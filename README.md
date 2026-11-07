@@ -34,13 +34,15 @@ https://llllho.github.io/reading-toolkit/
 
 源码在 `D:\ChromeDownloads\阅读ARC相关\阅读工具箱源码\`，本仓库只是它的英文名镜像，**不要直接在这里改**。
 
-改完源码后，在 Git Bash 里运行：
+改完源码后，**双击 `D:\ChromeDownloads\阅读ARC相关\同步到GitHub.bat`** 就行（不用敲命令）。
+
+它会：把 6 个 HTML 复制过来 → 把 index.html 里的中文链接换成英文文件名 → 提交 → 推送。窗口里会打印每一步，最后停在 `Press any key to continue`，按任意键关闭。推送后 GitHub Actions 自动部署，1 分钟内生效。
+
+想手动跑也可以：
 
 ```bash
-bash "D:/ChromeDownloads/阅读ARC相关/同步到GitHub.sh"
+bash "D:/ChromeDownloads/阅读ARC相关/sync-to-github.sh"
 ```
-
-脚本会复制 6 个 HTML（顺带把 index.html 里的中文链接换成英文名）、提交、推送。推送后 GitHub Actions 自动部署，1 分钟内生效。
 
 ## 说明
 
