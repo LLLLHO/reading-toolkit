@@ -1,0 +1,2832 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<title>阅读 ARC 高亮规则生成器</title>
+<style>
+  :root{
+    --bg:#f4f5f7; --panel:#ffffff; --field:#ffffff; --line:#e3e1db; --txt:#2b2b29; --sub:#8a887f;
+    --accent:#2563eb; --accent-deep:#1d4fd8; --accent-light:#e8efff; --warn:#a32d2d; --ok:#1a9e5c;
+    --code-bg:#f1f0ea; --toast-bg:#2c2c2a; --guide:rgba(37,99,235,.9); --guide2:rgba(20,160,90,.9);
+    --paper:#f7f6f2; --chk-a:#eeeeee; --chk-b:#ffffff;
+    color-scheme:light dark;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#14161a; --panel:#1e2128; --field:#252b36; --line:#333a47; --txt:#e6eaf0; --sub:#9aa4b2;
+      --accent:#5b8cff; --accent-deep:#3f6fe0; --accent-light:#1c2c4a; --warn:#e07a7a; --ok:#4ec98a;
+      --code-bg:#252b36; --toast-bg:#3a4150; --guide:rgba(96,165,250,.95); --guide2:rgba(80,210,140,.95);
+      --paper:#191c22; --chk-a:#262a31; --chk-b:#1e2128;
+    }
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:"Segoe UI","Microsoft YaHei",sans-serif; background:var(--bg); color:var(--txt); font-size:14px; line-height:1.6;}
+  body::before{content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background:
+      radial-gradient(620px 440px at 6% -6%, rgba(147,197,253,.32), transparent 65%),
+      radial-gradient(720px 480px at 96% -2%, rgba(186,230,253,.28), transparent 65%),
+      linear-gradient(180deg, #f4f5f7 0%, #eef2f8 100%);}
+  @media (prefers-color-scheme: dark){
+    body::before{background:radial-gradient(620px 440px at 6% -6%, rgba(37,99,235,.20), transparent 65%),
+      radial-gradient(720px 480px at 96% -2%, rgba(14,116,144,.16), transparent 65%),
+      linear-gradient(180deg, #14161a 0%, #151b26 100%);}
+  }
+  header{background:var(--panel); border-bottom:1px solid var(--line); padding:13px 28px; display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;}
+  header h1{font-size:17px; font-weight:500;}
+  header span{color:var(--sub); font-size:12px;}
+  .topStick{position:sticky; top:0; z-index:90; background:var(--bg); border-bottom:1px solid var(--line);}
+  .tabBar{display:flex; gap:8px; flex-wrap:wrap; padding:10px 28px; max-width:1320px; margin:0 auto;}
+  .tabBar button{border:1px solid var(--line); background:var(--panel); color:var(--sub); border-radius:9px; padding:7px 16px; font-size:13px; cursor:pointer;}
+  .tabBar button.on{background:var(--accent); color:#fff; border-color:var(--accent);}
+  main{display:grid; grid-template-columns:400px 1fr; gap:16px; padding:16px 28px 40px; max-width:1320px; margin:0 auto; align-items:start;}
+  main[hidden]{display:none;}
+  .col{display:flex; flex-direction:column; gap:14px; min-width:0;}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:15px;}
+  .card h2{font-size:14px; font-weight:500; margin-bottom:10px; display:flex; align-items:center; gap:8px;}
+  .card h2 .tag{font-size:11px; color:var(--accent); background:var(--accent-light); border-radius:4px; padding:1px 6px; font-weight:400;}
+  .hint{color:var(--sub); font-size:12px; margin-top:6px; line-height:1.65;}
+  .hint b{color:var(--txt); font-weight:500;}
+  label.fld{display:block; font-size:12px; color:var(--sub); margin:11px 0 4px;}
+  input[type=text],input[type=number],textarea,select{
+    width:100%; border:1px solid var(--line); border-radius:8px; padding:7px 10px; font-size:13px;
+    font-family:inherit; background:var(--field); color:var(--txt);}
+  input:focus,textarea:focus,select:focus{outline:none; border-color:var(--accent);}
+  textarea{resize:vertical;}
+  .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px;}
+  .grid4{display:grid; grid-template-columns:repeat(4,1fr); gap:8px;}
+  .grid4 .cell label{display:block; font-size:11px; color:var(--sub); text-align:center; margin-bottom:2px;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .btn{border:1px solid var(--line); background:var(--field); border-radius:8px; padding:7px 13px; font-size:13px; cursor:pointer; color:var(--txt); white-space:nowrap;}
+  .btn:hover{border-color:var(--accent); color:var(--accent);}
+  .btn.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .btn.primary:hover{background:var(--accent-deep); border-color:var(--accent-deep); color:#fff;}
+  .btn.sm{padding:4px 10px; font-size:12px;}
+  .btn:disabled{opacity:.45; cursor:not-allowed;}
+  .drop{border:1.5px dashed var(--line); border-radius:10px; padding:22px 12px; text-align:center; cursor:pointer; transition:.15s;}
+  .drop:hover,.drop.drag{border-color:var(--accent); background:var(--accent-light);}
+  .drop p{color:var(--sub); font-size:13px;}
+  .drop strong{color:var(--accent); font-weight:500;}
+  .stage{display:flex; justify-content:center; margin-top:10px; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:
+    repeating-conic-gradient(var(--chk-a) 0 25%, var(--chk-b) 0 50%) 0 0/14px 14px;}
+  .stageWrap{position:relative; display:block; font-size:0; width:100%; touch-action:none;}
+  .stageWrap img{width:100%; height:auto; display:block;}
+  .ln{position:absolute; z-index:2; touch-action:none;}
+  .lnV{top:0; height:100%; width:14px; margin-left:-7px; cursor:ew-resize;
+    background:linear-gradient(var(--guide),var(--guide)) 50% 0/1.5px 100% no-repeat;}
+  .lnH{left:0; width:100%; height:14px; margin-top:-7px; cursor:ns-resize;
+    background:linear-gradient(var(--guide),var(--guide)) 0 50%/100% 1.5px no-repeat;}
+  .lnV.ct{background-image:linear-gradient(var(--guide2),var(--guide2)); pointer-events:none;}
+  .lnH.ct{background-image:linear-gradient(var(--guide2),var(--guide2)); pointer-events:none;}
+  .nsCore{position:absolute; z-index:1; pointer-events:none; border:1px dashed var(--guide);
+    background:rgba(37,99,235,.07); box-sizing:border-box;}
+  .mono{font-family:Consolas,Menlo,monospace; font-size:11.5px; word-break:break-all; line-height:1.6;}
+  .symGrid{display:flex; flex-wrap:wrap; gap:6px; margin-top:4px;}
+  .symChip{display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); border-radius:8px; padding:5px 10px; cursor:pointer; font-size:12px; user-select:none; color:var(--sub);}
+  .symChip input{margin:0;}
+  .symChip.on{border-color:var(--accent); background:var(--accent-light); color:var(--accent);}
+  .symChip b{font-weight:500; font-size:13px;}
+  .customRow{display:flex; gap:6px; align-items:center; margin-top:6px;}
+  .customRow input{width:58px; text-align:center; padding:5px 6px;}
+  .swatch{width:60px; height:32px; border:1px solid var(--line); border-radius:8px; cursor:pointer; padding:0; flex:none;}
+  .swatch.chk{background-image:linear-gradient(45deg,var(--chk-a) 25%,transparent 25%,transparent 75%,var(--chk-a) 75%),linear-gradient(45deg,var(--chk-a) 25%,transparent 25%,transparent 75%,var(--chk-a) 75%); background-size:8px 8px; background-position:0 0,4px 4px;}
+  .swatch:hover{box-shadow:0 0 0 2px rgba(47,111,237,.35);}
+  .swatch.sm{width:44px; height:26px; border-radius:6px;}
+  .cSlot{display:inline-flex; align-items:center; gap:7px;}
+  .ttGuide{position:absolute; z-index:6; pointer-events:none; background:var(--accent); opacity:.9;}
+  .ttGuide.v{width:1px; top:0; bottom:0;}
+  .ttGuide.h{height:1px; left:0; right:0;}
+  .paper{border:1px solid var(--line); border-radius:10px; overflow:hidden; background:#f7f6f2;}
+  .paperInner{padding:20px 18px; color:#1f1f1f; font-family:"Songti SC","SimSun","宋体",serif;}
+  .paper.dark{background:#15171b;}
+  .paper.dark .paperInner{color:#cfcfc9;}
+  .paperInner p{margin:0; text-indent:2em;}
+  .paperInner p.chTitle{text-indent:0; text-align:center; font-weight:700; font-size:1.28em; margin-bottom:1.1em;}
+  .paperInner p.gap{height:.7em;}
+  #ttPreviewBlock{display:block; box-sizing:border-box;}
+  #ttCanvasWrap{border:1px solid var(--line); border-radius:10px; overflow:hidden; touch-action:none;}
+  #ttCanvas{position:relative; margin:0 auto;}
+  #ttLayerBar{display:none; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap;}
+  #ttLayerList{display:flex; flex-direction:column; gap:5px; margin-top:8px; max-height:132px; overflow:auto;}
+  .lyrRow{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--sub); border:1px solid var(--line); border-radius:7px; padding:4px 8px; cursor:pointer;}
+  .lyrRow.on{border-color:var(--accent); color:var(--accent); background:var(--accent-light);}
+  .lyrRow img{width:26px; height:26px; object-fit:contain; background:repeating-conic-gradient(var(--chk-a) 0 25%, var(--chk-b) 0 50%) 0 0/8px 8px; border-radius:4px;}
+  details{margin-top:10px;}
+  summary{font-size:12px; color:var(--sub); cursor:pointer; user-select:none;}
+  code{background:var(--code-bg); border-radius:4px; padding:1px 5px; font-size:12px;}
+  #toast{position:fixed; left:50%; bottom:34px; transform:translateX(-50%) translateY(20px);
+    background:var(--toast-bg); color:#fff; padding:9px 20px; border-radius:8px; font-size:13px;
+    opacity:0; pointer-events:none; transition:all .25s; z-index:9999; max-width:88vw; text-align:center;}
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  #cp-mask{position:fixed; inset:0; z-index:1200;}
+  #cp-mask[hidden]{display:none;}
+  #cp-box{position:fixed; left:8px; top:8px; width:252px; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px; box-shadow:0 8px 28px rgba(0,0,0,.22); display:flex; flex-direction:column; gap:9px; font-size:12px;}
+  #cp-sv{position:relative; height:150px; border-radius:8px; cursor:crosshair; border:1px solid rgba(0,0,0,.12); touch-action:none;}
+  #cp-cur{position:absolute; width:13px; height:13px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 3px rgba(0,0,0,.65); transform:translate(-50%,-50%); pointer-events:none;}
+  #cp-hue,#cp-a{-webkit-appearance:none; appearance:none; width:100%; height:13px; border-radius:7px; margin:0; padding:0; border:none; outline:none; cursor:pointer;}
+  #cp-hue{background:linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00);}
+  #cp-hue::-webkit-slider-thumb,#cp-a::-webkit-slider-thumb{-webkit-appearance:none; width:15px; height:15px; border-radius:50%; background:#fff; border:2px solid #fff; box-shadow:0 0 3px rgba(0,0,0,.6); cursor:pointer;}
+  .cp-row{display:flex; align-items:center; gap:8px;}
+  #cp-sw{width:36px; height:26px; border-radius:6px; border:1px solid var(--line); flex:none;}
+  #cp-hex{flex:1; min-width:0; font-family:Consolas,monospace; font-size:11.5px;}
+  .cp-btns{display:flex; justify-content:flex-end; gap:8px;}
+  .cp-btns .btn{padding:4px 14px;}
+  .cp-btns .pri{background:var(--accent); color:#fff; border-color:var(--accent);}
+  @media (min-width: 861px){
+    main > .col:last-child{position:sticky; top:104px; max-height:calc(100vh - 118px); overflow-y:auto; scrollbar-width:thin;}
+  }
+  @media (max-width: 860px){
+    header{padding:11px 14px; flex-direction:column; gap:2px; align-items:flex-start;}
+    .tabBar{padding:8px 10px;}
+    main{grid-template-columns:1fr; padding:12px 10px 36px;}
+    main > .col:last-child{position:static; max-height:none;}
+    .btn{padding:9px 13px; font-size:14px;}
+    .btn.sm{padding:6px 10px; font-size:12px;}
+    input[type=text],input[type=number],select,textarea{font-size:15px; padding:9px 10px;}
+  }
+</style>
+</head>
+<body>
+<div class="topStick">
+  <header>
+    <a href="index.html" style="flex:none;color:var(--sub);text-decoration:none;font-size:12px;border:1px solid var(--line);border-radius:8px;padding:3px 10px;background:var(--panel)" title="返回工具箱首页">← 工具箱</a>
+    <h1>阅读 ARC 高亮规则生成器</h1>
+    <span>对话气泡 / 标题装饰 · 导出 .red 规则包 · 纯本地运行，不上传任何图片 · <span id="verTag" style="opacity:.7"></span> · <a href="#" id="btnForget" style="color:var(--sub);font-size:11.5px;text-decoration:underline dotted" title="清除本机自动保存的表单设置，下次打开回到默认值">清除已保存设置</a></span>
+  </header>
+  <div class="tabBar" id="tabBar">
+    <button data-tab="tabDialog" class="on">💬 对话高亮</button>
+    <button data-tab="tabTitle">📕 标题高亮</button>
+  </div>
+</div>
+
+<!-- ==================== 对话高亮 ==================== -->
+<main id="tabDialog">
+  <div class="col">
+
+    <div class="card">
+      <h2>1 · 气泡图 <span class="tag">PNG</span></h2>
+      <div class="drop" id="dlgDrop">
+        <p><strong>点击选择</strong> 或拖拽 PNG 到此处</p>
+        <p class="hint" style="margin-top:2px">透明背景的气泡图，宽度别超过正文行宽</p>
+        <input type="file" id="dlgFile" accept="image/png" hidden>
+      </div>
+      <div class="hint" id="dlgInfo" style="display:none"></div>
+      <div class="stage" id="dlgStage" style="display:none">
+        <div class="stageWrap" id="dlgWrap">
+          <img id="dlgImg" alt="气泡图">
+          <div class="nsCore" id="nsCore"></div>
+          <div class="ln lnV ct" data-k="cl"></div>
+          <div class="ln lnV ct" data-k="cr"></div>
+          <div class="ln lnH ct" data-k="ct"></div>
+          <div class="ln lnH ct" data-k="cb"></div>
+          <div class="ln lnV" data-k="sl" title="左切点"></div>
+          <div class="ln lnV" data-k="sr" title="右切点"></div>
+          <div class="ln lnH" data-k="st" title="上切点"></div>
+          <div class="ln lnH" data-k="sb" title="下切点"></div>
+        </div>
+      </div>
+      <p class="hint" id="dlgStageTip" style="display:none">
+        <b style="color:var(--guide)">蓝线</b>＝九宫格切点：四条蓝线围出的中间区域会被拉长，四个角原样不动（蓝线可以直接拖）；
+        <b style="color:var(--guide2)">绿线</b>＝文字区，跟着内边距自动走。
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>2 · 背景图怎么用 <span class="tag">铺法</span></h2>
+      <select id="bgMode">
+        <option value="bubble">气泡：九宫格拉伸铺满（默认）</option>
+        <option value="tag">贴图：原样挂在文字一侧，不拉伸</option>
+      </select>
+
+      <label class="fld">这一段怎么排（决定背景画一次还是每行画一次）</label>
+      <select id="bgFlow">
+        <option value="inline">行内：跟着文字走，每行各画一次</option>
+        <option value="iblock">整块嵌在行里：整段只画一次，宽度贴着字（推荐）</option>
+        <option value="block">独立成段：整段只画一次，撑满整个栏宽</option>
+      </select>
+      <div class="hint" id="flowOut" style="color:var(--accent)"></div>
+      <div class="hint">
+        <b>行内</b>最贴近 ARC 默认效果：气泡会跟着每一行重新画一次，长句折行后是「两截气泡」；
+        想<b>让一张会拉伸的气泡包住整段</b>，就选后两档——整段只会画一次，九宫格把中间拉长、四角不动。
+        <b>整块嵌在行里</b>不会另起段落，句子还在原来的位置；<b>独立成段</b>会让它前后换行，并撑满整栏（引文块那种效果）。
+      </div>
+
+      <div id="nsPanel">
+        <label style="display:flex;gap:7px;align-items:flex-start;font-size:12.5px;line-height:1.55;color:var(--txt);margin:2px 0 10px">
+          <input type="checkbox" id="nsOff" style="margin-top:3px;flex:none">
+          <span><b>不切九宫格：整张图压进每一行</b>（每行左右各一份花纹，要配上面选「行内」）
+            <br><span style="color:var(--sub)">勾上就不写 nine-slice，导出为 <code>background-size:100% 100%</code> ＋ <code>box-decoration-break:clone</code>——旧版那种「每行两端各一朵花、整段没有外框」的效果。</span>
+          </span>
+        </label>
+        <label class="fld">九宫格拉伸区域 nine-slice</label>
+        <div class="grid4">
+          <div class="cell"><label>上</label><input type="number" id="nsT" min="0" value="0"></div>
+          <div class="cell"><label>右</label><input type="number" id="nsR" min="0" value="0"></div>
+          <div class="cell"><label>下</label><input type="number" id="nsB" min="0" value="0"></div>
+          <div class="cell"><label>左</label><input type="number" id="nsL" min="0" value="0"></div>
+        </div>
+        <div class="row">
+          <button class="btn sm" id="btnNsAuto">自动识别</button>
+          <button class="btn sm" id="btnNsEdge">按不透明边距</button>
+          <button class="btn sm" id="btnNsZero">清零（整图拉伸）</button>
+        </div>
+        <div class="hint mono" id="nsOut" style="color:var(--accent)"></div>
+        <div class="hint">
+          这四个值＝从图片<b>上/右/下/左</b>四条边往里切多深（单位是图片像素）。四刀围出的中间那块会被拉长，四个角原样保留。
+          带圆角、花纹、小符号的气泡图必须切，否则整张图被压扁时角落的符号就糊了。全填 0＝不用九宫格，整张图硬拉伸。
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label style="display:flex;gap:6px;align-items:center;font-size:12.5px;color:var(--sub)">
+            <input type="checkbox" id="nsBasis" checked> 顺带写入 <code>nine-slice-basis: bubble</code>（气泡跟着字变大变小）
+          </label>
+        </div>
+      </div>
+
+      <div id="tagPanel" hidden>
+        <div class="grid4">
+          <div class="cell"><label>贴在哪边</label>
+            <select id="tagSide"><option value="left">左侧</option><option value="right">右侧</option><option value="top">上方</option><option value="bottom">下方</option></select>
+          </div>
+          <div class="cell"><label>图宽 em</label><input type="number" id="tagSize" value="2" step="0.1" min="0.5" max="12"></div>
+        </div>
+        <div class="grid4" style="margin-top:6px">
+          <div class="cell"><label>与文字间距 em</label><input type="number" id="tagGap" value="0.2" step="0.05" min="0" max="4"></div>
+        </div>
+        <label class="fld">贴图尺寸（导出会写成 <code>background-size: 2em</code>，高度按原图比例，不会变形）</label>
+        <div class="row">
+          <button class="btn sm" id="btnTagApply">按贴图自动留出内边距</button>
+        </div>
+        <div class="hint" id="tagOut" style="color:var(--accent)"></div>
+        <div class="hint">
+          这一档不切九宫格，图片按原始比例挂在指定一侧，文字被内边距推到另一边——就是「整张图在文字左边」的效果。
+          图片只会画在第一行，所以想让整段都缩在图片右边，把上面「这一段怎么排」切成「整块嵌在行里 / 独立成段」。
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>3 · 气泡里文字怎么排</h2>
+      <div class="grid4">
+        <div class="cell"><label>字号 em</label><input type="number" id="stSize" value="0.875" step="0.025" min="0.4" max="2"></div>
+        <div class="cell"><label>行高</label><input type="number" id="stLh" value="1.3" step="0.05" min="0.6" max="3"></div>
+        <div class="cell"><label>字距 px</label><input type="number" id="stLs" value="0" step="0.5"></div>
+        <div class="cell"><label>下边距 px</label><input type="number" id="stMb" value="0" step="1"></div>
+      </div>
+      <label class="fld">内边距 em（文字到气泡边缘的距离，直接决定气泡多大）</label>
+      <div class="grid4">
+        <div class="cell"><label>左</label><input type="number" id="stPl" value="0.9" step="0.05" min="0"></div>
+        <div class="cell"><label>上</label><input type="number" id="stPt" value="0.7" step="0.05" min="0"></div>
+        <div class="cell"><label>右</label><input type="number" id="stPr" value="0.45" step="0.05" min="0"></div>
+        <div class="cell"><label>下</label><input type="number" id="stPb" value="0.7" step="0.05" min="0"></div>
+      </div>
+      <label class="fld">文字颜色</label>
+      <div class="row" style="margin-top:0">
+        <select id="stColorMode" style="width:auto; flex:1; min-width:150px">
+          <option value="bg">跟随基础颜色 {backgroundColor}</option>
+          <option value="pri">跟随强调色 {primaryColor}</option>
+          <option value="custom" selected>自定义颜色</option>
+        </select>
+        <button type="button" class="swatch" id="stSwatch"></button>
+        <span class="hint mono" id="stColorVal" style="margin:0; cursor:pointer"></span>
+      </div>
+      <p class="hint">想让 ARC 换主题时气泡文字跟着变，用 <code>{backgroundColor}</code>；想固定就选自定义。</p>
+    </div>
+
+    <div class="card">
+      <h2>4 · 匹配哪些引号 <span class="tag">勾选即生效</span></h2>
+      <div class="symGrid" id="symGrid"></div>
+      <div style="margin-top:10px; display:flex; gap:14px; flex-wrap:wrap;">
+        <label style="display:flex;gap:6px;align-items:center;font-size:12.5px;color:var(--sub)"><input type="checkbox" id="symKeepQuote" checked> 气泡包含引号本身</label>
+        <label style="display:flex;gap:6px;align-items:center;font-size:12.5px;color:var(--sub)"><input type="checkbox" id="symMulti" checked> 允许跨行（跨段续引）</label>
+      </div>
+      <label class="fld">自定义符号对</label>
+      <div id="symCustom"></div>
+      <div class="row"><button class="btn sm" id="btnSymAdd">＋ 添加一对</button></div>
+      <div class="hint">生成的正则：</div>
+      <div class="hint mono" id="symOut" style="color:var(--accent)"></div>
+    </div>
+
+    <div class="card">
+      <h2>5 · 规则信息</h2>
+      <label class="fld">规则名称</label>
+      <input type="text" id="dlgName" value="对话高亮">
+      <div class="grid2" style="margin-top:8px">
+        <div><label class="fld" style="margin-top:0">分组名</label><input type="text" id="dlgGroup" value="其他气泡"></div>
+        <div><label class="fld" style="margin-top:0">排序值</label><input type="number" id="dlgSort" value="13" step="1"></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <label style="display:flex;gap:6px;align-items:center;font-size:13px"><input type="checkbox" id="dlgEnabled" checked> 导入后立即启用</label>
+      </div>
+      <details>
+        <summary>高级：nine-slice 边框粗细 / 基础颜色值</summary>
+        <label class="fld">nine-slice-scale（9-Slice 边框画多粗，留空则不写）</label>
+        <input type="text" id="nsScale" placeholder="留空；不确定就先不填">
+        <label class="fld">styleColorType（基础颜色标识，默认 purple）</label>
+        <input type="text" id="dlgColorType" value="purple">
+      </details>
+    </div>
+
+    <div class="card">
+      <h2>6 · 从现有规则包反推</h2>
+      <div class="row" style="margin-top:0">
+        <button class="btn" id="btnDlgImport">📥 导入 .red 填回本页</button>
+        <input type="file" id="dlgImportFile" accept=".red" hidden>
+      </div>
+      <p class="hint">把别人的气泡规则导进来，图片、锚点、内边距、用到的引号都会还原，换张图就能出自己的版本。</p>
+    </div>
+
+  </div>
+
+  <div class="col">
+    <div class="card">
+      <h2>预览 <span class="tag">与 ARC 同一套 CSS</span></h2>
+      <div class="row" style="margin-top:0">
+        <div id="paperSeg" style="display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden">
+          <button data-p="light" class="on" style="border:none;background:var(--accent-light);color:var(--accent);padding:6px 12px;font-size:12px;cursor:pointer">浅色页</button>
+          <button data-p="dark" style="border:none;background:var(--field);color:var(--sub);padding:6px 12px;font-size:12px;cursor:pointer">夜间页</button>
+        </div>
+        <span style="flex:1"></span>
+        <span class="hint" style="margin:0">列宽</span>
+        <input type="number" id="bodyW" value="390" min="240" max="900" style="width:66px">
+        <span class="hint" style="margin:0">字号</span>
+        <input type="number" id="bodyFs" value="20" min="12" max="34" style="width:58px">
+        <span class="hint" style="margin:0">行距</span>
+        <input type="number" id="bodyLh" value="1.9" min="1.2" max="3" step="0.05" style="width:58px">
+      </div>
+      <div class="row" style="margin-top:6px">
+        <span class="hint" style="margin:0">预览用主题色：</span>
+        <span class="hint" style="margin:0">背景色</span>
+        <span class="cSlot">
+          <button type="button" class="swatch sm" id="pvBgColorSw" title="阅读主题的「背景颜色」，用来解析 {backgroundColor}"></button>
+          <input type="hidden" id="pvBgColor" value="#fbf9f4">
+          <span class="hint mono" style="margin:0" id="pvBgColorVal"></span>
+        </span>
+        <span class="hint" style="margin:0">强调色</span>
+        <span class="cSlot">
+          <button type="button" class="swatch sm" id="pvPriColorSw" title="阅读主题的「强调色」，用来解析 {primaryColor}"></button>
+          <input type="hidden" id="pvPriColor" value="#c43e3e">
+          <span class="hint mono" style="margin:0" id="pvPriColorVal"></span>
+        </span>
+      </div>
+      <div class="paper" id="dlgPaper" style="margin-top:10px">
+        <div class="paperInner" id="dlgArea"></div>
+      </div>
+      <label class="fld">预览正文（首行是「第X章 …」会渲染成章节标题）</label>
+      <textarea id="dlgText" rows="5">第一章 新的故事
+他望向窗外，说：“今天风很轻。”
+她翻开《书》，写下「新的故事」与「旧日回忆」，在“此处”留下记号。
+"Double quotes work too," he added with a smile.
+他说：“这一段故意写得长一些，长到要折行才能放下，用来看看气泡换行时的样子。”</textarea>
+      <div class="row"><button class="btn sm" id="btnDlgResetText">恢复示例文字</button></div>
+      <p class="hint">这张「纸」的宽度就是上面的<b>列宽</b>（＝阅读器里正文的栏宽），自动居中——气泡在哪里折行完全由它决定。预览用的就是导出文件里那套数值：字号、内边距、行高照搬，九宫格用 border-image 按同样的切点画（浏览器没有 nine-slice，border-image 是等价画法），所以角落花纹大小、气泡胖瘦所见即所得。勾了「不切九宫格」时，预览也会带上 <code>box-decoration-break: clone</code>，折成几行就画几份，和真机一致。若真机上切的位置整体偏了，多半是 ARC 对四个值的顺序理解不同，把左右、上下的数字对调再试一次。</p>
+    </div>
+
+    <div class="card">
+      <h2>导出</h2>
+      <div class="row" style="margin-top:0">
+        <button class="btn primary" id="btnDlgExport">导出 .red 规则包</button>
+        <button class="btn" id="btnDlgJson">导出 JSON 副本</button>
+      </div>
+      <p class="hint">导出后会弹出一个小面板：能直接存就点「保存文件」；手机浏览器拦 blob 下载时，可以点「复制 Base64」，再回到电脑上的本页用下面的「Base64 还原」变回文件。</p>
+      <details>
+        <summary>手机上导不出来？用 Base64 中转</summary>
+        <label class="fld">把手机复制的 Base64 粘到这里</label>
+        <textarea id="b64In" rows="3" class="mono" placeholder="粘贴以 UEQ 开头的那一大串……"></textarea>
+        <div class="row">
+          <button class="btn sm" id="btnB64Restore">还原成 .red 并保存</button>
+        </div>
+        <p class="hint">手机上点「复制 Base64」→ 发给自己（微信文件传输助手 / 邮件）→ 在电脑上打开本页粘进来 → 得到 .red 文件。</p>
+      </details>
+      <details open>
+        <summary>将写入的高级 CSS</summary>
+        <textarea id="dlgCssOut" rows="8" readonly class="mono" style="margin-top:8px"></textarea>
+      </details>
+    </div>
+  </div>
+</main>
+
+<!-- ==================== 标题高亮 ==================== -->
+<main id="tabTitle" hidden>
+  <div class="col">
+
+    <div class="card">
+      <h2>1 · 画布里的图片 <span class="tag">可多张</span></h2>
+      <div class="row" style="margin-top:0">
+        <button class="btn primary" id="btnTtAdd">🖼 添加图片</button>
+        <input type="file" id="ttFiles" accept="image/*" multiple hidden>
+      </div>
+      <div id="ttLayerList"></div>
+      <div id="ttLayerBar">
+        <span class="hint" style="margin:0">宽度</span>
+        <input type="range" id="ttLayerW" min="20" step="1" style="flex:1; min-width:100px">
+        <button class="btn sm" id="ttLayerUp">⬆</button>
+        <button class="btn sm" id="ttLayerDown">⬇</button>
+        <button class="btn sm" id="ttLayerDel">🗑</button>
+      </div>
+      <p class="hint">点画布上的图选中它，拖动移位，右下角小方块拉大小。图可以放在标题文字的上、下、左、右，或者四周围起来——位置完全由你摆，导出时合成一张透明 PNG 当标题背景。</p>
+    </div>
+
+    <div class="card">
+      <h2>2 · 画布与文字</h2>
+      <div class="row" style="margin-top:0">
+        <span class="hint" style="margin:0">设计宽</span>
+        <select id="ttDesignW" style="width:auto"><option value="720">720</option><option value="1080" selected>1080</option><option value="1440">1440</option></select>
+        <span class="hint" style="margin:0">画布高</span>
+        <input type="number" id="ttCanvasH" value="0" min="0" step="10" style="width:78px" placeholder="自动">
+      </div>
+      <label class="fld">标题示例文字（画布上拖虚线框可换位置）</label>
+      <input type="text" id="ttText" value="第一章 新的故事">
+      <div class="row" style="margin-top:8px">
+        <label style="display:flex;gap:6px;align-items:center;font-size:12.5px;color:var(--sub)">
+          <input type="checkbox" id="ttSnap" checked> 拖动时自动吸附（画布左右边、水平居中、与图片对齐）
+        </label>
+      </div>
+      <p class="hint">吸附时会出现一条蓝色参考线，停在最近的对齐位置。图片也能吸附到画布和文字框的边缘 / 中心。</p>
+      <p class="hint">画布高填 0 就按图片自动撑到图片底边。在图片范围内上下拖标题，画布高度不变、图也不会变形；只有把标题拖到图片底边以外，画布才会往上长。</p>
+      <p class="hint" id="ttFitWarn" style="display:none; color:#e06c75">标题比画布还高：下内边距被压成 0，装饰图会被压扁。把画布高调大，或者把字号调小。</p>
+    </div>
+
+    <div class="card">
+      <h2>3 · 标题文字样式</h2>
+      <div class="grid2">
+        <div><label class="fld" style="margin-top:0">字号 em（相对正文）</label><input type="number" id="ttFontEm" value="1.53" step="0.01" min="0.6" max="3"></div>
+        <div><label class="fld" style="margin-top:0">字重</label>
+          <select id="ttWeight"><option value="normal">常规 normal</option><option value="bold">粗体 bold</option><option value="100">细体 100</option><option value="300">细体 300</option><option value="500">中等 500</option><option value="700">粗 700</option><option value="900">特粗 900</option></select>
+        </div>
+      </div>
+      <div class="grid2" style="margin-top:8px">
+        <div><label class="fld" style="margin-top:0">字距 px</label><input type="number" id="ttSpacing" value="0" step="0.5"></div>
+        <div><label class="fld" style="margin-top:0">行高</label><input type="number" id="ttLh" value="1.2" step="0.05" min="0.7" max="3"></div>
+      </div>
+      <label class="fld">水平对齐</label>
+      <select id="ttAlign"><option value="center">居中</option><option value="left">靠左</option><option value="right">靠右</option></select>
+      <label class="fld">文字颜色</label>
+      <div class="row" style="margin-top:0">
+        <select id="ttColorMode" style="width:auto; flex:1; min-width:150px">
+          <option value="pri">跟随强调色 {primaryColor}</option>
+          <option value="bg">跟随基础颜色 {backgroundColor}</option>
+          <option value="custom" selected>自定义颜色</option>
+        </select>
+        <button type="button" class="swatch" id="ttSwatch"></button>
+        <span class="hint mono" id="ttColorVal" style="margin:0; cursor:pointer"></span>
+      </div>
+      <div class="grid2" style="margin-top:8px">
+        <div><label class="fld" style="margin-top:0">描边 px（0=关）</label><input type="number" id="ttStroke" value="0" step="0.5" min="0" max="6"></div>
+        <div><label class="fld" style="margin-top:0">描边颜色</label>
+          <span class="cSlot" style="width:100%">
+            <button type="button" class="swatch sm" id="ttStrokeColorSw"></button>
+            <input type="hidden" id="ttStrokeColor" value="#ffffff">
+            <span class="hint mono" style="margin:0" id="ttStrokeColorVal"></span>
+          </span>
+        </div>
+      </div>
+      <div class="row"><label style="display:flex;gap:6px;align-items:center;font-size:13px"><input type="checkbox" id="ttGlow"> 文字发光</label></div>
+      <details>
+        <summary>高级：外边距 / 铺图方式 / 基础颜色值</summary>
+        <label class="fld">外边距 px（可负，负值把标题往上提）</label>
+        <div class="grid4">
+          <div class="cell"><label>上</label><input type="number" id="ttMarT" value="0"></div>
+          <div class="cell"><label>右</label><input type="number" id="ttMarR" value="0"></div>
+          <div class="cell"><label>下</label><input type="number" id="ttMarB" value="0"></div>
+          <div class="cell"><label>左</label><input type="number" id="ttMarL" value="0"></div>
+        </div>
+        <label class="fld">铺图方式</label>
+        <select id="ttFit">
+          <option value="100% auto" selected>宽度铺满 · 高度按原比例（标题多行也不拉图，推荐）</option>
+          <option value="100% 100%">精确铺满（与画布 1:1，但标题多出一行会把图纵向拉长）</option>
+          <option value="cover">裁切铺满 cover（整幅插画不会被拉变形，但会裁边）</option>
+        </select>
+        <label class="fld">铺图对齐（「宽度铺满」和 cover 时生效）</label>
+        <select id="ttFitPos">
+          <option value="top center" selected>贴顶（装饰图在标题上方时选这个）</option>
+          <option value="center center">居中</option>
+          <option value="bottom center">贴底（装饰图在标题下方时选这个）</option>
+        </select>
+        <label class="fld">styleColorType（基础颜色标识，默认 accent）</label>
+        <input type="text" id="ttColorType" value="accent">
+      </details>
+    </div>
+
+    <div class="card">
+      <h2>4 · 规则信息</h2>
+      <div class="grid2">
+        <div><label class="fld" style="margin-top:0">规则名称</label><input type="text" id="ttName" value="标题高亮"></div>
+        <div><label class="fld" style="margin-top:0">排序值</label><input type="number" id="ttSort" value="772" step="1"></div>
+      </div>
+      <div class="row"><label style="display:flex;gap:6px;align-items:center;font-size:13px"><input type="checkbox" id="ttEnabled" checked> 导入后立即启用</label></div>
+      <div class="row"><button class="btn" id="btnTtImport">📥 导入 .red 填回本页</button><input type="file" id="ttImportFile" accept=".red" hidden></div>
+    </div>
+
+  </div>
+
+  <div class="col">
+    <div class="card">
+      <h2>画布 <span class="tag">虚线框是标题文字的位置</span></h2>
+      <div id="ttCanvasWrap"><div id="ttCanvas"></div></div>
+    </div>
+
+    <div class="card">
+      <h2>预览 <span class="tag">ARC 里的实际尺寸</span></h2>
+      <div class="row" style="margin-top:0">
+        <span class="hint" style="margin:0">手机正文列宽</span>
+        <input type="number" id="ttColW" value="390" min="220" max="900" style="width:76px"> px
+        <span class="hint" style="margin:0">正文字号</span>
+        <input type="number" id="ttBodyFs" value="20" min="12" max="34" style="width:66px"> px
+      </div>
+      <div class="row" style="margin-top:6px">
+        <span class="hint" style="margin:0">预览用主题色：</span>
+        <span class="hint" style="margin:0">背景色</span>
+        <span class="cSlot">
+          <button type="button" class="swatch sm" id="tvBgColorSw"></button>
+          <input type="hidden" id="tvBgColor" value="#fbf9f4">
+          <span class="hint mono" style="margin:0" id="tvBgColorVal"></span>
+        </span>
+        <span class="hint" style="margin:0">强调色</span>
+        <span class="cSlot">
+          <button type="button" class="swatch sm" id="tvPriColorSw"></button>
+          <input type="hidden" id="tvPriColor" value="#c43e3e">
+          <span class="hint mono" style="margin:0" id="tvPriColorVal"></span>
+        </span>
+      </div>
+      <div class="paper" id="ttPaper" style="margin-top:10px; padding:6px 0;">
+        <div class="paperInner" style="padding:8px 0;">
+          <div id="ttPreviewWrap" style="margin:0 auto;"><div id="ttPreviewBlock"></div></div>
+          <p id="ttPreviewBody" style="margin:0 auto; text-indent:2em; opacity:.5;">他望向窗外，说：“今天风很轻。”</p>
+        </div>
+      </div>
+      <p class="hint">预览里的背景就是导出那张合成图（按列宽等比缩过），CSS 与导出完全同一份——所以标题折行后图会不会被拉长，在这里就能直接看出来。画布上的 1080 宽等于手机上的列宽，内边距写成 em（跟着标题字号走），换字号、换屏宽时整块等比缩放。</p>
+    </div>
+
+    <div class="card">
+      <h2>导出</h2>
+      <div class="row" style="margin-top:0">
+        <button class="btn primary" id="btnTtExport">导出 .red 规则包</button>
+        <button class="btn" id="btnTtJson">导出 JSON 副本</button>
+      </div>
+      <details open>
+        <summary>将写入的高级 CSS</summary>
+        <textarea id="ttCssOut" rows="8" readonly class="mono" style="margin-top:8px"></textarea>
+      </details>
+    </div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const qsa = (s, r) => [...(r || document).querySelectorAll(s)];
+
+/* =========================================================
+   0 · 基础工具
+   ========================================================= */
+function toast(msg, ok = true){
+  const t = $('toast');
+  t.textContent = msg;
+  t.style.background = ok ? 'var(--toast-bg)' : '#a32d2d';
+  t.classList.add('show');
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.classList.remove('show'), 2600);
+}
+const num = (v) => {
+  const n = parseFloat(v);
+  if (isNaN(n)) return '0';
+  return String(Math.round(n * 1000) / 1000);
+};
+const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/* MD5：.red 里 background-image 引用的资源名 = MD5(原始图片字节) 大写
+   （样例 高亮规则.red → 332747277C09B847488728F6215FDD5D，与图片 MD5 一致） */
+function md5Hex(u8){
+  const S = [7,12,17,22,7,12,17,22,7,12,17,22,7,12,17,22,
+             5,9,14,20,5,9,14,20,5,9,14,20,5,9,14,20,
+             4,11,16,23,4,11,16,23,4,11,16,23,4,11,16,23,
+             6,10,15,21,6,10,15,21,6,10,15,21,6,10,15,21];
+  const K = new Int32Array(64);
+  for (let i = 0; i < 64; i++) K[i] = Math.floor(Math.abs(Math.sin(i + 1)) * 4294967296) | 0;
+  let a0 = 0x67452301, b0 = 0xefcdab89 | 0, c0 = 0x98badcfe | 0, d0 = 0x10325476 | 0;
+  const len = u8.length;
+  const total = (((len + 8) >> 6) + 1) << 6;
+  const msg = new Uint8Array(total);
+  msg.set(u8);
+  msg[len] = 0x80;
+  const dv = new DataView(msg.buffer);
+  dv.setUint32(total - 8, (len * 8) >>> 0, true);
+  dv.setUint32(total - 4, Math.floor(len / 536870912), true);
+  const M = new Int32Array(16);
+  for (let off = 0; off < total; off += 64){
+    for (let i = 0; i < 16; i++) M[i] = dv.getInt32(off + i * 4, true);
+    let A = a0, B = b0, C = c0, D = d0;
+    for (let i = 0; i < 64; i++){
+      let F, g;
+      if (i < 16){ F = (B & C) | (~B & D); g = i; }
+      else if (i < 32){ F = (D & B) | (~D & C); g = (5 * i + 1) % 16; }
+      else if (i < 48){ F = B ^ C ^ D; g = (3 * i + 5) % 16; }
+      else { F = C ^ (B | ~D); g = (7 * i) % 16; }
+      F = (F + A + K[i] + M[g]) | 0;
+      A = D; D = C; C = B;
+      B = (B + ((F << S[i]) | (F >>> (32 - S[i])))) | 0;
+    }
+    a0 = (a0 + A) | 0; b0 = (b0 + B) | 0; c0 = (c0 + C) | 0; d0 = (d0 + D) | 0;
+  }
+  const out = new DataView(new ArrayBuffer(16));
+  out.setInt32(0, a0, true); out.setInt32(4, b0, true);
+  out.setInt32(8, c0, true); out.setInt32(12, d0, true);
+  return [...new Uint8Array(out.buffer)].map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+}
+/* ---------- gzip 兜底 ----------
+   手机上的 Via / 夸克等用的是系统 WebView，老一点的没有 CompressionStream，
+   以前这里直接报「浏览器太旧」。现在给两条兜底：
+   ① 压缩：用 deflate 的「不压缩块(stored)」拼一个合法 gzip —— PNG 本来就压过，体积几乎不涨；
+   ② 解压：内置一个极小的 inflate，够读 .red 里的 gzip 就行。 */
+let CRC_TABLE = null;
+function crc32(u8){
+  if (!CRC_TABLE){
+    CRC_TABLE = new Uint32Array(256);
+    for (let n = 0; n < 256; n++){
+      let c = n;
+      for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      CRC_TABLE[n] = c >>> 0;
+    }
+  }
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < u8.length; i++) c = CRC_TABLE[(c ^ u8[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+function gzipStored(u8){
+  const parts = [new Uint8Array([0x1f, 0x8b, 0x08, 0x00, 0, 0, 0, 0, 0, 0x03])];
+  let i = 0;
+  if (!u8.length) parts.push(new Uint8Array([1, 0, 0, 0xff, 0xff]));
+  while (i < u8.length){
+    const n = Math.min(0xFFFF, u8.length - i);
+    const h = new Uint8Array(5);
+    h[0] = (i + n >= u8.length) ? 1 : 0;      // BFINAL + BTYPE=00（stored）
+    h[1] = n & 0xFF; h[2] = (n >>> 8) & 0xFF;
+    h[3] = (~n) & 0xFF; h[4] = ((~n) >>> 8) & 0xFF;
+    parts.push(h, u8.subarray(i, i + n));
+    i += n;
+  }
+  const tr = new Uint8Array(8);
+  const dv = new DataView(tr.buffer);
+  dv.setUint32(0, crc32(u8), true);
+  dv.setUint32(4, u8.length >>> 0, true);
+  parts.push(tr);
+  let total = 0; parts.forEach(x => total += x.length);
+  const out = new Uint8Array(total);
+  let o = 0;
+  parts.forEach(x => { out.set(x, o); o += x.length; });
+  return out;
+}
+function inflateRaw(src, start){
+  let pos = start || 0, bitbuf = 0, bitcnt = 0;
+  const out = [];
+  function getBit(){
+    if (!bitcnt){ bitbuf = src[pos++]; bitcnt = 8; }
+    const b = bitbuf & 1; bitbuf >>>= 1; bitcnt--; return b;
+  }
+  function getBits(n){ let v = 0; for (let i = 0; i < n; i++) v |= getBit() << i; return v; }
+  function buildHuff(lens){
+    const counts = new Uint16Array(16);
+    for (let i = 0; i < lens.length; i++) counts[lens[i]]++;
+    counts[0] = 0;
+    const offs = new Uint16Array(16);
+    for (let i = 1; i < 16; i++) offs[i] = offs[i - 1] + counts[i - 1];
+    const symbols = new Uint16Array(lens.length);
+    for (let s = 0; s < lens.length; s++) if (lens[s]) symbols[offs[lens[s]]++] = s;
+    return { counts, symbols };
+  }
+  function decode(h){
+    let code = 0, first = 0, index = 0;
+    for (let len = 1; len < 16; len++){
+      code |= getBit();
+      const count = h.counts[len];
+      if (code - first < count) return h.symbols[index + code - first];
+      index += count; first = (first + count) << 1; code <<= 1;
+    }
+    throw new Error('gzip 数据损坏');
+  }
+  const LBASE = [3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258];
+  const LEXT  = [0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0];
+  const DBASE = [1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577];
+  const DEXT  = [0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13];
+  let fixedL = null, fixedD = null, last = 0;
+  function block(lh, dh){
+    for (;;){
+      const sym = decode(lh);
+      if (sym < 256) out.push(sym);
+      else if (sym === 256) return;
+      else {
+        const li = sym - 257;
+        const len = LBASE[li] + getBits(LEXT[li]);
+        const di = decode(dh);
+        const dist = DBASE[di] + getBits(DEXT[di]);
+        const s = out.length - dist;
+        for (let k = 0; k < len; k++) out.push(out[s + k]);
+      }
+    }
+  }
+  while (!last){
+    last = getBit();
+    const type = getBits(2);
+    if (type === 0){
+      bitcnt = 0; bitbuf = 0;
+      const len = src[pos] | (src[pos + 1] << 8);
+      pos += 4;
+      for (let i = 0; i < len; i++) out.push(src[pos++]);
+    } else if (type === 1){
+      if (!fixedL){
+        const l = new Uint8Array(288);
+        for (let i = 0; i < 144; i++) l[i] = 8;
+        for (let i = 144; i < 256; i++) l[i] = 9;
+        for (let i = 256; i < 280; i++) l[i] = 7;
+        for (let i = 280; i < 288; i++) l[i] = 8;
+        fixedL = buildHuff(l);
+        fixedD = buildHuff(new Uint8Array(30).fill(5));
+      }
+      block(fixedL, fixedD);
+    } else if (type === 2){
+      const hlit = getBits(5) + 257, hdist = getBits(5) + 1, hclen = getBits(4) + 4;
+      const order = [16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15];
+      const clens = new Uint8Array(19);
+      for (let i = 0; i < hclen; i++) clens[order[i]] = getBits(3);
+      const ch = buildHuff(clens);
+      const lens = new Uint8Array(hlit + hdist);
+      let i = 0;
+      while (i < lens.length){
+        const sym = decode(ch);
+        if (sym < 16) lens[i++] = sym;
+        else if (sym === 16){ const pv = lens[i - 1]; let n = 3 + getBits(2); while (n--) lens[i++] = pv; }
+        else if (sym === 17){ let n = 3 + getBits(3); while (n--) lens[i++] = 0; }
+        else { let n = 11 + getBits(7); while (n--) lens[i++] = 0; }
+      }
+      block(buildHuff(lens.subarray(0, hlit)), buildHuff(lens.subarray(hlit)));
+    } else throw new Error('gzip 数据损坏');
+  }
+  return new Uint8Array(out);
+}
+function gunzipJS(u8){
+  if (u8[0] !== 0x1f || u8[1] !== 0x8b) throw new Error('不是 gzip 数据');
+  const flg = u8[3];
+  let p = 10;
+  if (flg & 4){ p += 2 + (u8[p] | (u8[p + 1] << 8)); }
+  if (flg & 8){ while (p < u8.length && u8[p++]) {} }
+  if (flg & 16){ while (p < u8.length && u8[p++]) {} }
+  if (flg & 2) p += 2;
+  return inflateRaw(u8, p);
+}
+
+async function gzipBytes(u8){
+  if (typeof CompressionStream !== 'undefined'){
+    try{
+      const stream = new Blob([u8]).stream().pipeThrough(new CompressionStream('gzip'));
+      return new Uint8Array(await new Response(stream).arrayBuffer());
+    }catch(_){}
+  }
+  return gzipStored(u8);   // 兜底：合法 gzip，只是不压缩
+}
+async function gunzipBytes(u8){
+  if (typeof DecompressionStream !== 'undefined'){
+    try{
+      const stream = new Blob([u8]).stream().pipeThrough(new DecompressionStream('gzip'));
+      return new Uint8Array(await new Response(stream).arrayBuffer());
+    }catch(_){}
+  }
+  return gunzipJS(u8);     // 兜底：内置 inflate
+}
+function toB64(u8){
+  let bin = '';
+  const step = 0x8000;
+  for (let i = 0; i < u8.length; i += step) bin += String.fromCharCode.apply(null, u8.subarray(i, i + step));
+  return btoa(bin);
+}
+function fromB64(b64){
+  const bin = atob(b64);
+  const u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  return u8;
+}
+function hexToRgba(hex, alphaPct){
+  const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${(alphaPct / 100).toFixed(2)})`;
+}
+/* 把 #rgb / #rrggbb / rgb() / rgba() 反解成 {hex, alpha}，供颜色小部件回填 */
+function parseCssColor(str){
+  const s = (str || '').trim();
+  let m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(s);
+  if (m){
+    let t = m[1];
+    if (t.length === 3) t = t.split('').map(c => c + c).join('');
+    return { hex: '#' + t.toLowerCase(), alpha: 100 };
+  }
+  m = /^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)\s*(?:[,/]\s*([\d.]+)\s*)?\)$/i.exec(s);
+  if (m){
+    const hex = '#' + [m[1], m[2], m[3]].map(v => ('0' + Math.max(0, Math.min(255, Math.round(+v))).toString(16)).slice(-2)).join('');
+    return { hex: hex, alpha: m[4] === undefined ? 100 : Math.round(Math.max(0, Math.min(1, +m[4])) * 100) };
+  }
+  return null;
+}
+
+/* 统一的颜色小部件：色块 + 十六进制文字，点开都是同一套取色器（带透明度和确定/取消） */
+const COLOR_SLOTS = [];
+function bindColorSlot(swId, valId, inpId, onChange){
+  const sw = $(swId), val = $(valId), inp = $(inpId);
+  if (!sw || !inp) return;
+  const paint = () => {
+    const c = parseCssColor(inp.value) || { hex: '#000000', alpha: 100 };
+    sw.style.backgroundColor = hexToRgba(c.hex, c.alpha);
+    sw.classList.toggle('chk', c.alpha < 100);
+    sw.title = c.hex + (c.alpha < 100 ? ' · ' + c.alpha + '%' : '');
+    if (val) val.textContent = c.alpha < 100 ? c.hex + ' · ' + c.alpha + '%' : c.hex;
+  };
+  sw.addEventListener('click', () => {
+    const c = parseCssColor(inp.value) || { hex: '#000000', alpha: 100 };
+    openPicker(sw, c.hex, c.alpha, (hex, a) => {
+      inp.value = (a >= 100) ? hex : hexToRgba(hex, a);
+      paint();
+      if (onChange) onChange();
+    });
+  });
+  if (val) val.addEventListener('click', () => {
+    if (navigator.clipboard) navigator.clipboard.writeText(inp.value).then(() => toast('已复制 ' + inp.value)).catch(() => {});
+  });
+  paint();
+  COLOR_SLOTS.push(paint);
+  return paint;
+}
+function repaintColorSlots(){ COLOR_SLOTS.forEach(f => f()); }
+
+/* ---------- 导出与保存 ----------
+   安卓上的 Via / 夸克 / 微信内置浏览器对 blob: 下载的支持差别很大，有的直接静默失败。
+   所以导出后统一弹一个面板，给三条通道：
+   ① 真链接保存（a[download]，点/长按都算用户手势）
+   ② 系统分享（navigator.share 带文件，支持的浏览器能直接存到文件管理器）
+   ③ 复制 Base64（最后的兜底：粘到电脑上的本工具里，用「Base64 还原 .red」变回文件）
+   另外把「构建文件」和「点下载」拆开：缓存好的链接可以在点击那一刻同步用掉，
+   不会因为 await 而丢掉用户手势。 */
+const APP_VER = 'v2026-10-31b';
+if ($('verTag')) $('verTag').textContent = APP_VER;
+const UA = navigator.userAgent;
+const IS_ANDROID = /Android/i.test(UA);
+/* WebView 系浏览器（Via 就是）对顶层 a[download] 的处理和自带内核的浏览器不一样，
+   会把 blob 当成普通导航，于是跳到空白页。判定先看「已知能吃 a[download] 的」白名单
+   （夸克的 UA 里也带 Version/4.0，不能只看它），再看 WebView 特征。
+   WebView 上自动触发改走隐藏 iframe，不会顶掉当前页；面板里那个真链接则按老办法直接点。 */
+const LEGACY_WEBVIEW = /Quark|UCBrowser|HuaweiBrowser|MiuiBrowser|SamsungBrowser|Firefox|EdgA|OPR\//i.test(UA)
+  ? false
+  : (/;\s*wv\b/i.test(UA) || /Version\/4\.0/.test(UA) || /Via\//i.test(UA));
+
+function diagText(extra){
+  const f = [];
+  const has = k => (k in window) ? '✓' : '✗';
+  f.push('版本 ' + APP_VER);
+  f.push('UA: ' + navigator.userAgent);
+  f.push('CompressionStream ' + has('CompressionStream') + '  DecompressionStream ' + has('DecompressionStream'));
+  f.push('createObjectURL ' + has('URL') + '  download属性 ' + ('download' in document.createElement('a') ? '✓' : '✗'));
+  f.push('WebView 判定 ' + (LEGACY_WEBVIEW ? '是（走 iframe 触发）' : '否（直接 a.click）'));
+  f.push('clipboard ' + (navigator.clipboard ? '✓' : '✗') + '  share ' + (navigator.share ? '✓' : '✗')
+    + '  shareFiles ' + (navigator.canShare && navigator.canShare({ files: [new File([new Blob(['x'])], 'a.txt')] }) ? '✓' : '✗'));
+  if (extra) f.push('---', extra);
+  return f.join('\n');
+}
+
+let saveBarUrl = null, saveBarTimer = 0;
+function closeSaveBar(){
+  const b = $('saveBar');
+  if (b) b.remove();
+  if (saveBarUrl){ URL.revokeObjectURL(saveBarUrl); saveBarUrl = null; }
+}
+/* 导出失败时的「诊断」按钮：成功/失败两条分支原先各抄了一份，合并成一个 */
+function makeDiagBtn(bar, opt){
+  const dg = document.createElement('button');
+  dg.className = 'btn sm';
+  dg.textContent = '诊断';
+  dg.addEventListener('click', () => {
+    let pre = bar.querySelector('#saveDiag');
+    if (!pre){
+      pre = document.createElement('pre');
+      pre.id = 'saveDiag';
+      pre.className = 'mono';
+      pre.style.cssText = 'margin:0;max-height:130px;overflow:auto;background:var(--field);border-radius:6px;padding:7px;white-space:pre-wrap;';
+      bar.appendChild(pre);
+    }
+    pre.hidden = !pre.hidden;
+    pre.textContent = diagText(opt.errDetail || '');
+  });
+  return dg;
+}
+
+function showSavePanel(opt){
+  // opt: { url, filename, size, bytes, error }
+  const ok = !opt.error;
+  let bar = $('saveBar');
+  if (!bar){
+    bar = document.createElement('div');
+    bar.id = 'saveBar';
+    bar.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:10px;width:min(560px,calc(100% - 16px));'
+      + 'z-index:9998;display:flex;flex-direction:column;box-sizing:border-box;'
+      + 'gap:8px;background:var(--panel);border:1px solid ' + (ok ? 'var(--accent)' : '#c43e3e') + ';'
+      + 'border-radius:10px;padding:10px 12px;box-shadow:0 8px 26px rgba(0,0,0,.3);font-size:12.5px;color:var(--txt);';
+    document.body.appendChild(bar);
+  }
+  bar.style.borderColor = ok ? 'var(--accent)' : '#c43e3e';
+  bar.innerHTML = '';
+
+  const head = document.createElement('div');
+  head.style.cssText = 'display:flex;gap:8px;align-items:flex-start;';
+  const msg = document.createElement('div');
+  msg.style.cssText = 'flex:1;min-width:0;word-break:break-all;';
+  if (ok){
+    const hint = opt.frameMode
+      ? '已尝试自动保存。如果通知栏/下载列表里没出现文件，用下面的按钮取走'
+      : (opt.mobile ? '已开始保存' : '已开始保存，没看到文件就用下面的按钮');
+    msg.innerHTML = '<b>已生成</b> <span style="color:var(--sub)">' + opt.filename + ' · '
+      + Math.max(1, Math.round(opt.size / 1024)) + ' KB</span>'
+      + '<div style="color:var(--sub);margin-top:3px">' + hint + '</div>';
+  } else {
+    msg.innerHTML = '<b style="color:#c43e3e">导出失败</b> <span style="color:var(--sub)">' + opt.error + '</span>';
+  }
+  const x = document.createElement('button');
+  x.className = 'btn sm';
+  x.textContent = '✕';
+  x.addEventListener('click', closeSaveBar);
+  head.append(msg, x);
+  bar.appendChild(head);
+
+  if (ok){
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;align-items:center;';
+
+    const btnStyle = primary => primary
+      ? 'background:var(--accent);color:#fff;border-radius:8px;padding:9px 16px;text-decoration:none;font-size:13px;border:none;cursor:pointer;'
+      : '';
+
+    // ① 系统分享：安卓上最靠谱的一条，能直接存进「文件」或传给别的 App
+    let shareBtn = null;
+    if (opt.bytes){
+      try{
+        const file = new File([opt.bytes], opt.filename, { type: 'application/octet-stream' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })){
+          shareBtn = document.createElement('button');
+          shareBtn.textContent = '系统分享';
+          shareBtn.className = 'btn sm';
+          shareBtn.style.cssText = btnStyle(!!opt.mobile);
+          shareBtn.addEventListener('click', () => navigator.share({ files: [file], title: opt.filename }).catch(() => {}));
+        }
+      }catch(_){}
+    }
+
+    // ② 真链接保存。WebView 上不设 target：带 _blank 时它会把 blob 当新标签打开（空白页），
+    //    不设 target 才会走 shouldOverrideUrlLoading 的下载分支——这也是「以前能导出」的那条路。
+    const a = document.createElement('a');
+    a.href = opt.url;
+    a.download = opt.filename;
+    if (!opt.frameMode){ a.target = '_blank'; a.rel = 'noopener'; }
+    a.textContent = opt.frameMode ? '点这里存文件' : '保存文件';
+    a.style.cssText = 'background:var(--accent);color:#fff;border:1px solid var(--line);border-radius:8px;'
+      + 'padding:9px 16px;text-decoration:none;font-size:13px;';
+
+    // ③ 复制 Base64：最后的兜底
+    let cpBtn = null;
+    if (opt.bytes){
+      cpBtn = document.createElement('button');
+      cpBtn.textContent = '复制 Base64';
+      cpBtn.className = 'btn sm';
+      cpBtn.style.cssText = btnStyle(false);
+      cpBtn.addEventListener('click', async () => {
+        const okCopy = await copyText(toB64(opt.bytes));
+        toast(okCopy ? '已复制，可粘到电脑上的本工具里还原成 .red' : '复制失败：换个浏览器再试', okCopy);
+      });
+    }
+
+    const dg = makeDiagBtn(bar, opt);
+
+    const order = [a, shareBtn, cpBtn, dg];
+    order.forEach(el => { if (el) row.appendChild(el); });
+
+    const tip = document.createElement('div');
+    tip.style.cssText = 'color:var(--sub);font-size:11.5px;line-height:1.6;';
+    if (opt.frameMode){
+      tip.innerHTML = '如果没存下来：点「点这里存文件」再试一次（若跳出一个空白页，返回本页即可，设置不会丢）；'
+        + (shareBtn ? '或者用「系统分享」存进「文件」；' : '')
+        + '实在不行点「复制 Base64」到电脑上还原。';
+    } else {
+      tip.innerHTML = '没弹出下载？点上面「保存文件」；或用「复制 Base64」在另一台设备上还原。';
+    }
+    bar.append(row, tip);
+  } else {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:8px;';
+    row.appendChild(makeDiagBtn(bar, opt));
+    bar.appendChild(row);
+  }
+
+  if (saveBarUrl && saveBarUrl !== opt.url) URL.revokeObjectURL(saveBarUrl);
+  saveBarUrl = opt.url || null;
+  clearTimeout(saveBarTimer);
+  saveBarTimer = setTimeout(closeSaveBar, 600000);
+}
+
+async function copyText(t){
+  try{
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      await navigator.clipboard.writeText(t);
+      return true;
+    }
+  }catch(_){}
+  try{
+    const ta = document.createElement('textarea');
+    ta.value = t;
+    ta.style.cssText = 'position:fixed;left:-9999px;top:0;';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    ta.remove();
+    return ok;
+  }catch(_){ return false; }
+}
+
+/* 只负责把已有链接点下去（必须同步调用，手势才有效） */
+function clickDownload(url, filename){
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.target = '_blank';      // 万一浏览器忽略 download，也只是多开一个标签，不会把本页顶掉
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  let threw = '';
+  try { a.click(); } catch (e){ threw = String(e && e.message || e); }
+  a.remove();
+  return threw;
+}
+
+/* 让隐藏 iframe 去导航 blob：WebView 系浏览器可能把它交给下载器（成功落盘），
+   也可能只是在 iframe 内部渲染——但主页面完好，不会变空白页。 */
+function frameDownload(url){
+  try{
+    const f = document.createElement('iframe');
+    f.setAttribute('aria-hidden', 'true');
+    f.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:2px;height:2px;border:0;opacity:0;';
+    f.src = url;
+    document.body.appendChild(f);
+    setTimeout(() => { try{ f.remove(); }catch(_){ } }, 120000);
+    return '';
+  }catch(e){ return String(e && e.message || e); }
+}
+
+/* 统一出口：能正常吃 a[download] 的浏览器就直点，WebView 系改走 iframe。
+   两种情况都必须在 click 事件里同步调用，否则用户手势失效（手机一律拒下）。 */
+function startDownload(url, filename){
+  return LEGACY_WEBVIEW ? frameDownload(url) : clickDownload(url, filename);
+}
+
+function download(bytes, filename, mime, opt){
+  opt = opt || {};
+  try{
+    const blob = new Blob([bytes], { type: mime || 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    const threw = startDownload(url, filename);
+    showSavePanel({ url: url, filename: filename, size: blob.size, bytes: bytes, mobile: IS_ANDROID,
+      frameMode: LEGACY_WEBVIEW, autoStarted: !threw, errDetail: threw ? 'click() 抛错：' + threw : '' });
+    return url;
+  }catch(err){
+    showSavePanel({ error: err.message || String(err), errDetail: (err && err.stack) || '' });
+    return null;
+  }
+}
+async function downloadRed(payload, name){
+  try{
+    const gz = await gzipBytes(new TextEncoder().encode(JSON.stringify(payload)));
+    const out = new Uint8Array(4 + gz.length);
+    out[0] = 0x52; out[1] = 0x45; out[2] = 0x44; out[3] = 0x01;   // "RED" + 版本 1
+    out.set(gz, 4);
+    download(out, `高亮规则 - ${(name || '未命名').replace(/[\\/:*?"<>|]/g, '').trim()}.red`);
+  }catch(err){
+    showSavePanel({ error: err.message || String(err), errDetail: (err && err.stack) || '' });
+  }
+}
+
+/* 把一段 CSS 声明串套到元素上——预览与导出共用同一份字符串，
+   唯一替换的是背景资源名（导出是 MD5，预览是 blob URL） */
+/* 按分号拆声明，但要跳过 url(...) 和引号内部的分号——
+   预览用的 dataURL 里有「;base64,」，裸 split(';') 会把 background-image 拦腰截断。 */
+function splitCssDecls(cssText){
+  const out = [];
+  let depth = 0, quote = '', cur = '';
+  for (const ch of cssText){
+    if (quote){ if (ch === quote) quote = ''; cur += ch; continue; }
+    if (ch === '"' || ch === "'"){ quote = ch; cur += ch; continue; }
+    if (ch === '(') depth++;
+    else if (ch === ')') depth = Math.max(0, depth - 1);
+    else if (ch === ';' && depth === 0){ out.push(cur); cur = ''; continue; }
+    cur += ch;
+  }
+  if (cur.trim()) out.push(cur);
+  return out;
+}
+function applyCss(el, cssText){
+  splitCssDecls(cssText).forEach(seg => {
+    const i = seg.indexOf(':');
+    if (i < 0) return;
+    const p = seg.slice(0, i).trim(), v = seg.slice(i + 1).trim();
+    if (!p || !v || p.indexOf('reeden-') === 0) return;
+    try { el.style.setProperty(p, v); } catch (_){}
+  });
+}
+
+/* =========================================================
+   1 · 取色器
+   ========================================================= */
+const CP = { h: 0, s: 0, v: 0, a: 1, cb: null, mask: null, box: null };
+function hsvToRgb(h, s, v){
+  const f = n => { const k = (n + h / 60) % 6; return v - v * s * Math.max(0, Math.min(k, 4 - k, 1)); };
+  return [f(5), f(3), f(1)];
+}
+function rgbToHsv(r, g, b){
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  let h = 0;
+  if (d){
+    if (mx === r) h = (((g - b) / d) % 6 + 6) % 6;
+    else if (mx === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h *= 60;
+  }
+  return [h, mx ? d / mx : 0, mx];
+}
+function rgbHex(r, g, b){
+  const q = v => Math.max(0, Math.min(255, Math.round(v * 255)));
+  return '#' + [r, g, b].map(v => ('0' + q(v).toString(16)).slice(-2)).join('');
+}
+let cpAnchor = null;
+function openPicker(anchorEl, hex, alphaPct, cb){
+  const [h, s, v] = rgbToHsv(parseInt(hex.slice(1, 3), 16) / 255, parseInt(hex.slice(3, 5), 16) / 255, parseInt(hex.slice(5, 7), 16) / 255);
+  CP.h = h; CP.s = s; CP.v = v; CP.a = alphaPct / 100;
+  CP.cb = cb;
+  cpAnchor = { hex, alphaPct };
+  CP.mask.hidden = false;
+  cpPlace(anchorEl);
+  cpLive();
+}
+function cpLive(){
+  const hex = rgbHex(...hsvToRgb(CP.h, CP.s, CP.v));
+  const a = Math.round(CP.a * 100);
+  CP.cb && CP.cb(hex, a);
+  const q = s => CP.box.querySelector(s);
+  const hsl = 'hsl(' + Math.round(CP.h) + ',100%,50%)';
+  q('#cp-cur').style.left = (CP.s * 100).toFixed(2) + '%';
+  q('#cp-cur').style.top = ((1 - CP.v) * 100).toFixed(2) + '%';
+  q('#cp-cur').style.background = hex;
+  q('#cp-sv').style.background = 'linear-gradient(to top,#000,rgba(0,0,0,0)),linear-gradient(to right,#fff,rgba(255,255,255,0)),' + hsl;
+  const aIn = q('#cp-a');
+  aIn.style.backgroundImage = 'linear-gradient(to right,rgba(255,255,255,0),' + hsl + '),repeating-conic-gradient(#c9c9c9 0% 25%,#fff 0% 50%)';
+  aIn.style.backgroundSize = 'auto,10px 10px';
+  aIn.value = a;
+  q('#cp-hue').value = Math.round(CP.h);
+  q('#cp-hex').value = hex + (CP.a < 1 ? Math.round(CP.a * 255).toString(16).padStart(2, '0') : '');
+  q('#cp-sw').style.background = hexToRgba(hex, a);
+}
+function cpPlace(anchorEl){
+  const box = CP.box;
+  const r = anchorEl.getBoundingClientRect();
+  let x = Math.min(r.left, innerWidth - box.offsetWidth - 10);
+  let y = r.bottom + 8;
+  if (y + box.offsetHeight > innerHeight - 8) y = Math.max(8, r.top - box.offsetHeight - 8);
+  box.style.left = Math.max(8, x) + 'px';
+  box.style.top = Math.max(8, y) + 'px';
+}
+(function initPicker(){
+  const mask = document.createElement('div');
+  mask.id = 'cp-mask'; mask.hidden = true;
+  mask.innerHTML =
+    '<div id="cp-box">'
+    + '<div id="cp-sv"><div id="cp-cur"></div></div>'
+    + '<input type="range" id="cp-hue" min="0" max="360" step="1">'
+    + '<input type="range" id="cp-a" min="0" max="100" step="1">'
+    + '<div class="cp-row"><span id="cp-sw"></span><input type="text" id="cp-hex" spellcheck="false" placeholder="#rrggbb"></div>'
+    + '<div class="cp-btns"><button class="btn" id="cp-cancel">取消</button><button class="btn pri" id="cp-ok">确定</button></div>'
+    + '</div>';
+  document.body.appendChild(mask);
+  CP.mask = mask; CP.box = mask.firstElementChild;
+  const q = s => mask.querySelector(s);
+  const sv = q('#cp-sv');
+  let drag = false;
+  const move = e => {
+    const r = sv.getBoundingClientRect();
+    CP.s = Math.max(0, Math.min(1, (e.clientX - r.left) / Math.max(1, r.width)));
+    CP.v = Math.max(0, Math.min(1, 1 - (e.clientY - r.top) / Math.max(1, r.height)));
+    cpLive();
+  };
+  sv.addEventListener('pointerdown', e => { drag = true; try { sv.setPointerCapture(e.pointerId); } catch (_){} move(e); });
+  sv.addEventListener('pointermove', e => { if (drag) move(e); });
+  sv.addEventListener('pointerup', () => drag = false);
+  q('#cp-hue').addEventListener('input', e => { CP.h = +e.target.value; cpLive(); });
+  q('#cp-a').addEventListener('input', e => { CP.a = +e.target.value / 100; cpLive(); });
+  const hexIn = q('#cp-hex');
+  const apply = () => {
+    let t = hexIn.value.trim().replace(/^#/, '');
+    if (/^[0-9a-f]{3}$/i.test(t)) t = t.split('').map(c => c + c).join('');
+    if (/^[0-9a-f]{6,8}$/i.test(t)){
+      const r = parseInt(t.slice(0, 2), 16) / 255, g = parseInt(t.slice(2, 4), 16) / 255, b = parseInt(t.slice(4, 6), 16) / 255;
+      const hsv = rgbToHsv(r, g, b);
+      CP.h = hsv[0]; CP.s = hsv[1]; CP.v = hsv[2];
+      if (t.length === 8) CP.a = parseInt(t.slice(6), 16) / 255;
+      cpLive();
+    } else hexIn.style.borderColor = '#e05555';
+  };
+  hexIn.addEventListener('change', apply);
+  hexIn.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); apply(); } });
+  q('#cp-ok').addEventListener('click', () => { mask.hidden = true; });
+  q('#cp-cancel').addEventListener('click', () => {
+    if (cpAnchor && CP.cb) CP.cb(cpAnchor.hex, cpAnchor.alphaPct);
+    mask.hidden = true;
+  });
+  mask.addEventListener('pointerdown', e => {
+    if (e.target === mask){ if (cpAnchor && CP.cb) CP.cb(cpAnchor.hex, cpAnchor.alphaPct); mask.hidden = true; }
+  });
+})();
+
+/* =========================================================
+   2 · 标签页
+   ========================================================= */
+$('tabBar').addEventListener('click', e => {
+  const b = e.target.closest('button[data-tab]');
+  if (!b) return;
+  qsa('#tabBar button').forEach(x => x.classList.toggle('on', x === b));
+  ['tabDialog', 'tabTitle'].forEach(id => { $(id).hidden = (id !== b.dataset.tab); });
+  if (b.dataset.tab === 'tabTitle') ttRender();
+});
+
+/* =========================================================
+   3 · 对话高亮
+   ========================================================= */
+const DLG = {
+  bytes: null, url: null, W: 0, H: 0, imgB64: '',
+  ns: { l: 0, t: 0, r: 0, b: 0 },
+  ct: { l: 0, t: 0, r: 0, b: 0 },
+  colorHex: '#40342c', colorAlpha: 100,
+  syms: { curly: true, corner: true, corner2: true, dquote: true, single: false },
+  custom: []
+};
+
+const SYM_DEFS = [
+  { id: 'curly',   l: '“', r: '”', label: '“ ”',  name: '中文双引号' },
+  { id: 'corner',  l: '「', r: '」', label: '「 」', name: '直角引号' },
+  { id: 'corner2', l: '『', r: '』', label: '『 』', name: '双层直角' },
+  { id: 'dquote',  l: '"', r: '"',  label: '" "',  name: '英文双引号' },
+  { id: 'single',  l: '‘', r: '’', label: '‘ ’',  name: '中文单引号' }
+];
+
+/* ---- 上传 ---- */
+const dlgDrop = $('dlgDrop');
+dlgDrop.addEventListener('click', () => $('dlgFile').click());
+dlgDrop.addEventListener('dragover', e => { e.preventDefault(); dlgDrop.classList.add('drag'); });
+dlgDrop.addEventListener('dragleave', () => dlgDrop.classList.remove('drag'));
+dlgDrop.addEventListener('drop', e => {
+  e.preventDefault(); dlgDrop.classList.remove('drag');
+  if (e.dataTransfer.files[0]) loadDlgPng(e.dataTransfer.files[0]);
+});
+$('dlgFile').addEventListener('change', e => {
+  if (e.target.files[0]) loadDlgPng(e.target.files[0]);
+  e.target.value = '';
+});
+async function loadDlgPng(file){
+  try{
+    const buf = new Uint8Array(await file.arrayBuffer());
+    if (!(buf[0] === 0x89 && buf[1] === 0x50)) throw new Error('不是 PNG 文件');
+    DLG.bytes = buf;
+    DLG.imgB64 = '';   // 图片的 gzip+base64 缓存，导出时直接复用
+    if (DLG.url) URL.revokeObjectURL(DLG.url);
+    DLG.url = URL.createObjectURL(new Blob([buf], { type: 'image/png' }));
+    const img = new Image();
+    img.src = DLG.url;
+    await img.decode();
+    DLG.W = img.naturalWidth; DLG.H = img.naturalHeight;
+    try{ DLG.imgB64 = toB64(await gzipBytes(buf)); }catch(_){ DLG.imgB64 = ''; }
+    $('dlgInfo').style.display = '';
+    $('dlgInfo').textContent = `${file.name} · ${DLG.W} × ${DLG.H} px · ${(buf.length / 1024).toFixed(1)} KB`;
+    $('dlgStage').style.display = 'flex';
+    $('dlgStageTip').style.display = '';
+    $('dlgImg').src = DLG.url;
+    DLG.ns = { l: 0, t: 0, r: 0, b: 0 };
+    DLG.ct = { l: Math.round(DLG.W * 0.14), t: Math.round(DLG.H * 0.22), r: Math.round(DLG.W * 0.1), b: Math.round(DLG.H * 0.22) };
+    syncNsInputs();
+    if (!DLG.bytes) return;
+    applyAuto(await analyzeAlpha(), true);
+    dlgRender();
+    toast(DLG.ns.l + DLG.ns.r + DLG.ns.t + DLG.ns.b > 0
+      ? '气泡图已加载：已自动切好九宫格，可拖蓝线微调'
+      : '这张图没有可拉伸的中间区——想当图标挂在文字旁边，把「背景图怎么用」切成「贴图」');
+  }catch(err){ toast('图片载入失败：' + err.message, false); }
+}
+function syncNsInputs(){
+  $('nsT').value = DLG.ns.t; $('nsR').value = DLG.ns.r;
+  $('nsB').value = DLG.ns.b; $('nsL').value = DLG.ns.l;
+}
+
+/* ---- 量一遍像素：不透明外接框 / 内部最大透明区（＝放文字的地方）/ 圆角半径 ---- */
+async function analyzeAlpha(){
+  if (!DLG.bytes) return null;
+  const img = $('dlgImg');
+  if (!img.complete){ try{ await img.decode(); }catch(_){ } }
+  const scale = Math.min(1, 520 / DLG.W);
+  const cv = document.createElement('canvas');
+  cv.width = Math.max(1, Math.round(DLG.W * scale));
+  cv.height = Math.max(1, Math.round(DLG.H * scale));
+  const ctx = cv.getContext('2d');
+  ctx.drawImage(img, 0, 0, cv.width, cv.height);
+  const d = ctx.getImageData(0, 0, cv.width, cv.height).data;
+  const W = cv.width, H = cv.height;
+  const A = (x, y) => d[(y * W + x) * 4 + 3];
+  const inv = 1 / scale;
+
+  /* 1) 不透明外接框 */
+  let x0 = W, y0 = H, x1 = -1, y1 = -1;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++){
+    if (A(x, y) > 24){
+      if (x < x0) x0 = x; if (x > x1) x1 = x;
+      if (y < y0) y0 = y; if (y > y1) y1 = y;
+    }
+  }
+  if (x1 < 0) return null;
+  const box = { l: Math.round(x0 * inv), t: Math.round(y0 * inv),
+                r: Math.round((W - 1 - x1) * inv), b: Math.round((H - 1 - y1) * inv) };
+
+  /* 2) 外接框里最大的一块「全透明」矩形：气泡掏空的那块就是文字区 */
+  const w = x1 - x0 + 1, h = y1 - y0 + 1;
+  const heights = new Int32Array(w);
+  let hr = { area: 0, x: 0, y: 0, w: 0, h: 0 };
+  for (let y = y0; y <= y1; y++){
+    for (let i = 0; i < w; i++) heights[i] = A(x0 + i, y) <= 8 ? heights[i] + 1 : 0;
+    const st = [];
+    for (let i = 0; i <= w; i++){
+      const hh = i < w ? heights[i] : 0;
+      let s = i;
+      while (st.length && st[st.length - 1][1] >= hh){
+        const top = st.pop();
+        const area = top[1] * (i - top[0]);
+        if (area > hr.area) hr = { area, x: top[0], y: y - top[1] + 1, w: i - top[0], h: top[1] };
+        s = top[0];
+      }
+      st.push([s, hh]);
+    }
+  }
+  let hole = null;
+  if (hr.w > 8 && hr.h > 8 && hr.area > W * H * 0.15){
+    hole = {
+      l: Math.round((x0 + hr.x) * inv),
+      t: Math.round((y0 + hr.y) * inv),
+      r: Math.round((W - (x0 + hr.x + hr.w)) * inv),
+      b: Math.round((H - (y0 + hr.y + hr.h)) * inv)
+    };
+  }
+
+  /* 3) 圆角半径：外接框最上面一行里，不透明段离左右边有多远 */
+  let segL = -1, segR = -1;
+  for (let x = x0; x <= x1; x++) if (A(x, y0) > 24){ segL = x; break; }
+  for (let x = x1; x >= x0; x--) if (A(x, y0) > 24){ segR = x; break; }
+  const radius = (segL >= 0) ? Math.round(Math.max(segL - x0, x1 - segR) * inv) : 0;
+
+  /* 4) 9-patch 自动切法：从图的正中往外走，走到「长得不一样」的那一列/那一行就停。
+     中间重复的那片是能拉伸的，两头的花纹、圆角、小符号会自动落进固定角里。
+     指纹同时认透明度和明暗，所以「黑底上的红箭头」这种不透明花纹也能认出来。 */
+  const FP = 24;
+  /* 每列 / 每行压成一条「亮度指纹」，从图正中往外比，差得多了就停 —— 那就是切点。
+     用平均亮度 + 容差，比按颜色分类更抗噪；透明/不透明的分布也算在内。 */
+  const profCol = [], profRow = [];
+  for (let x = 0; x < W; x++){
+    const p = new Float32Array(FP);
+    for (let b = 0; b < FP; b++){
+      const ya = Math.floor(b * H / FP), yb = Math.max(ya + 1, Math.floor((b + 1) * H / FP));
+      let sum = 0, n = 0;
+      for (let y = ya; y < yb; y++){
+        const i = (y * W + x) * 4;
+        if (d[i + 3] > 24){ sum += 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]; n++; }
+      }
+      p[b] = n ? sum / n : -1;
+    }
+    profCol.push(p);
+  }
+  for (let y = 0; y < H; y++){
+    const p = new Float32Array(FP);
+    for (let b = 0; b < FP; b++){
+      const xa = Math.floor(b * W / FP), xb = Math.max(xa + 1, Math.floor((b + 1) * W / FP));
+      let sum = 0, n = 0;
+      for (let x = xa; x < xb; x++){
+        const i = (y * W + x) * 4;
+        if (d[i + 3] > 24){ sum += 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]; n++; }
+      }
+      p[b] = n ? sum / n : -1;
+    }
+    profRow.push(p);
+  }
+  const alike = (a, b) => {
+    for (let k = 0; k < FP; k++){
+      if ((a[k] < 0) !== (b[k] < 0)) return false;
+      if (a[k] >= 0 && Math.abs(a[k] - b[k]) > 20) return false;
+    }
+    return true;
+  };
+  const centerRun = (profs, n) => {
+    const c = n >> 1;
+    let i = c, j = c;
+    while (i > 0 && alike(profs[i - 1], profs[c])) i--;
+    while (j < n - 1 && alike(profs[j + 1], profs[c])) j++;
+    return { a: i, b: j };
+  };
+  let slices = null;
+  const cr = centerRun(profCol, W), rr = centerRun(profRow, H);
+  if (cr && rr && (cr.b - cr.a + 1) > W * 0.3 && (rr.b - rr.a + 1) > H * 0.3){
+    const sl = { l: Math.round(cr.a * inv), t: Math.round(rr.a * inv),
+                 r: Math.round((W - 1 - cr.b) * inv), b: Math.round((H - 1 - rr.b) * inv) };
+    if (sl.l + sl.r < DLG.W - 16 && sl.t + sl.b < DLG.H - 16) slices = sl;
+  }
+
+  return { box, hole, radius: Math.max(0, radius), slices };
+}
+
+/* 把量出来的结果直接填成九宫格切点（文字区绿线仍以内边距为准，一格一格跟手） */
+function applyAuto(m, writeNs){
+  if (!m) return;
+  if (writeNs !== false){
+    if (m.slices){
+      DLG.ns = { l: m.slices.l, t: m.slices.t, r: m.slices.r, b: m.slices.b };
+    } else if (m.hole && m.hole.l + m.hole.r < DLG.W - 8 && m.hole.t + m.hole.b < DLG.H - 8){
+      DLG.ns = { l: m.hole.l, t: m.hole.t, r: m.hole.r, b: m.hole.b };
+    } else if (m.radius > 6){
+      DLG.ns = { l: m.radius, t: m.radius, r: m.radius, b: m.radius };
+    } else {
+      DLG.ns = { l: 0, t: 0, r: 0, b: 0 };
+    }
+  }
+  syncNsInputs();
+}
+$('btnNsAuto').addEventListener('click', async () => {
+  if (!DLG.bytes) return toast('请先上传气泡图', false);
+  if (nsOff()){ $('nsOff').checked = false; syncNsOff(); }
+  applyAuto(await analyzeAlpha(), true);
+  dlgRender(); toast('已自动切好：能把角落固定住，剩下的拖蓝线微调');
+});
+$('btnNsEdge').addEventListener('click', async () => {
+  if (!DLG.bytes) return toast('请先上传气泡图', false);
+  if (nsOff()){ $('nsOff').checked = false; syncNsOff(); }
+  const m = await analyzeAlpha();
+  if (!m) return toast('这张图整张透明，没法量边距', false);
+  DLG.ns = { l: m.box.l, t: m.box.t, r: m.box.r, b: m.box.b };
+  syncNsInputs(); dlgRender();
+  toast('已切成「图片透明边距以内」：主体以外的空白不参与拉伸');
+});
+$('btnNsZero').addEventListener('click', () => {
+  if (!DLG.bytes) return toast('请先上传气泡图', false);
+  DLG.ns = { l: 0, t: 0, r: 0, b: 0 };
+  $('nsOff').checked = true;   // 清零＝不切片，把开关也同步过来
+  syncNsInputs(); syncNsOff(); dlgRender();
+  toast('已关闭九宫格：整张图压进每一行，角落符号会跟着行高变形');
+});
+$('nsOff').addEventListener('change', () => {
+  syncNsOff(); dlgRender();
+  if (formRestoring) return;   // 恢复上次设置时别弹提示
+  toast(nsOff()
+    ? '已关闭九宫格：整图压进每一行' + (bgFlow() === 'inline' ? '，现在是每行各一份花纹' : '，记得把排版切成「行内」才是每行各一份')
+    : '已恢复九宫格：四角原样、中间拉长', true);
+});
+
+/* ---- 舞台拖动：只拖四条蓝线 ---- */
+(function initStageDrag(){
+  const wrap = $('dlgWrap');
+  let key = null;
+  wrap.addEventListener('pointerdown', e => {
+    const k = e.target.dataset ? e.target.dataset.k : null;
+    if (!k || k === 'cl' || k === 'cr' || k === 'ct' || k === 'cb') return;
+    key = k;
+    e.preventDefault();
+    const move = ev => {
+      const r = wrap.getBoundingClientRect();
+      if (!r.width) return;
+      const px = Math.max(0, Math.min(DLG.W, Math.round((ev.clientX - r.left) / r.width * DLG.W)));
+      const py = Math.max(0, Math.min(DLG.H, Math.round((ev.clientY - r.top) / r.height * DLG.H)));
+      if (key === 'sl') DLG.ns.l = Math.max(0, Math.min(px, DLG.W - DLG.ns.r - 4));
+      else if (key === 'sr') DLG.ns.r = Math.max(0, Math.min(DLG.W - px, DLG.W - DLG.ns.l - 4));
+      else if (key === 'st') DLG.ns.t = Math.max(0, Math.min(py, DLG.H - DLG.ns.b - 4));
+      else if (key === 'sb') DLG.ns.b = Math.max(0, Math.min(DLG.H - py, DLG.H - DLG.ns.t - 4));
+      syncNsInputs();
+      dlgRender();
+    };
+    const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); key = null; };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  });
+})();
+
+function renderStage(){
+  if (!DLG.bytes) return;
+  const n = DLG.ns;
+  const tag = bgMode() === 'tag';
+  const off = tag || nsOff();
+  const pos = { sl: n.l, sr: DLG.W - n.r, st: n.t, sb: DLG.H - n.b,
+                cl: DLG.ct.l, cr: DLG.W - DLG.ct.r, ct: DLG.ct.t, cb: DLG.H - DLG.ct.b };
+  qsa('.lnV[data-k]', $('dlgWrap')).forEach(el => {
+    const blue = el.dataset.k === 'sl' || el.dataset.k === 'sr';
+    if ((tag && el.dataset.k.length === 2) || (blue && off)){ el.style.display = 'none'; return; }
+    el.style.display = '';
+    el.style.left = (pos[el.dataset.k] / DLG.W * 100) + '%';
+  });
+  qsa('.lnH[data-k]', $('dlgWrap')).forEach(el => {
+    const blue = el.dataset.k === 'st' || el.dataset.k === 'sb';
+    if ((tag && el.dataset.k.length === 2) || (blue && off)){ el.style.display = 'none'; return; }
+    el.style.display = '';
+    el.style.top = (pos[el.dataset.k] / DLG.H * 100) + '%';
+  });
+  const core = $('nsCore');
+  const w = Math.max(0, DLG.W - n.l - n.r), h = Math.max(0, DLG.H - n.t - n.b);
+  core.style.display = (!off && (n.l + n.r + n.t + n.b) > 0) ? '' : 'none';
+  core.style.left = (n.l / DLG.W * 100) + '%';
+  core.style.top = (n.t / DLG.H * 100) + '%';
+  core.style.width = (w / DLG.W * 100) + '%';
+  core.style.height = (h / DLG.H * 100) + '%';
+  $('nsOut').textContent = nsOff()
+    ? '不切片 · 整图压进每一行' + (bgFlow() === 'inline' ? '（行内＝每行各一份花纹）' : '（整段只画一次，会被整体拉长）')
+    : dlgNineStr();
+}
+
+/* ---- nine-slice 字符串：上 右 下 左（CSS 四值顺序） ---- */
+function nsOn(){ return (DLG.ns.l + DLG.ns.r + DLG.ns.t + DLG.ns.b) > 0; }
+/* 显式「不切片」：整张图压进每一行（旧版那种每行两端各一朵花）。
+   勾上后不写 nine-slice，ARC 就退回最朴素的 background-size:100% 100% + clone。 */
+function nsOff(){ return !!($('nsOff') && $('nsOff').checked); }
+function dlgNineStr(){
+  if (!DLG.W || nsOff() || !nsOn()) return '';
+  // 四值顺序跟 CSS 一致：上 右 下 左；某一边填 0 会让那条边画不出来，统一兜到 1px
+  return [DLG.ns.t, DLG.ns.r, DLG.ns.b, DLG.ns.l].map(v => Math.max(1, Math.round(v) || 0)).join(' ');
+}
+
+function dlgContentRect(){
+  if (!DLG.W) return null;
+  const m = dlgProbe();
+  if (!m) return null;
+  const w = m.w, h = m.h;
+  if (w < 2 || h < 2) return null;
+  let cx1 = Math.round(m.pl / w * DLG.W);
+  let cy1 = Math.round(m.pt / h * DLG.H);
+  let cx2 = Math.round(DLG.W - m.pr / w * DLG.W);
+  let cy2 = Math.round(DLG.H - m.pb / h * DLG.H);
+  cx1 = Math.max(0, Math.min(DLG.W - 2, cx1));
+  cy1 = Math.max(0, Math.min(DLG.H - 2, cy1));
+  cx2 = Math.max(cx1 + 1, Math.min(DLG.W, cx2));
+  cy2 = Math.max(cy1 + 1, Math.min(DLG.H, cy2));
+  return [cx1, cy1, cx2, cy2];
+}
+
+/* ---- CSS 组装 ---- */
+function dlgColor(){
+  const mode = $('stColorMode').value;
+  if (mode === 'bg') return '{backgroundColor}';
+  if (mode === 'pri') return '{primaryColor}';
+  return hexToRgba(DLG.colorHex, DLG.colorAlpha);
+}
+function dlgTextDecls(){
+  const p = [];
+  p.push('color: ' + dlgColor());
+  p.push('font-size: ' + num($('stSize').value) + 'em');
+  p.push('line-height: ' + num($('stLh').value));
+  const ls = parseFloat($('stLs').value) || 0;
+  if (ls) p.push('letter-spacing: ' + num(ls) + 'px');
+  p.push('padding-left: ' + num($('stPl').value) + 'em');
+  p.push('padding-right: ' + num($('stPr').value) + 'em');
+  p.push('padding-top: ' + num($('stPt').value) + 'em');
+  p.push('padding-bottom: ' + num($('stPb').value) + 'em');
+  const mb = parseFloat($('stMb').value) || 0;
+  if (mb) p.push('margin-bottom: ' + num(mb) + 'px');
+  return p;
+}
+/* ---- 背景图的两种用法 ----
+   bubble：九宫格铺满整块，适合气泡/框线；
+   tag：图片按原比例挂在文字一侧（不做九宫格），文字被内边距推到另一边。
+   适合箭头、印章、小图标这类「整张图就是一个符号」的素材。 */
+const TAG_POS = { left: 'left center', right: 'right center', top: 'center top', bottom: 'center bottom' };
+function bgMode(){ return ($('bgMode') ? $('bgMode').value : 'bubble') || 'bubble'; }
+/* 排版：inline＝跟着文字流（每行各画一次背景）；iblock＝整块嵌在行里，只画一次且宽度贴字；
+   block＝独立成段，只画一次并撑满整栏。后两档是「让一张会拉伸的气泡包住整段」的唯一办法——
+   因为背景是画在这个 span 的盒子上，盒子不断行，才只能画一次。 */
+function bgFlow(){ return ($('bgFlow') ? $('bgFlow').value : 'inline') || 'inline'; }
+function flowDecls(){
+  const f = bgFlow();
+  const p = [];
+  if (f === 'iblock') p.push('display: inline-block', 'max-width: 100%', 'text-indent: 0');
+  else if (f === 'block') p.push('display: block', 'text-indent: 0', 'margin-top: 0.2em', 'margin-bottom: 0.2em');
+  return p;
+}
+/* 行内贴图时背景只按第一行定位，垂直方向得贴 top；整块时居中才好看 */
+function tagPos(side){
+  if (bgFlow() === 'inline'){
+    if (side === 'left') return 'left top';
+    if (side === 'right') return 'right top';
+  }
+  return TAG_POS[side];
+}
+function tagDims(){
+  const w = Math.max(0.3, parseFloat($('tagSize').value) || 2);
+  const gap = Math.max(0, parseFloat($('tagGap').value) || 0);
+  const ar = (DLG.W && DLG.H) ? DLG.H / DLG.W : 1;
+  return { side: $('tagSide').value, w: w, gap: gap, h: w * ar };
+}
+/* 贴图模式下，把贴图占的那条内边距自动填好（图宽/图高 + 间距） */
+function applyTagPad(){
+  if (bgMode() !== 'tag') return;
+  const t = tagDims();
+  if (t.side === 'left') $('stPl').value = +(t.w + t.gap).toFixed(2);
+  else if (t.side === 'right') $('stPr').value = +(t.w + t.gap).toFixed(2);
+  else if (t.side === 'top') $('stPt').value = +(t.h + t.gap).toFixed(2);
+  else $('stPb').value = +(t.h + t.gap).toFixed(2);
+}
+function dlgBgDecls(resId){
+  const p = [];
+  if (resId) p.push('background-image: url("' + resId + '")');
+  if (bgMode() === 'tag'){
+    const t = tagDims();
+    /* 行内时背景只按「第一段」定位（浏览器默认 box-decoration-break:slice），
+       所以垂直方向要用 top 而不是 center，否则整张图会被吊在多行并集的正中间 */
+    p.push('background-position: ' + tagPos(t.side));
+    p.push('background-repeat: no-repeat');
+    p.push('background-size: ' + num(t.w) + 'em');
+  } else {
+    p.push('background-position: center');
+    p.push('background-repeat: no-repeat');
+    p.push('background-size: 100% 100%');
+    if (bgFlow() === 'inline'){
+      // 每行各画一次完整气泡，靠 clone 保证折断的每一行四角都齐全
+      p.push('box-decoration-break: clone');
+      p.push('-webkit-box-decoration-break: clone');
+    }
+  }
+  return p.concat(flowDecls());
+}
+function dlgCssBase(resId){
+  return dlgBgDecls(resId).concat(dlgTextDecls()).join('; ') + ';';
+}
+function dlgCss(resId){
+  const p = dlgBgDecls(resId);
+  if (bgMode() !== 'tag'){
+    const ns = dlgNineStr();
+    if (ns){
+      p.push('reeden-background-nine-slice: ' + ns);
+      const sc = ($('nsScale').value || '').trim();
+      if (sc) p.push('reeden-background-nine-slice-scale: ' + sc);
+      if ($('nsBasis').checked) p.push('reeden-background-nine-slice-basis: bubble');
+    }
+  }
+  return p.concat(dlgTextDecls()).join('; ') + ';';
+}
+
+/* 预览 CSS：切了九宫格时，把「内边距」换成等宽的透明「边框」，再用 border-image 画九宫格。
+   浏览器没有 nine-slice，border-image 是唯一等价画法——四角等比、不被拉长，
+   而边框宽度＝内边距，所以文字位置和气泡外框尺寸跟导出的一模一样。 */
+function dlgCssPreview(url){
+  // 贴图模式不用九宫格，导出的那份 CSS 直接套上去就是真机效果
+  // （行内时千万别加 box-decoration-break:clone，否则每一行都会各画一张图）
+  if (bgMode() === 'tag'){
+    return dlgCss(url);
+  }
+  const pl = num($('stPl').value), pt = num($('stPt').value), pr = num($('stPr').value), pb = num($('stPb').value);
+  const p = [];
+  p.push('color: ' + dlgColor());
+  p.push('font-size: ' + num($('stSize').value) + 'em');
+  p.push('line-height: ' + num($('stLh').value));
+  const ls = parseFloat($('stLs').value) || 0;
+  if (ls) p.push('letter-spacing: ' + num(ls) + 'px');
+  const ns = dlgNineStr();
+  if (url && ns){
+    p.push('border-style: solid');
+    p.push('border-color: transparent');
+    p.push('border-width: ' + pt + 'em ' + pr + 'em ' + pb + 'em ' + pl + 'em');
+    p.push('border-image-source: url("' + url + '")');
+    p.push('border-image-slice: ' + ns + ' fill');
+    p.push('border-image-width: ' + pt + 'em ' + pr + 'em ' + pb + 'em ' + pl + 'em');
+    p.push('border-image-repeat: stretch');
+    if (bgFlow() === 'inline'){
+      p.push('box-decoration-break: clone');
+      p.push('-webkit-box-decoration-break: clone');
+    }
+  } else if (url){
+    p.push('background-image: url("' + url + '")');
+    p.push('background-position: center');
+    p.push('background-repeat: no-repeat');
+    p.push('background-size: 100% 100%');
+    p.push('padding: ' + pt + 'em ' + pr + 'em ' + pb + 'em ' + pl + 'em');
+    /* 这里必须和导出对齐：导出的行内档带 box-decoration-break:clone，
+       漏了它浏览器会把整段当成一张图切片画——第一行左边、末行右边各露出半朵花，
+       中间行什么都没有，于是预览和实机完全不是一回事。 */
+    if (bgFlow() === 'inline'){
+      p.push('box-decoration-break: clone');
+      p.push('-webkit-box-decoration-break: clone');
+    }
+  }
+  const mb = parseFloat($('stMb').value) || 0;
+  if (mb) p.push('margin-bottom: ' + num(mb) + 'px');
+  return p.concat(flowDecls()).join('; ') + ';';
+}
+
+/* 用一个隐藏样本量出「单行气泡盒子」的真实尺寸和四边内边距 */
+function dlgProbe(){
+  const area = $('dlgArea');
+  if (!area) return null;
+  const el = document.createElement('span');
+  el.textContent = '九个字样本';
+  el.style.position = 'absolute';
+  el.style.visibility = 'hidden';
+  el.style.whiteSpace = 'nowrap';
+  el.style.left = '-9999px';
+  applyCss(el, dlgCssBase(DLG.url || ''));
+  el.style.maxWidth = 'none';   // 别让「整块」档的 max-width:100% 影响量出来的尺寸
+  area.appendChild(el);
+  const r = el.getBoundingClientRect();
+  const cs = getComputedStyle(el);
+  const m = {
+    w: r.width, h: r.height,
+    pl: parseFloat(cs.paddingLeft) || 0, pr: parseFloat(cs.paddingRight) || 0,
+    pt: parseFloat(cs.paddingTop) || 0, pb: parseFloat(cs.paddingBottom) || 0
+  };
+  el.remove();
+  return m;
+}
+
+/* ---- 正则 ---- */
+function buildRegexString(){
+  const keep = $('symKeepQuote').checked;
+  const multi = $('symMulti').checked;
+  const nl = multi ? '' : '\\n';
+  const outs = [];
+  SYM_DEFS.forEach(d => { if (DLG.syms[d.id]) outs.push(buildOne(d.l, d.r, keep, nl)); });
+  DLG.custom.forEach(c => { if (c.l && c.r) outs.push(buildOne(c.l, c.r, keep, nl)); });
+  return outs.join('|');
+}
+function buildOne(l, r, keep, nl){
+  const L = escRe(l), R = escRe(r);
+  // 字符集里排除收尾符（以及不同的起始符），避免「『…』」被外层「」整段吞掉
+  const cls = (l === r) ? ('^' + R) : ('^' + L + R);
+  const body = '[' + cls + nl + ']+';
+  return keep ? (L + body + R) : ('(?<=' + L + ')' + body + '(?=' + R + ')');
+}
+
+/* ---- 预览：把导出 CSS 直接套到 span 上 ---- */
+function isTitleLine(s){
+  return /^\s*(第[0-9０-９零〇一二三四五六七八九十百千万两]{1,12}[章节回卷部篇集幕折]|序章|楔子|引子|前言|后记|终章|尾声|番外|外传|附录|正文)/.test(s);
+}
+function renderTextInto(area, text, ranges, css){
+  let offset = 0;
+  text.split('\n').forEach(line => {
+    const lS = offset, lE = offset + line.length;
+    const p = document.createElement('p');
+    p.className = isTitleLine(line) ? 'chTitle' : (line.trim() ? 'para' : 'gap');
+    let i = lS;
+    while (i < lE){
+      let hit = null;
+      for (const r of ranges){ if (r[0] <= i && r[1] > i){ hit = r; break; } }
+      if (hit){
+        const end = Math.min(hit[1], lE);
+        const sp = document.createElement('span');
+        applyCss(sp, css);
+        sp.textContent = text.slice(i, end);
+        p.appendChild(sp);
+        i = end;
+      } else {
+        let next = lE;
+        for (const r of ranges) if (r[0] > i && r[0] < next) next = r[0];
+        p.appendChild(document.createTextNode(text.slice(i, next)));
+        i = next;
+      }
+    }
+    if (!line.trim()) p.appendChild(document.createTextNode('\u00a0'));
+    area.appendChild(p);
+    offset = lE + 1;
+  });
+}
+
+/* {backgroundColor} / {primaryColor} 是 ARC 运行时的主题占位符，浏览器不认识，
+   预览时换算成「预览用主题色」里选的颜色 */
+function resolveTokens(css, bgId, priId){
+  return css
+    .replace(/\{backgroundColor\}/gi, $(bgId).value)
+    .replace(/\{primaryColor\}/gi, $(priId).value);
+}
+
+function dlgRender(){
+  if (!DLG.bytes){ $('dlgCssOut').value = ''; return; }
+  renderStage();
+  const area = $('dlgArea');
+  /* 让「纸」跟着正文栏宽走并居中——否则纸撑满卡片、正文只有 390px 宽，
+     右边会空出一大片，看起来像排版坏了 */
+  const colW = parseFloat($('bodyW').value) || 390;
+  const paper = $('dlgPaper');
+  paper.style.width = (colW + 38) + 'px';   // 38 = paperInner 左右内边距 36 + 两侧边框 2
+  paper.style.maxWidth = '100%';
+  paper.style.marginLeft = 'auto';
+  paper.style.marginRight = 'auto';
+  area.style.width = '100%';
+  area.style.fontSize = (parseFloat($('bodyFs').value) || 20) + 'px';
+  area.style.lineHeight = String(parseFloat($('bodyLh').value) || 1.9);
+  area.innerHTML = '';
+  const css = dlgCssPreview(DLG.url);
+  const reStr = buildRegexString();
+  $('symOut').textContent = reStr || '（还没勾选任何符号）';
+  const ranges = [];
+  if (reStr){
+    try{
+      const re = new RegExp(reStr, 'g');
+      let m, guard = 0;
+      while ((m = re.exec($('dlgText').value)) && guard++ < 3000){
+        if (!m[0]){ re.lastIndex++; continue; }
+        ranges.push([m.index, m.index + m[0].length]);
+      }
+    }catch(err){ toast('正则不合法：' + err.message, false); }
+  }
+  renderTextInto(area, $('dlgText').value, ranges, resolveTokens(css, 'pvBgColor', 'pvPriColor'));
+  const ct = dlgContentRect();
+  if (ct) DLG.ct = { l: ct[0], t: ct[1], r: DLG.W - ct[2], b: DLG.H - ct[3] };
+  renderStage();
+  $('dlgCssOut').value = dlgCss(md5Hex(DLG.bytes));
+  // 设置一变就悄悄把 .red 预先压好，导出时能同步点下载（手机浏览器只认点击那一刻的手势）
+  clearTimeout(dlgRedTimer);
+  dlgRedTimer = setTimeout(rebuildDlgRed, 500);
+}
+
+/* ---- 控件绑定 ---- */
+['stSize','stLh','stLs','stMb','stPl','stPr','stPt','stPb','bodyW','bodyFs','bodyLh']
+  .forEach(id => { $(id).addEventListener('input', dlgRender); $(id).addEventListener('change', dlgRender); });
+
+/* 铺法切换 */
+function syncNsOff(){
+  const off = nsOff();
+  ['nsT','nsR','nsB','nsL'].forEach(id => { $(id).disabled = off; });
+}
+function syncBgMode(){
+  const tag = bgMode() === 'tag';
+  $('nsPanel').hidden = tag;
+  $('tagPanel').hidden = !tag;
+  $('nsCore').style.display = (tag || nsOff()) ? 'none' : '';
+  $('dlgStageTip').innerHTML = tag
+    ? '<b style="color:var(--guide2)">绿线</b>＝文字区（跟着内边距走）。贴图模式下不用管九宫格：图片会原样挂在文字一侧，蓝线已隐藏。'
+    : '<b style="color:var(--guide)">蓝线</b>＝九宫格切点：四条蓝线围出的中间区域会被拉长，四个角原样不动（蓝线可以直接拖）；<b style="color:var(--guide2)">绿线</b>＝文字区，跟着内边距自动走。';
+  if (tag){
+    applyTagPad();
+    const t = tagDims();
+    $('tagOut').textContent = '背景图：' + tagPos(t.side) + ' · 宽 ' + num(t.w) + 'em（高约 ' + num(t.h) + 'em）'
+      + ' · 内边距 ' + num(t.w + t.gap) + 'em';
+  }
+  const f = bgFlow();
+  $('flowOut').textContent = f === 'inline'
+    ? '当前：行内 → 折行的每一行都会各自画一遍背景（气泡会断成两截）'
+    : (f === 'iblock'
+      ? '当前：display:inline-block + max-width:100% → 整段一个背景，宽度贴字，不会另起段落'
+      : '当前：display:block → 整段一个背景，但会另起一行且撑满整栏');
+  dlgRender();
+}
+$('bgMode').addEventListener('change', syncBgMode);
+['tagSide','bgFlow'].forEach(id => $(id).addEventListener('change', syncBgMode));
+['tagSize','tagGap'].forEach(id => $(id).addEventListener('input', () => { applyTagPad(); syncBgMode(); }));
+$('btnTagApply').addEventListener('click', () => { applyTagPad(); syncBgMode(); toast('已按贴图尺寸留出内边距'); });
+['nsT','nsR','nsB','nsL'].forEach(id => $(id).addEventListener('input', () => {
+  const v = Math.max(0, Math.round(parseFloat($(id).value) || 0));
+  DLG.ns[id.slice(2).toLowerCase()] = v;
+  dlgRender();
+}));
+$('nsScale').addEventListener('input', dlgRender);
+$('nsBasis').addEventListener('change', dlgRender);
+$('dlgText').addEventListener('input', dlgRender);
+$('btnDlgResetText').addEventListener('click', () => {
+  $('dlgText').value = $('dlgText').defaultValue;
+  dlgRender();
+});
+$('paperSeg').addEventListener('click', e => {
+  const b = e.target.closest('button[data-p]');
+  if (!b) return;
+  qsa('#paperSeg button').forEach(x => {
+    const on = x === b;
+    x.classList.toggle('on', on);
+    x.style.background = on ? 'var(--accent-light)' : 'var(--field)';
+    x.style.color = on ? 'var(--accent)' : 'var(--sub)';
+  });
+  $('dlgPaper').classList.toggle('dark', b.dataset.p === 'dark');
+});
+
+/* 颜色 */
+function paintSwatch(){
+  const sw = $('stSwatch');
+  if (!sw) return;
+  sw.style.backgroundColor = hexToRgba(DLG.colorHex, DLG.colorAlpha);
+  sw.classList.toggle('chk', DLG.colorAlpha < 100);
+  $('stColorVal').textContent = DLG.colorHex + ' · ' + DLG.colorAlpha + '%';
+}
+$('stColorMode').addEventListener('change', () => {
+  const custom = $('stColorMode').value === 'custom';
+  $('stSwatch').style.display = custom ? '' : 'none';
+  $('stColorVal').style.display = custom ? '' : 'none';
+  paintSwatch();
+  dlgRender();
+});
+$('stSwatch').addEventListener('click', () => {
+  openPicker($('stSwatch'), DLG.colorHex, DLG.colorAlpha, (hex, a) => {
+    DLG.colorHex = hex; DLG.colorAlpha = a; paintSwatch(); dlgRender();
+  });
+});
+$('stColorVal').addEventListener('click', () => {
+  const t = $('stColorVal').textContent || '';
+  if (navigator.clipboard) navigator.clipboard.writeText(t).then(() => toast('已复制 ' + t)).catch(() => {});
+});
+
+/* 符号勾选 */
+(function buildSymGrid(){
+  const box = $('symGrid');
+  SYM_DEFS.forEach(d => {
+    const lab = document.createElement('label');
+    lab.className = 'symChip' + (DLG.syms[d.id] ? ' on' : '');
+    lab.innerHTML = '<input type="checkbox" data-sym="' + d.id + '"' + (DLG.syms[d.id] ? ' checked' : '') +
+      '><b>' + d.label + '</b><span>' + d.name + '</span>';
+    lab.querySelector('input').addEventListener('change', e => {
+      DLG.syms[d.id] = e.target.checked;
+      lab.classList.toggle('on', e.target.checked);
+      dlgRender();
+    });
+    box.appendChild(lab);
+  });
+})();
+['symKeepQuote','symMulti'].forEach(id => $(id).addEventListener('change', dlgRender));
+$('btnSymAdd').addEventListener('click', () => {
+  DLG.custom.push({ l: '', r: '' });
+  renderCustomSyms();
+});
+function renderCustomSyms(){
+  const box = $('symCustom');
+  box.innerHTML = '';
+  DLG.custom.forEach((c, i) => {
+    const row = document.createElement('div');
+    row.className = 'customRow';
+    row.innerHTML = '<input type="text" maxlength="2" placeholder="左" value="' + c.l.replace(/"/g, '&quot;') + '">'
+      + '<span class="hint" style="margin:0">…</span>'
+      + '<input type="text" maxlength="2" placeholder="右" value="' + c.r.replace(/"/g, '&quot;') + '">'
+      + '<button class="btn sm">✕</button>';
+    const ins = row.querySelectorAll('input');
+    ins[0].addEventListener('input', e => { c.l = e.target.value; dlgRender(); });
+    ins[1].addEventListener('input', e => { c.r = e.target.value; dlgRender(); });
+    row.querySelector('button').addEventListener('click', () => { DLG.custom.splice(i, 1); renderCustomSyms(); dlgRender(); });
+    box.appendChild(row);
+  });
+}
+renderCustomSyms();
+
+/* ---- 导出 ---- */
+function dlgPayload(){
+  const rule = {
+    name: $('dlgName').value || '对话高亮',
+    keyword: buildRegexString(),
+    isRegex: true,
+    isMultiline: $('symMulti').checked,
+    titleOnly: false,
+    enabled: $('dlgEnabled').checked,
+    sortOrder: parseInt($('dlgSort').value, 10) || 0,
+    global: true,
+    groupName: $('dlgGroup').value || '其他气泡',
+    applyToStyledBooks: true,
+    styleType: 'background',
+    styleColorType: $('dlgColorType').value.trim() || 'purple',
+    styleMode: 'advanced',
+    styleCssText: dlgCss(md5Hex(DLG.bytes))
+  };
+  return { version: 1, type: 'highlightRule', data: [rule] };
+}
+/* 预先把 .red 压好并缓存成 blob URL：导出点击那一刻直接用，避免 await 吃掉手势 */
+let dlgRed = { key: '', url: '', bytes: null, filename: '' };
+let dlgRedTimer = 0;
+function dlgFileName(){
+  return '高亮规则 - ' + (($('dlgName').value || '未命名').replace(/[\\/:*?"<>|]/g, '').trim()) + '.red';
+}
+function dlgRedKey(){ return JSON.stringify(dlgPayload()); }
+async function rebuildDlgRed(){
+  if (!DLG.bytes || !DLG.imgB64) return;
+  const key = dlgRedKey();
+  if (key === dlgRed.key && dlgRed.url) return;
+  try{
+    const payload = dlgPayload();
+    payload.data[0].backgroundImageData = DLG.imgB64;
+    const gz = await gzipBytes(new TextEncoder().encode(JSON.stringify(payload)));
+    const out = new Uint8Array(4 + gz.length);
+    out[0] = 0x52; out[1] = 0x45; out[2] = 0x44; out[3] = 0x01;
+    out.set(gz, 4);
+    if (dlgRed.url) URL.revokeObjectURL(dlgRed.url);
+    dlgRed = {
+      key: key,
+      url: URL.createObjectURL(new Blob([out], { type: 'application/octet-stream' })),
+      bytes: out,
+      filename: dlgFileName()
+    };
+  }catch(_){}
+}
+
+$('btnDlgExport').addEventListener('click', () => {
+  if (!DLG.bytes) return toast('请先上传气泡图', false);
+  if (!buildRegexString()) return toast('请至少勾选一种引号', false);
+  // 缓存命中：同步触发，手势还在
+  if (dlgRed.url && dlgRed.key === dlgRedKey()){
+    const threw = startDownload(dlgRed.url, dlgRed.filename);
+    showSavePanel({ url: dlgRed.url, filename: dlgRed.filename, size: dlgRed.bytes.length, bytes: dlgRed.bytes,
+      mobile: IS_ANDROID, frameMode: LEGACY_WEBVIEW, autoStarted: !threw, errDetail: threw ? 'click() 抛错：' + threw : '' });
+    return;
+  }
+  // 没赶上预打包：用「不压缩块」的 gzip 同步拼一份，依旧不丢手势
+  try{
+    const payload = dlgPayload();
+    payload.data[0].backgroundImageData = DLG.imgB64 || toB64(gzipStored(DLG.bytes));
+    const gz = gzipStored(new TextEncoder().encode(JSON.stringify(payload)));
+    const out = new Uint8Array(4 + gz.length);
+    out[0] = 0x52; out[1] = 0x45; out[2] = 0x44; out[3] = 0x01;
+    out.set(gz, 4);
+    const url = URL.createObjectURL(new Blob([out], { type: 'application/octet-stream' }));
+    const fn = dlgFileName();
+    const threw = startDownload(url, fn);
+    showSavePanel({ url: url, filename: fn, size: out.length, bytes: out, mobile: IS_ANDROID,
+      frameMode: LEGACY_WEBVIEW, autoStarted: !threw, errDetail: threw ? 'click() 抛错：' + threw : '' });
+  }catch(err){
+    showSavePanel({ error: err.message, errDetail: (err && err.stack) || '' });
+  }
+});
+$('btnB64Restore').addEventListener('click', () => {
+  const s = ($('b64In').value || '').replace(/\s+/g, '').replace(/^data:[^;]*;base64,/i, '');
+  if (!s) return toast('先把 Base64 粘进来', false);
+  try{
+    const u8 = fromB64(s);
+    if (!(u8[0] === 0x52 && u8[1] === 0x45 && u8[2] === 0x44)) throw new Error('这段数据不是 .red 文件');
+    download(u8, '还原的高亮规则.red');
+    $('b64In').value = '';
+  }catch(err){ toast('还原失败：' + err.message, false); }
+});
+$('btnDlgJson').addEventListener('click', () => {
+  if (!DLG.bytes) return toast('请先上传气泡图', false);
+  const payload = dlgPayload();
+  if (DLG.bytes) payload.data[0].backgroundImageData = '(导出 .red 时写入)';
+  download(new TextEncoder().encode(JSON.stringify(payload, null, 2)), ($('dlgName').value || '对话高亮') + '.json', 'application/json');
+  toast('已导出 JSON（图片数据不包含在内）');
+});
+
+/* ---- 从 .red 反推 ---- */
+$('btnDlgImport').addEventListener('click', () => $('dlgImportFile').click());
+$('dlgImportFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  try{
+    const rules = await readRed(f);
+    const r = rules[0];
+    const css = r.styleCssText || '';
+    $('dlgName').value = (r.name || '对话高亮') + '（改）';
+    $('dlgGroup').value = r.groupName || '其他气泡';
+    $('dlgSort').value = (r.sortOrder === undefined ? 13 : r.sortOrder);
+    $('dlgEnabled').checked = !!r.enabled;
+    $('dlgColorType').value = r.styleColorType || 'purple';
+    $('symMulti').checked = r.isMultiline !== false;
+
+    const nsRaw = (css.match(/reeden-background-nine-slice:\s*([^;]+)/) || [])[1];
+    const nsNum = nsRaw ? nsRaw.split('/')[0].trim().split(/\s+/).map(Number).filter(n => !isNaN(n)) : [];
+    // 文件里没有 nine-slice 字段 ＝ 这条规则本来就不切片（旧版导出的就是这种），把开关同步过来
+    $('nsOff').checked = !nsRaw;
+    syncNsOff();
+    $('nsBasis').checked = /nine-slice-basis\s*:\s*bubble/i.test(css);
+    const sc = (css.match(/nine-slice-scale:\s*([^;]+)/) || [])[1];
+    $('nsScale').value = sc ? sc.trim() : '';
+
+    const fs = cssVal(css, 'font-size'); if (fs && /em/.test(fs)) $('stSize').value = parseFloat(fs);
+    const lh = cssVal(css, 'line-height'); if (lh) $('stLh').value = parseFloat(lh);
+    const ls = cssVal(css, 'letter-spacing'); if (ls) $('stLs').value = parseFloat(ls);
+    const mb = cssVal(css, 'margin-bottom'); if (mb) $('stMb').value = parseFloat(mb);
+    const pl = cssVal(css, 'padding-left'); if (pl && /em/.test(pl)) $('stPl').value = parseFloat(pl);
+    const pr = cssVal(css, 'padding-right'); if (pr && /em/.test(pr)) $('stPr').value = parseFloat(pr);
+    const pt = cssVal(css, 'padding-top'); if (pt && /em/.test(pt)) $('stPt').value = parseFloat(pt);
+    const pb = cssVal(css, 'padding-bottom'); if (pb && /em/.test(pb)) $('stPb').value = parseFloat(pb);
+
+    const col = cssVal(css, 'color') || '';
+    if (/\{backgroundColor\}/i.test(col)) $('stColorMode').value = 'bg';
+    else if (/\{primaryColor\}/i.test(col)) $('stColorMode').value = 'pri';
+    else {
+      const ha = rgbaToHexAlpha(col);
+      if (ha){ $('stColorMode').value = 'custom'; DLG.colorHex = ha.hex; DLG.colorAlpha = ha.alpha; }
+    }
+    $('stColorMode').dispatchEvent(new Event('change'));
+
+    const kw = r.keyword || '';
+    SYM_DEFS.forEach(d => { DLG.syms[d.id] = kw.indexOf(d.l) >= 0; });
+    qsa('#symGrid input[data-sym]').forEach(inp => {
+      inp.checked = !!DLG.syms[inp.dataset.sym];
+      inp.closest('.symChip').classList.toggle('on', inp.checked);
+    });
+    $('symKeepQuote').checked = !/\(\?<=/.test(kw);
+
+    if (r.backgroundImageData){
+      const raw = await gunzipBytes(fromB64(r.backgroundImageData));
+      DLG.bytes = raw;
+      DLG.imgB64 = r.backgroundImageData;   // 原包里已经是 gzip+base64，直接复用
+      if (DLG.url) URL.revokeObjectURL(DLG.url);
+      DLG.url = URL.createObjectURL(new Blob([raw], { type: 'image/png' }));
+      const img = new Image();
+      img.src = DLG.url;
+      await img.decode();
+      DLG.W = img.naturalWidth; DLG.H = img.naturalHeight;
+      $('dlgImg').src = DLG.url;
+      $('dlgStage').style.display = 'flex';
+      $('dlgStageTip').style.display = '';
+      $('dlgInfo').style.display = '';
+      $('dlgInfo').textContent = DLG.W + ' × ' + DLG.H + ' px · 来自规则包';
+      /* 社区包里常见两种写法：
+         「上 右 下 左」四值 → 直接当切点；
+         「x1 y1 x2 y2 / 图宽 图高 / …」五段式（Reeden 编辑器导出的坐标）→ 换算成四边切点 */
+      if (nsNum.length >= 4){
+        if (/\/\s*\d+\s+\d+/.test(nsRaw)){
+          const [x1, y1, x2, y2] = nsNum;
+          DLG.ns = {
+            l: Math.round(x1), t: Math.round(y1),
+            r: Math.round(Math.max(1, DLG.W - x2)), b: Math.round(Math.max(1, DLG.H - y2))
+          };
+        } else {
+          const [t, rr, b, l] = nsNum;
+          DLG.ns = { t: Math.round(t), r: Math.round(rr), b: Math.round(b), l: Math.round(l) };
+        }
+      } else {
+        DLG.ns = { l: 0, t: 0, r: 0, b: 0 };
+      }
+      syncNsInputs();
+      applyAuto(await analyzeAlpha(), false);
+    }
+    dlgRender();
+    toast('已导入「' + (r.name || '未命名') + '」：图片、切点、内边距、引号都已还原');
+  }catch(err){ toast('导入失败：' + err.message, false); }
+});
+
+/* =========================================================
+   4 · .red 读取
+   ========================================================= */
+async function readRed(file){
+  const buf = new Uint8Array(await file.arrayBuffer());
+  if (!(buf[0] === 0x52 && buf[1] === 0x45 && buf[2] === 0x44)) throw new Error('不是 .red 文件（缺少 RED 魔数）');
+  const json = JSON.parse(new TextDecoder().decode(await gunzipBytes(buf.slice(4))));
+  if (json.type !== 'highlightRule' || !Array.isArray(json.data) || !json.data.length) throw new Error('文件里没有高亮规则');
+  return json.data;
+}
+function cssVal(css, prop){
+  const m = css.match(new RegExp(prop.replace(/-/g, '\\-') + '\\s*:\\s*([^;]+)'));
+  return m ? m[1].trim() : null;
+}
+function rgbaToHexAlpha(v){
+  const m = v.match(/rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+))?\s*\)/);
+  if (m) return { hex: rgbHex(+m[1] / 255, +m[2] / 255, +m[3] / 255), alpha: Math.round((m[4] !== undefined ? +m[4] : 1) * 100) };
+  if (/^#[0-9a-fA-F]{6}$/.test(v)) return { hex: v.toLowerCase(), alpha: 100 };
+  return null;
+}
+
+/* =========================================================
+   5 · 标题高亮
+   ========================================================= */
+const TT = {
+  designW: 1080, layers: [], sel: -1,
+  text: { x: 90, y: 70, w: 900 },
+  colorHex: '#498dbd', colorAlpha: 100,
+  previewUrl: null,
+  guideV: null, guideH: null
+};
+/* 画布显示比例：宽度铺满右栏，同时限制最大高度，保证下方预览不被挤到屏幕外 */
+const ttScale = () => {
+  const wrapW = Math.max(200, $('ttCanvasWrap').clientWidth - 2);
+  return Math.min(wrapW / TT.designW, 440 / ttCanvasH());
+};
+const ttColW = () => Math.max(200, parseFloat($('ttColW').value) || 390);
+const ttBodyFs = () => Math.max(12, parseFloat($('ttBodyFs').value) || 20);
+const ttFontPx = () => (parseFloat($('ttFontEm').value) || 1.53) * ttBodyFs() * TT.designW / ttColW();
+const ttLH = () => parseFloat($('ttLh').value) || 1.2;
+const ttSpacing = () => parseFloat($('ttSpacing').value) || 0;
+
+function ttLines(){
+  const cv = ttLines._c || (ttLines._c = document.createElement('canvas').getContext('2d'));
+  const fw = $('ttWeight').value;
+  cv.font = ((fw === 'bold' || +fw >= 500) ? fw + ' ' : '') + ttFontPx() + 'px sans-serif';
+  const txt = $('ttText').value || '标题';
+  const spacing = ttSpacing() * TT.designW / ttColW();
+  const maxW = TT.text.w;
+  let lines = 1, cur = 0;
+  for (const ch of txt){
+    if (ch === '\n'){ lines++; cur = 0; continue; }
+    const w = cv.measureText(ch).width + spacing;
+    if (cur + w > maxW && cur > 0){ lines++; cur = w; }
+    else cur += w;
+  }
+  return { lines, h: lines * ttFontPx() * ttLH() };
+}
+function ttCanvasH(){
+  const manual = parseFloat($('ttCanvasH').value) || 0;
+  if (manual > 0) return manual;
+  let bottom = TT.text.y + ttLines().h + 10;
+  TT.layers.forEach(l => { bottom = Math.max(bottom, l.y + l.w * l.img.naturalHeight / l.img.naturalWidth); });
+  return Math.ceil(bottom + 10);
+}
+
+function ttRenderCanvas(){
+  const cv = $('ttCanvas');
+  const s = ttScale(), H = ttCanvasH();
+  cv.style.width = Math.round(TT.designW * s) + 'px';
+  cv.style.height = Math.round(H * s) + 'px';
+  cv.style.background = 'repeating-conic-gradient(var(--chk-a) 0% 25%, var(--chk-b) 0% 50%) 50% / 16px 16px';
+  cv.innerHTML = '';
+  TT.layers.forEach((l, i) => {
+    const h = l.w * l.img.naturalHeight / l.img.naturalWidth;
+    const d = document.createElement('div');
+    d.dataset.idx = i;
+    d.style.cssText = 'position:absolute;left:' + (l.x * s) + 'px;top:' + (l.y * s) + 'px;width:' + (l.w * s) + 'px;height:' + (h * s) + 'px;'
+      + 'background-image:url("' + l.img.src + '");background-size:100% 100%;cursor:move;'
+      + (i === TT.sel ? 'outline:2px solid var(--accent);outline-offset:-1px;' : '');
+    if (i === TT.sel){
+      const hd = document.createElement('div');
+      hd.dataset.handle = '1';
+      hd.style.cssText = 'position:absolute;right:-7px;bottom:-7px;width:14px;height:14px;background:var(--accent);border:2px solid #fff;border-radius:3px;cursor:nwse-resize;box-shadow:0 1px 4px rgba(0,0,0,.35)';
+      d.appendChild(hd);
+    }
+    cv.appendChild(d);
+  });
+  const t = document.createElement('div');
+  const align = $('ttAlign').value;
+  const fw = $('ttWeight').value;
+  t.dataset.text = '1';
+  t.style.cssText = 'position:absolute;left:' + (TT.text.x * s) + 'px;top:' + (TT.text.y * s) + 'px;width:' + (TT.text.w * s) + 'px;'
+    + 'cursor:move;outline:1.5px dashed var(--accent);text-align:' + align + ';word-break:break-word;'
+    + 'line-height:' + ttLH() + ';font-size:' + (ttFontPx() * s) + 'px;font-weight:' + fw + ';'
+    + 'letter-spacing:' + (ttSpacing() * s) + 'px;color:#777;';
+  const sw = parseFloat($('ttStroke').value) || 0;
+  if (sw > 0) t.style.webkitTextStroke = (sw * s) + 'px ' + $('ttStrokeColor').value;
+  t.textContent = $('ttText').value || '标题';
+  const hd = document.createElement('div');
+  hd.dataset.textsize = '1';
+  hd.style.cssText = 'position:absolute;right:-7px;bottom:-7px;width:14px;height:14px;background:var(--accent);border:2px solid #fff;border-radius:3px;cursor:ew-resize;box-shadow:0 1px 4px rgba(0,0,0,.35)';
+  t.appendChild(hd);
+  cv.appendChild(t);
+
+  /* 吸附参考线 */
+  if (TT.guideV != null){
+    const g = document.createElement('div');
+    g.className = 'ttGuide v';
+    g.style.left = Math.round(TT.guideV * s) + 'px';
+    cv.appendChild(g);
+  }
+  if (TT.guideH != null){
+    const g = document.createElement('div');
+    g.className = 'ttGuide h';
+    g.style.top = Math.round(TT.guideH * s) + 'px';
+    cv.appendChild(g);
+  }
+  $('ttCanvasH').placeholder = '自动 ' + H;
+}
+
+/* ---- 吸附：边缘 / 居中 / 与图片对齐 ---- */
+function snapPick(val, list, th){
+  let best = null, bd = th;
+  list.forEach(c => { const d = Math.abs(val - c.v); if (d <= bd){ bd = d; best = c; } });
+  return best;
+}
+function snapTextX(){
+  const w = TT.text.w;
+  const out = [
+    { v: 0, line: 0 },
+    { v: (TT.designW - w) / 2, line: TT.designW / 2 },
+    { v: TT.designW - w, line: TT.designW }
+  ];
+  TT.layers.forEach(l => {
+    out.push({ v: l.x, line: l.x });
+    out.push({ v: l.x + (l.w - w) / 2, line: l.x + l.w / 2 });
+    out.push({ v: l.x + l.w - w, line: l.x + l.w });
+  });
+  return out;
+}
+function snapTextY(){
+  const h = ttLines().h, H = ttCanvasH();
+  const out = [
+    { v: 0, line: 0 },
+    { v: (H - h) / 2, line: H / 2 },
+    { v: H - h, line: H }
+  ];
+  TT.layers.forEach(l => {
+    const lh = l.w * l.img.naturalHeight / l.img.naturalWidth;
+    out.push({ v: l.y, line: l.y });
+    out.push({ v: l.y + (lh - h) / 2, line: l.y + lh / 2 });
+    out.push({ v: l.y + lh - h, line: l.y + lh });
+  });
+  return out;
+}
+function snapBox(bw, bh){
+  const H = ttCanvasH(), th = ttLines().h;
+  return {
+    xs: [
+      { v: 0, line: 0 },
+      { v: (TT.designW - bw) / 2, line: TT.designW / 2 },
+      { v: TT.designW - bw, line: TT.designW },
+      { v: TT.text.x, line: TT.text.x },
+      { v: TT.text.x + (TT.text.w - bw) / 2, line: TT.text.x + TT.text.w / 2 },
+      { v: TT.text.x + TT.text.w - bw, line: TT.text.x + TT.text.w }
+    ],
+    ys: [
+      { v: 0, line: 0 },
+      { v: (H - bh) / 2, line: H / 2 },
+      { v: H - bh, line: H },
+      { v: TT.text.y, line: TT.text.y },
+      { v: TT.text.y + (th - bh) / 2, line: TT.text.y + th / 2 },
+      { v: TT.text.y + th - bh, line: TT.text.y + th }
+    ]
+  };
+}
+
+$('ttCanvas').addEventListener('pointerdown', e => {
+  const s = ttScale();
+  let drag = null;
+  if (e.target.dataset.text !== undefined) drag = { type: 'text', ox: TT.text.x, oy: TT.text.y, cx: e.clientX, cy: e.clientY };
+  else if (e.target.dataset.textsize !== undefined) drag = { type: 'tsize', ow: TT.text.w, cx: e.clientX };
+  else if (e.target.dataset.handle !== undefined){
+    const i = +e.target.parentElement.dataset.idx;
+    drag = { type: 'rsize', i, ow: TT.layers[i].w, cx: e.clientX };
+  } else if (e.target.dataset.idx !== undefined){
+    const i = +e.target.dataset.idx;
+    if (TT.sel !== i){ TT.sel = i; ttRender(); ttRenderLayerList(); }
+    drag = { type: 'move', i, ox: TT.layers[i].x, oy: TT.layers[i].y, cx: e.clientX, cy: e.clientY };
+  } else return;
+  e.preventDefault();
+  const move = ev => {
+    const dx = (ev.clientX - drag.cx) / s, dy = (ev.clientY - drag.cy) / s;
+    const snapOn = $('ttSnap') ? $('ttSnap').checked : true;
+    const th = 9 / s;
+    if (drag.type === 'text'){
+      let nx = Math.max(-TT.text.w * 0.5, Math.min(TT.designW - 20, drag.ox + dx));
+      // 手动定了画布高时，文字不许拖出画布底部（拖出去会让下内边距被压成 0，图才会被拉长）
+      const maxY = Math.max(0, ttCanvasH() - ttLines().h - 2);
+      let ny = Math.max(0, Math.min(maxY, drag.oy + dy));
+      TT.guideV = TT.guideH = null;
+      if (snapOn){
+        const sx = snapPick(nx, snapTextX(), th);
+        if (sx){ nx = sx.v; TT.guideV = sx.line; }
+        const sy = snapPick(ny, snapTextY(), th);
+        if (sy){ ny = sy.v; TT.guideH = sy.line; }
+      }
+      TT.text.x = Math.round(nx);
+      TT.text.y = Math.round(ny);
+    } else if (drag.type === 'tsize'){
+      TT.text.w = Math.round(Math.max(80, Math.min(TT.designW - TT.text.x, drag.ow + dx)));
+    } else if (drag.type === 'rsize'){
+      TT.layers[drag.i].w = Math.max(20, Math.round(drag.ow + dx));
+      $('ttLayerW').value = TT.layers[drag.i].w;
+    } else {
+      const l = TT.layers[drag.i];
+      const lh = l.w * l.img.naturalHeight / l.img.naturalWidth;
+      let nx = Math.max(-l.w * 0.8, Math.min(TT.designW * 0.95, drag.ox + dx));
+      let ny = Math.max(-l.w * 0.8, drag.oy + dy);
+      TT.guideV = TT.guideH = null;
+      if (snapOn){
+        const c = snapBox(l.w, lh);
+        const sx = snapPick(nx, c.xs, th);
+        if (sx){ nx = sx.v; TT.guideV = sx.line; }
+        const sy = snapPick(ny, c.ys, th);
+        if (sy){ ny = sy.v; TT.guideH = sy.line; }
+      }
+      l.x = Math.round(nx);
+      l.y = Math.round(ny);
+    }
+    ttRender();
+  };
+  const up = () => {
+    window.removeEventListener('pointermove', move);
+    window.removeEventListener('pointerup', up);
+    if (TT.guideV != null || TT.guideH != null){ TT.guideV = TT.guideH = null; ttRender(); }
+  };
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', up);
+});
+
+$('btnTtAdd').addEventListener('click', () => $('ttFiles').click());
+/* 图层图用的是 blob URL：删层 / 换画布时必须释放，否则每加一次图就泄漏一份图片内存 */
+function ttDropLayer(l){ if (l && l.url){ URL.revokeObjectURL(l.url); l.url = null; } }
+function ttDropAll(){ (TT.layers || []).forEach(ttDropLayer); }
+$('ttFiles').addEventListener('change', async () => {
+  const files = [...$('ttFiles').files]; $('ttFiles').value = '';
+  for (const f of files){
+    const img = new Image();
+    const url = URL.createObjectURL(f);
+    img.src = url;
+    try { await img.decode(); } catch (_){ URL.revokeObjectURL(url); continue; }
+    const w = Math.min(TT.designW, img.naturalWidth);
+    TT.layers.push({ img: img, url: url, x: Math.round((TT.designW - w) / 2), y: 10, w: w });
+    TT.sel = TT.layers.length - 1;
+  }
+  ttRender(); ttRenderLayerList(); ttRenderLayerBar();
+});
+function ttRenderLayerList(){
+  const box = $('ttLayerList');
+  box.innerHTML = '';
+  if (!TT.layers.length){ box.innerHTML = '<div class="hint" style="margin:2px 0">画布里还没有图片</div>'; return; }
+  TT.layers.forEach((l, i) => {
+    const row = document.createElement('div');
+    row.className = 'lyrRow' + (i === TT.sel ? ' on' : '');
+    row.innerHTML = '<img src="' + l.img.src + '" alt=""><span style="flex:1">图片 ' + (i + 1) + ' · '
+      + Math.round(l.w) + ' × ' + Math.round(l.w * l.img.naturalHeight / l.img.naturalWidth) + '</span>';
+    row.addEventListener('click', () => { TT.sel = i; ttRender(); ttRenderLayerList(); ttRenderLayerBar(); });
+    box.appendChild(row);
+  });
+}
+function ttRenderLayerBar(){
+  const bar = $('ttLayerBar');
+  const l = TT.layers[TT.sel];
+  bar.style.display = l ? 'flex' : 'none';
+  if (l){ $('ttLayerW').max = Math.round(TT.designW * 1.6); $('ttLayerW').value = Math.round(l.w); }
+}
+$('ttLayerW').addEventListener('input', () => {
+  const l = TT.layers[TT.sel];
+  if (l){ l.w = +$('ttLayerW').value; ttRender(); ttRenderLayerList(); }
+});
+$('ttLayerUp').addEventListener('click', () => {
+  const i = TT.sel;
+  if (i >= 0 && i < TT.layers.length - 1){
+    const t = TT.layers[i]; TT.layers[i] = TT.layers[i + 1]; TT.layers[i + 1] = t;
+    TT.sel = i + 1; ttRender(); ttRenderLayerList();
+  }
+});
+$('ttLayerDown').addEventListener('click', () => {
+  const i = TT.sel;
+  if (i > 0){
+    const t = TT.layers[i]; TT.layers[i] = TT.layers[i - 1]; TT.layers[i - 1] = t;
+    TT.sel = i - 1; ttRender(); ttRenderLayerList();
+  }
+});
+$('ttLayerDel').addEventListener('click', () => {
+  if (TT.sel >= 0){ ttDropLayer(TT.layers[TT.sel]); TT.layers.splice(TT.sel, 1); TT.sel = TT.layers.length - 1; ttRender(); ttRenderLayerList(); ttRenderLayerBar(); }
+});
+
+/* ---- 标题 CSS ---- */
+function ttColor(){
+  const m = $('ttColorMode').value;
+  if (m === 'pri') return '{primaryColor}';
+  if (m === 'bg') return '{backgroundColor}';
+  return hexToRgba(TT.colorHex, TT.colorAlpha);
+}
+/* 四边内边距一律换成 em（相对标题自己的字号）。
+   原因：ARC 里这块的高度 = 上下内边距 + 文字高度，而背景图是铺满整块的。
+   用 px 写死，换字号 / 换屏宽时"文字高度"和"内边距"不再成同一比例，图就会被上下拉长；
+   用 em 写，整块跟着字号等比缩放，图就永远是原比例。 */
+const ttFsDev = () => (parseFloat($('ttFontEm').value) || 1.53) * ttBodyFs();   // 标题在手机上的字号 px
+function ttPadEm(){
+  const fp = Math.max(1, ttFontPx());   // 标题字号 = 多少「设计像素」，也就是设计像素→em 的换算率
+  const H = ttCanvasH();
+  return {
+    t: Math.max(0, TT.text.y) / fp,
+    l: Math.max(0, TT.text.x) / fp,
+    r: Math.max(0, TT.designW - TT.text.x - TT.text.w) / fp,
+    b: Math.max(0, H - TT.text.y - ttLines().h) / fp
+  };
+}
+/* 把别人文件里的 padding 读回 em：em 直接取，px 按手机上标题字号折算 */
+function padEm(css, prop){
+  const v = (cssVal(css, prop) || '').trim();
+  const n = parseFloat(v);
+  if (!v || isNaN(n)) return 0;
+  if (/em\s*$/i.test(v)) return n;
+  if (/px\s*$/i.test(v)) return n / Math.max(1, ttFsDev());
+  return 0;
+}
+function ttCss(resId, pad){
+  const p = [];
+  if (resId){
+    const fit = $('ttFit').value;
+    p.push('background-image: url("' + resId + '")');
+    p.push('background-repeat: no-repeat');
+    // 贴顶时块比图高，多出来的空白落在文字下方（不会把图拉长）；
+    // 只有「精确铺满」才用 100% 100%，那种写法图高跟着块高走，标题一折行就会纵向变形
+    p.push('background-position: ' + (fit === '100% 100%' ? 'center' : ($('ttFitPos') ? $('ttFitPos').value : 'top center')));
+    p.push('background-size: ' + fit);
+  }
+  p.push('color: ' + ttColor());
+  p.push('text-align: ' + $('ttAlign').value);
+  const fw = $('ttWeight').value;
+  if (fw && fw !== 'normal') p.push('font-weight: ' + fw);
+  p.push('font-size: ' + num($('ttFontEm').value) + 'em');
+  if (ttSpacing()) p.push('letter-spacing: ' + num(ttSpacing()) + 'px');
+  p.push('line-height: ' + num(ttLH()));
+  p.push('padding-top: ' + num(pad.t) + 'em');
+  p.push('padding-right: ' + num(pad.r) + 'em');
+  p.push('padding-bottom: ' + num(pad.b) + 'em');
+  p.push('padding-left: ' + num(pad.l) + 'em');
+  [['ttMarT', 'top'], ['ttMarR', 'right'], ['ttMarB', 'bottom'], ['ttMarL', 'left']].forEach(function(it){
+    const v = parseFloat($(it[0]).value) || 0;
+    if (v) p.push('margin-' + it[1] + ': ' + num(v) + 'px');
+  });
+  const sw = parseFloat($('ttStroke').value) || 0;
+  if (sw > 0){ p.push('-webkit-text-stroke: ' + num(sw) + 'px ' + $('ttStrokeColor').value); p.push('paint-order: stroke fill'); }
+  if ($('ttGlow').checked) p.push('text-shadow: 0 0 3px rgba(255,255,255,.9), 0 0 8px rgba(255,255,255,.6)');
+  return p.join('; ') + ';';
+}
+
+/* 预览用的背景图：把画布上的图层按「预览列宽」缩放合成一张，
+   和导出那张 1080 宽的图完全同比例，只是 pixels 少一点、够快。
+   图层没动（只改了文字）时直接复用上一张，省掉 toDataURL 的开销。 */
+let ttPrevKey = '', ttPrevSrc = '', ttPrevUid = 0;
+function ttPreviewImage(){
+  const key = [TT.designW, ttColW(), ttCanvasH(),
+    TT.layers.map(l => (l.img.__uid || (l.img.__uid = ++ttPrevUid)) + ':' + l.x + ',' + l.y + ',' + l.w).join('|')].join('#');
+  if (key === ttPrevKey && ttPrevSrc) return ttPrevSrc;
+  const H = ttCanvasH();
+  const s = ttColW() / TT.designW;
+  const cv = document.createElement('canvas');
+  cv.width = Math.max(1, Math.round(TT.designW * s));
+  cv.height = Math.max(1, Math.round(H * s));
+  const ctx = cv.getContext('2d');
+  TT.layers.forEach(l => {
+    const h = l.w * l.img.naturalHeight / l.img.naturalWidth;
+    ctx.drawImage(l.img, l.x * s, l.y * s, l.w * s, h * s);
+  });
+  ttPrevKey = key;
+  ttPrevSrc = cv.toDataURL('image/png');
+  return ttPrevSrc;
+}
+
+function ttRenderPreview(){
+  const block = $('ttPreviewBlock');
+  const wrap = $('ttPreviewWrap');
+  const colW = ttColW();
+  wrap.style.width = colW + 'px';
+  wrap.style.fontSize = ttBodyFs() + 'px';
+  const body = $('ttPreviewBody');
+  body.style.width = colW + 'px';
+  body.style.fontSize = ttBodyFs() + 'px';
+
+  /* 预览套的就是导出那一份 CSS，连背景图也一起套——所以「标题折行后图会不会被拉长」
+     在这里能直接看出来，不用等导入 ARC 才发现 */
+  const pad = ttPadEm();
+  const url = TT.layers.length ? ttPreviewImage() : null;
+  applyCss(block, resolveTokens(ttCss(url, pad), 'tvBgColor', 'tvPriColor'));
+  block.style.width = '100%';
+  block.style.position = 'relative';
+  block.innerHTML = '';
+
+  const txt = document.createElement('div');
+  txt.style.position = 'relative';
+  txt.style.zIndex = '1';
+  txt.textContent = $('ttText').value || '标题';
+  block.appendChild(txt);
+}
+
+function ttRender(){
+  ttRenderCanvas();
+  const pad = ttPadEm();
+  ttRenderPreview();
+  $('ttCssOut').value = ttCss('REPLACE_RESOURCE_ID', pad);
+  $('ttFitWarn').style.display = (ttCanvasH() - TT.text.y - ttLines().h < -0.5) ? '' : 'none';
+  ttRenderLayerBar();
+}
+['ttText','ttFontEm','ttWeight','ttSpacing','ttLh','ttAlign','ttColorMode','ttStroke','ttGlow',
+ 'ttMarT','ttMarR','ttMarB','ttMarL','ttFit','ttFitPos','ttColW','ttBodyFs','ttCanvasH']
+  .forEach(id => { if ($(id)) $(id).addEventListener('input', () => ttRender()); });
+['ttFit','ttFitPos','ttWeight','ttAlign'].forEach(id => {
+  if ($(id)) $(id).addEventListener('change', () => ttRender());
+});
+$('ttDesignW').addEventListener('change', () => { TT.designW = +$('ttDesignW').value || 1080; ttRender(); });
+$('ttColorMode').addEventListener('change', () => {
+  const custom = $('ttColorMode').value === 'custom';
+  $('ttSwatch').style.display = custom ? '' : 'none';
+  $('ttColorVal').style.display = custom ? '' : 'none';
+  ttPaintSwatch(); ttRender();
+});
+function ttPaintSwatch(){
+  $('ttSwatch').style.backgroundColor = hexToRgba(TT.colorHex, TT.colorAlpha);
+  $('ttSwatch').classList.toggle('chk', TT.colorAlpha < 100);
+  $('ttColorVal').textContent = TT.colorHex + ' · ' + TT.colorAlpha + '%';
+}
+$('ttSwatch').addEventListener('click', () => {
+  openPicker($('ttSwatch'), TT.colorHex, TT.colorAlpha, (hex, a) => {
+    TT.colorHex = hex; TT.colorAlpha = a; ttPaintSwatch(); ttRender();
+  });
+});
+
+/* ---- 合成 PNG ---- */
+async function ttCompose(){
+  const H = ttCanvasH();
+  const cv = document.createElement('canvas');
+  cv.width = TT.designW; cv.height = H;
+  const ctx = cv.getContext('2d');
+  TT.layers.forEach(l => {
+    const h = l.w * l.img.naturalHeight / l.img.naturalWidth;
+    ctx.drawImage(l.img, l.x, l.y, l.w, h);
+  });
+  const blob = await new Promise(res => cv.toBlob(res, 'image/png'));
+  return new Uint8Array(await blob.arrayBuffer());
+}
+function ttPayload(bytes){
+  return {
+    version: 1, type: 'highlightRule',
+    data: [{
+      name: $('ttName').value || '标题高亮',
+      keyword: '', isRegex: false,
+      titleOnly: true, target: 'title',
+      enabled: $('ttEnabled').checked,
+      sortOrder: parseInt($('ttSort').value, 10) || 0,
+      global: true,
+      styleType: 'background',
+      styleColorType: $('ttColorType').value.trim() || 'accent',
+      styleMode: 'advanced',
+      styleCssText: ttCss(bytes ? md5Hex(bytes) : 'REPLACE_RESOURCE_ID', ttPadEm())
+    }]
+  };
+}
+$('btnTtExport').addEventListener('click', async () => {
+  try{
+    if (!TT.layers.length) return toast('画布上还没有图片：先添加图片再导出', false);
+    const bytes = await ttCompose();
+    const payload = ttPayload(bytes);
+    payload.data[0].backgroundImageData = toB64(await gzipBytes(bytes));
+    await downloadRed(payload, $('ttName').value);
+  }catch(err){ toast('导出失败：' + err.message, false); }
+});
+$('btnTtJson').addEventListener('click', () => {
+  const payload = ttPayload(null);
+  payload.data[0].backgroundImageData = '(导出 .red 时写入)';
+  download(new TextEncoder().encode(JSON.stringify(payload, null, 2)), ($('ttName').value || '标题高亮') + '.json', 'application/json');
+  toast('已导出 JSON（图片数据不包含在内）');
+});
+
+/* ---- 标题规则导入 ---- */
+$('btnTtImport').addEventListener('click', () => $('ttImportFile').click());
+$('ttImportFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  try{
+    const rules = await readRed(f);
+    const r = rules.find(x => x.enabled) || rules[0];
+    const css = r.styleCssText || '';
+    $('ttName').value = (r.name || '标题高亮') + '（改）';
+    $('ttEnabled').checked = !!r.enabled;
+    $('ttSort').value = (r.sortOrder === undefined ? 772 : r.sortOrder);
+    $('ttColorType').value = r.styleColorType || 'accent';
+    const fs = cssVal(css, 'font-size'); if (fs && /em/.test(fs)) $('ttFontEm').value = parseFloat(fs);
+    const fw = cssVal(css, 'font-weight'); if (fw) $('ttWeight').value = fw;
+    const ls = cssVal(css, 'letter-spacing'); if (ls) $('ttSpacing').value = parseFloat(ls);
+    const lh = cssVal(css, 'line-height'); if (lh) $('ttLh').value = parseFloat(lh);
+    const ta = cssVal(css, 'text-align'); if (ta) $('ttAlign').value = ta;
+    const bs = cssVal(css, 'background-size');
+    if (bs){
+      const v = bs.trim().toLowerCase();
+      $('ttFit').value = /cover/.test(v) ? 'cover' : (/auto/.test(v) ? '100% auto' : '100% 100%');
+    }
+    const bp = cssVal(css, 'background-position');
+    if (bp && $('ttFitPos')){
+      const v = bp.toLowerCase();
+      $('ttFitPos').value = /bottom/.test(v) ? 'bottom center' : (/top/.test(v) ? 'top center' : 'center center');
+    }
+    const col = cssVal(css, 'color') || '';
+    if (/\{primaryColor\}/i.test(col)) $('ttColorMode').value = 'pri';
+    else if (/\{backgroundColor\}/i.test(col)) $('ttColorMode').value = 'bg';
+    else {
+      const ha = rgbaToHexAlpha(col);
+      if (ha){ $('ttColorMode').value = 'custom'; TT.colorHex = ha.hex; TT.colorAlpha = ha.alpha; }
+    }
+    $('ttColorMode').dispatchEvent(new Event('change'));
+    const st = css.match(/-webkit-text-stroke:\s*([\d.]+)px\s+([^;]+)/);
+    if (st){
+      $('ttStroke').value = parseFloat(st[1]);
+      const c = rgbaToHexAlpha(st[2]);
+      if (c) $('ttStrokeColor').value = c.hex;
+    }
+    $('ttGlow').checked = /text-shadow/i.test(css);
+
+    const fp = Math.max(1, ttFontPx());
+    TT.text.x = Math.round(padEm(css, 'padding-left') * fp);
+    TT.text.y = Math.round(padEm(css, 'padding-top') * fp);
+    const padR = padEm(css, 'padding-right') * fp;
+    TT.text.w = Math.max(80, Math.round(TT.designW - TT.text.x - padR));
+
+    if (r.backgroundImageData){
+      const raw = await gunzipBytes(fromB64(r.backgroundImageData));
+      const url = URL.createObjectURL(new Blob([raw], { type: 'image/png' }));
+      const img = new Image();
+      img.src = url;
+      try { await img.decode(); } catch (_){ URL.revokeObjectURL(url); throw new Error('底图解码失败'); }
+      ttDropAll();   /* 旧画布的图先释放，再整体替换 */
+      TT.layers = [{ img: img, url: url, x: 0, y: 0, w: TT.designW }];
+      TT.sel = 0;
+      $('ttCanvasH').value = Math.round(TT.text.y + ttLines().h + padEm(css, 'padding-bottom') * fp);
+    }
+    ttRender(); ttRenderLayerList(); repaintColorSlots();
+    toast('已导入「' + (r.name || '未命名') + '」：图片和文字位置已还原');
+  }catch(err){ toast('导入失败：' + err.message, false); }
+});
+
+/* =========================================================
+   6 · 启动
+   ========================================================= */
+$('stColorMode').dispatchEvent(new Event('change'));
+$('ttColorMode').dispatchEvent(new Event('change'));
+paintSwatch(); ttPaintSwatch();
+
+/* 所有颜色小部件统一走同一个取色器 */
+bindColorSlot('pvBgColorSw', 'pvBgColorVal', 'pvBgColor', dlgRender);
+bindColorSlot('pvPriColorSw', 'pvPriColorVal', 'pvPriColor', dlgRender);
+bindColorSlot('tvBgColorSw', 'tvBgColorVal', 'tvBgColor', ttRender);
+bindColorSlot('tvPriColorSw', 'tvPriColorVal', 'tvPriColor', ttRender);
+bindColorSlot('ttStrokeColorSw', 'ttStrokeColorVal', 'ttStrokeColor', ttRender);
+syncBgMode();
+
+ttRender();
+
+/* =========================================================
+   5.5 · 表单自动保存（只存文字 / 颜色 / 数值这类设置，图片不存）
+   以前刷新一下，编号、符号、颜色、九宫格尺寸全得重填；现在自动留在本机。
+   ========================================================= */
+const FORM_KEY = 'arcHL.form.v1';
+const FORM_SKIP = { dlgFile: 1, ttFiles: 1, b64In: 1 };   /* 文件输入与 base64 大文本不存 */
+let formRestoring = false, formTimer = 0;
+function formCollect(){
+  const o = {};
+  document.querySelectorAll('input[id],select[id],textarea[id]').forEach(el => {
+    if (FORM_SKIP[el.id] || el.type === 'file' || el.type === 'password') return;
+    const boxy = el.type === 'checkbox' || el.type === 'radio';
+    let v = boxy ? !!el.checked : el.value;
+    if (typeof v === 'string'){
+      if (v.length > 20000) return;      /* 超长文本（整段对话）不存，避免撑爆 localStorage */
+    }
+    o[el.id] = v;
+  });
+  return o;
+}
+function formSave(){
+  if (formRestoring) return;
+  clearTimeout(formTimer);
+  formTimer = setTimeout(() => {
+    try{ localStorage.setItem(FORM_KEY, JSON.stringify({ v: 1, ts: Date.now(), data: formCollect() })); }catch(_){}
+  }, 700);
+}
+function formRestore(){
+  let pack = null;
+  try{ pack = JSON.parse(localStorage.getItem(FORM_KEY) || 'null'); }catch(_){ return 0; }
+  const data = pack && pack.data;
+  if (!data || typeof data !== 'object') return 0;
+  formRestoring = true;
+  let n = 0;
+  Object.keys(data).forEach(id => {
+    const el = document.getElementById(id);
+    if (!el || FORM_SKIP[id] || el.type === 'file') return;
+    const v = data[id];
+    if (el.type === 'checkbox' || el.type === 'radio'){
+      if (el.checked === !!v) return;
+      el.checked = !!v;
+    } else {
+      if (el.value === String(v)) return;
+      el.value = v;
+    }
+    /* 用真事件走一遍原有联动逻辑（显隐、色块、预览），等价于用户亲手填一遍 */
+    try{ el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); }catch(_){}
+    n++;
+  });
+  formRestoring = false;
+  return n;
+}
+document.addEventListener('input', e => { if (e.target && e.target.id) formSave(); }, true);
+document.addEventListener('change', e => { if (e.target && e.target.id) formSave(); }, true);
+$('btnForget').addEventListener('click', e => {
+  e.preventDefault();
+  if (!confirm('清除本机保存的表单设置？图片本来就不保存，清掉后下次打开是默认值。')) return;
+  try{ localStorage.removeItem(FORM_KEY); }catch(_){}
+  location.reload();
+});
+const restoredN = formRestore();
+if (restoredN){
+  try{ repaintColorSlots(); }catch(_){}
+  try{ syncBgMode(); }catch(_){}
+  try{ dlgRender(); }catch(_){}
+  try{ ttRender(); }catch(_){}
+  toast('已恢复上次用的设置（' + restoredN + ' 项），图片需要重新选择');
+}
+formSave();   /* 把当前状态（含恢复结果）落一次盘 */
+
+/* 本地调试：?img=某张PNG 打开时自动载入气泡图；?tab=title 直接进标题页；?timg=某张图 自动加进标题画布 */
+(async () => {
+  try{
+    const qs = new URLSearchParams(location.search);
+    if (qs.get('tab') === 'title') qsa('#tabBar button')[1].click();
+    const tp = qs.get('timg');
+    if (tp){
+      await new Promise(r => setTimeout(r, 60));
+      const resp = await fetch(tp);
+      if (!resp.ok) return;
+      const f = new File([await resp.blob()], 'title.png', { type: 'image/png' });
+      const dt = new DataTransfer();
+      dt.items.add(f);
+      const inp = $('ttFiles');
+      inp.files = dt.files;
+      inp.dispatchEvent(new Event('change'));
+    }
+    const p = qs.get('img');
+    if (!p) return;
+    const resp = await fetch(p);
+    if (!resp.ok) return;
+    const blob = await resp.blob();
+    loadDlgPng(new File([blob], 'sample.png', { type: 'image/png' }));
+  }catch (_){}
+})();
+</script>
+</body>
+</html>

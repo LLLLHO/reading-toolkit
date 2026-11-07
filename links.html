@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>阅读相关网站 - 阅读工具箱</title>
+<style>
+    :root { --bg: #f1f5f9; --panel: #fff; --text: #1e293b; --text2: #64748b; --accent: #4f6ef2; --border: #e2e8f0; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: "Microsoft YaHei", system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px 16px 64px; }
+    body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+        background:
+            radial-gradient(620px 440px at 6% -6%, rgba(147,197,253,.55), transparent 65%),
+            radial-gradient(720px 480px at 96% -2%, rgba(186,230,253,.48), transparent 65%),
+            radial-gradient(680px 540px at -8% 82%, rgba(96,165,250,.30), transparent 65%),
+            radial-gradient(760px 580px at 102% 96%, rgba(165,180,252,.32), transparent 65%),
+            radial-gradient(520px 380px at 55% 118%, rgba(125,211,252,.25), transparent 65%),
+            linear-gradient(180deg, #f1f5f9 0%, #eaf2fb 100%); }
+    .wrap { width: 100%; max-width: 860px; margin: 0 auto; }
+    .top { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+    .top h1 { font-size: 22px; }
+    .back { color: var(--text2); text-decoration: none; font-size: 14px; padding: 6px 12px; border-radius: 8px; background: var(--panel); border: 1px solid var(--border); white-space: nowrap; }
+    .back:hover { color: var(--accent); border-color: var(--accent); }
+    .subbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .sub { color: var(--text2); font-size: 13.5px; margin: 0; }
+    .linkbtn { border: 1px solid var(--border); background: var(--panel); color: var(--text2); font-family: inherit; font-size: 12.5px; line-height: 1; padding: 7px 11px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
+    .linkbtn:hover { color: var(--accent); border-color: var(--accent); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+    /* 卡片与删除按钮分开成两层：button 不能塞在 a 里面（无效结构，点起来也容易误触） */
+    .siteWrap { position: relative; display: flex; min-width: 0; }
+    .site { flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px 16px; text-decoration: none; color: var(--text); transition: transform .15s, box-shadow .15s; }
+    .site:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(30,41,59,.12); }
+    .ava { flex: none; width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: #fff; }
+    .info { min-width: 0; }
+    .info h3 { font-size: 16px; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .info p { font-size: 12.5px; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .del { position: absolute; top: -9px; right: -9px; width: 26px; height: 26px; border-radius: 50%; border: none; background: #ef4444; color: #fff; font-size: 14px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(239,68,68,.4);
+        opacity: .52; transition: opacity .15s, background .15s; }
+    .siteWrap:hover .del, .siteWrap:focus-within .del { opacity: 1; }
+    .del:hover { background: #dc2626; }
+    .del:focus-visible { opacity: 1; outline: 2px solid #ef4444; outline-offset: 2px; }
+    /* 触屏没有 hover：常显，否则手机上根本删不掉（JS 再兜一层 body.no-hover） */
+    @media (hover: none) { .del { opacity: .95; } }
+    body.no-hover .del { opacity: .95; }
+    .add { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 82px; border: 2px dashed var(--border); border-radius: 12px; background: transparent; color: var(--text2); font-size: 14px; cursor: pointer; font-family: inherit; transition: border-color .15s, color .15s; }
+    .add:hover { border-color: var(--accent); color: var(--accent); }
+    .add span.plus { font-size: 24px; line-height: 1; }
+    /* 添加弹窗 */
+    .mask { display: none; position: fixed; inset: 0; background: rgba(15,23,42,.45); z-index: 10; align-items: center; justify-content: center; padding: 16px; }
+    .mask.open { display: flex; }
+    .dialog { background: var(--panel); border-radius: 14px; padding: 24px; width: 100%; max-width: 380px; box-shadow: 0 20px 50px rgba(15,23,42,.25); }
+    .dialog h3 { font-size: 17px; margin-bottom: 16px; }
+    .dialog label { display: block; font-size: 13px; color: var(--text2); margin: 12px 0 6px; }
+    .dialog input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; outline: none; }
+    .dialog input:focus { border-color: var(--accent); }
+    .dialog .err { color: #ef4444; font-size: 12.5px; margin-top: 6px; min-height: 18px; }
+    .dialog .btns { display: flex; gap: 10px; margin-top: 16px; }
+    .dialog button { flex: 1; padding: 10px 0; border-radius: 8px; border: 1px solid var(--border); background: var(--panel); color: var(--text); font-size: 14px; cursor: pointer; font-family: inherit; }
+    .dialog button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+    .dialog button.primary:hover { opacity: .92; }
+    .empty { text-align: center; color: var(--text2); font-size: 14px; padding: 40px 0; grid-column: 1 / -1; }
+    @media (max-width: 560px) { .grid { grid-template-columns: 1fr; gap: 10px; } .siteWrap { min-width: 0; } .site { padding: 14px 14px; gap: 12px; } .ava { width: 40px; height: 40px; font-size: 17px; } .info h3 { font-size: 15px; } .info p { font-size: 11.5px; } .add { min-height: 64px; } }
+    @media (prefers-color-scheme: dark) {
+        :root { --bg: #0b1220; --panel: #151e30; --text: #e2e8f0; --text2: #94a3b8; --border: #2b3a55; --accent: #60a5fa; }
+        body::before {
+            background:
+                radial-gradient(620px 440px at 6% -6%, rgba(37,99,235,.32), transparent 65%),
+                radial-gradient(720px 480px at 96% -2%, rgba(14,116,144,.28), transparent 65%),
+                radial-gradient(680px 540px at -8% 82%, rgba(30,64,175,.30), transparent 65%),
+                radial-gradient(760px 580px at 102% 96%, rgba(79,70,229,.26), transparent 65%),
+                radial-gradient(520px 380px at 55% 118%, rgba(8,145,178,.22), transparent 65%),
+                linear-gradient(180deg, #0b1220 0%, #0e1729 100%);
+        }
+        .site:hover { box-shadow: 0 8px 24px rgba(0,0,0,.45); }
+        .back { background: var(--panel); }
+        .dialog input { background: #0b1220; color: var(--text); border-color: var(--border); }
+        .dialog button { background: var(--panel); color: var(--text); border-color: var(--border); }
+        .dialog button.primary { background: var(--accent); border-color: var(--accent); color: #0b1220; }
+    }
+</style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="top">
+            <a class="back" href="index.html">← 返回工具箱</a>
+            <h1>🔗 阅读相关网站</h1>
+        </div>
+        <div class="subbar">
+            <p class="sub">点击卡片在新标签页打开对应网站；卡片右上角的 × 可移除；点击「添加网站」自定义收录。</p>
+            <button class="linkbtn" type="button" id="btnRestore" hidden title="把自己移除掉的内置网站加回来，自己添加的不会动">恢复默认收录</button>
+        </div>
+        <div class="grid" id="grid"></div>
+    </div>
+    <div class="mask" id="mask">
+        <div class="dialog">
+            <h3>添加网站</h3>
+            <label for="fName">网站名称</label>
+            <input id="fName" type="text" placeholder="例如：归云居" maxlength="20">
+            <label for="fUrl">网址</label>
+            <input id="fUrl" type="text" placeholder="例如：https://example.com" maxlength="200">
+            <div class="err" id="fErr"></div>
+            <div class="btns">
+                <button type="button" id="fCancel">取消</button>
+                <button type="button" class="primary" id="fOk">添加</button>
+            </div>
+        </div>
+    </div>
+<script>
+(function () {
+    'use strict';
+    // 默认收录（id 稳定，供"移除后可恢复"判断；如需恢复出厂，清空浏览器 localStorage 即可）
+    var DEFAULTS = [
+        { id: 'guiyunju', name: '归云居', url: 'https://guiyunju.xin', desc: '标题美化 / 气泡创作 / 多角色朗读等创作工具', color: '#7c6cf0' },
+        { id: 'themeshare', name: 'ThemeShare', url: 'https://themeshare.cn', desc: '阅读 APP 主题分享社区', color: '#f0736c' }
+    ];
+    var LS_KEY = 'rtb_sites_v1';       // 用户添加的网站
+    var LS_REMOVED = 'rtb_sites_removed_v1'; // 被移除的默认网站 id
+
+    var AVA_COLORS = ['#4f6ef2','#7c6cf0','#f0736c','#0ea5a4','#e08c2e','#d4548c','#3b9e5f','#64748b'];
+
+    function load(key, fallback) {
+        try { var v = JSON.parse(localStorage.getItem(key)); return Array.isArray(v) ? v : fallback; }
+        catch (e) { return fallback; }
+    }
+    function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
+
+    function normalizeUrl(raw) {
+        raw = (raw || '').trim();
+        if (!raw) return '';
+        if (!/^https?:\/\//i.test(raw)) raw = 'https://' + raw;
+        try { var u = new URL(raw); return u.origin + (u.pathname === '/' ? '' : u.pathname) + u.search; }
+        catch (e) { return null; }
+    }
+    function hostOf(url) { try { return new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return url; } }
+    function colorFor(seed) {
+        var h = 0; for (var i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+        return AVA_COLORS[h % AVA_COLORS.length];
+    }
+
+    var grid = document.getElementById('grid');
+    var mask = document.getElementById('mask');
+    var fName = document.getElementById('fName');
+    var fUrl = document.getElementById('fUrl');
+    var fErr = document.getElementById('fErr');
+
+    function getSites() {
+        var removed = load(LS_REMOVED, []);
+        var customs = load(LS_KEY, []);
+        var list = DEFAULTS.filter(function (s) { return removed.indexOf(s.id) === -1; })
+            .map(function (s) { return { name: s.name, url: s.url, desc: s.desc, color: s.color }; });
+        return list.concat(customs);
+    }
+
+    function render() {
+        var sites = getSites();
+        grid.innerHTML = '';
+        sites.forEach(function (s) {
+            var wrap = document.createElement('div');
+            wrap.className = 'siteWrap';
+            var a = document.createElement('a');
+            a.className = 'site';
+            a.href = s.url;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            var ava = document.createElement('div');
+            ava.className = 'ava';
+            ava.style.background = s.color || colorFor(hostOf(s.url));
+            ava.textContent = (s.name || '?').trim().charAt(0).toUpperCase();
+            var info = document.createElement('div');
+            info.className = 'info';
+            var h = document.createElement('h3'); h.textContent = s.name;
+            var p = document.createElement('p'); p.textContent = s.desc || hostOf(s.url);
+            info.appendChild(h); info.appendChild(p);
+            a.appendChild(ava); a.appendChild(info);
+            var del = document.createElement('button');
+            del.className = 'del'; del.type = 'button';
+            del.title = '移除「' + (s.name || '') + '」';
+            del.setAttribute('aria-label', '移除 ' + (s.name || ''));
+            del.textContent = '×';
+            del.addEventListener('click', function (e) {
+                e.preventDefault(); e.stopPropagation();
+                removeSite(s);
+            });
+            wrap.appendChild(a); wrap.appendChild(del);
+            grid.appendChild(wrap);
+        });
+        if (!sites.length) {
+            var empty = document.createElement('div');
+            empty.className = 'empty'; empty.textContent = '还没有收录任何网站，点击下方「添加网站」开始。';
+            grid.appendChild(empty);
+        }
+        var add = document.createElement('button');
+        add.className = 'add'; add.type = 'button';
+        add.innerHTML = '<span class="plus">＋</span>添加网站';
+        add.addEventListener('click', openDialog);
+        grid.appendChild(add);
+        updateRestoreBtn();
+    }
+
+    function updateRestoreBtn() {
+        var btn = document.getElementById('btnRestore');
+        if (!btn) return;
+        var removed = load(LS_REMOVED, []);
+        btn.hidden = removed.length === 0;
+        btn.textContent = removed.length ? '恢复默认收录（' + removed.length + '）' : '恢复默认收录';
+    }
+
+    function removeSite(s) {
+        var isDefault = DEFAULTS.some(function (d) { return d.url === s.url; });
+        if (isDefault) {
+            var removed = load(LS_REMOVED, []);
+            var d = DEFAULTS.filter(function (x) { return x.url === s.url; })[0];
+            if (d && removed.indexOf(d.id) === -1) { removed.push(d.id); save(LS_REMOVED, removed); }
+        } else {
+            save(LS_KEY, load(LS_KEY, []).filter(function (x) { return x.url !== s.url; }));
+        }
+        render();
+    }
+
+    function openDialog() {
+        fName.value = ''; fUrl.value = ''; fErr.textContent = '';
+        mask.classList.add('open');
+        setTimeout(function () { fName.focus(); }, 50);
+    }
+    function closeDialog() { mask.classList.remove('open'); }
+
+    function submitDialog() {
+        var name = fName.value.trim();
+        var url = normalizeUrl(fUrl.value);
+        if (!name) { fErr.textContent = '请填写网站名称'; fName.focus(); return; }
+        if (!url) { fErr.textContent = '网址格式不正确，请检查后重试'; fUrl.focus(); return; }
+        var customs = load(LS_KEY, []);
+        var all = getSites();
+        for (var i = 0; i < all.length; i++) {
+            if (all[i].url === url) { fErr.textContent = '这个网站已经在列表里了'; return; }
+        }
+        // 若添加的是曾移除的默认网站，恢复它而不是重复添加
+        var d = DEFAULTS.filter(function (x) { return x.url === url; })[0];
+        if (d) {
+            var removed = load(LS_REMOVED, []);
+            save(LS_REMOVED, removed.filter(function (id) { return id !== d.id; }));
+        } else {
+            customs.push({ name: name, url: url, desc: '', color: colorFor(hostOf(url)) });
+            save(LS_KEY, customs);
+        }
+        closeDialog();
+        render();
+    }
+
+    document.getElementById('fCancel').addEventListener('click', closeDialog);
+    document.getElementById('fOk').addEventListener('click', submitDialog);
+    document.getElementById('btnRestore').addEventListener('click', function () {
+        if (!confirm('把自己移除掉的内置网站都加回来？自己添加的网站不受影响。')) return;
+        save(LS_REMOVED, []);
+        render();
+    });
+    fUrl.addEventListener('keydown', function (e) { if (e.key === 'Enter') submitDialog(); });
+    fName.addEventListener('keydown', function (e) { if (e.key === 'Enter') fUrl.focus(); });
+    mask.addEventListener('click', function (e) { if (e.target === mask) closeDialog(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && mask.classList.contains('open')) closeDialog(); });
+
+    /* 触屏设备（无 hover）：删除按钮常显，部分浏览器对 hover 媒体查询支持不一致，用 JS 再兜一层 */
+    try {
+        if (window.matchMedia && window.matchMedia('(hover: none)').matches) document.body.classList.add('no-hover');
+    } catch (e) {}
+
+    render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>阅读工具箱</title>
+<style>
+    :root {
+        --bg: #f1f5f9;
+        --panel: #ffffff;
+        --text: #1e293b;
+        --text2: #64748b;
+        --text3: #94a3b8;
+        --border: #e2e8f0;
+        --accent: #4f6ef2;
+        --tag-bg: #f1f5f9;
+        --shadow: 0 1px 2px rgba(15,23,42,.05), 0 1px 3px rgba(15,23,42,.04);
+        --shadow-h: 0 12px 26px -14px rgba(15,23,42,.35);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        font-family: "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+        background: var(--bg); color: var(--text);
+        min-height: 100vh; display: flex; align-items: flex-start; justify-content: center;
+        padding: 7vh 24px 8vh;
+        -webkit-font-smoothing: antialiased;
+    }
+    body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+        background:
+            radial-gradient(620px 440px at 6% -6%, rgba(147,197,253,.42), transparent 65%),
+            radial-gradient(720px 480px at 96% -2%, rgba(186,230,253,.38), transparent 65%),
+            radial-gradient(680px 540px at -8% 82%, rgba(96,165,250,.20), transparent 65%),
+            radial-gradient(760px 580px at 102% 96%, rgba(165,180,252,.20), transparent 65%),
+            linear-gradient(180deg, #f4f7fb 0%, #eef3fa 100%); }
+
+    .wrap { width: 100%; max-width: 880px; }
+
+    /* ---------- 标题区 ---------- */
+    .hd { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .hd-t { display: flex; align-items: center; gap: 10px; }
+    .hdic { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center;
+        background: rgba(79,110,242,.10); color: #4f6ef2; flex: none; }
+    .hdic svg { width: 17px; height: 17px; }
+    h1 { font-size: 21px; font-weight: 600; letter-spacing: .3px; }
+    .sub { color: var(--text2); font-size: 13px; }
+    .rule { width: 60px; height: 2px; border: 0; border-radius: 2px; margin: 18px auto 26px;
+        background: linear-gradient(90deg, rgba(79,110,242,.45), rgba(79,110,242,0)); }
+
+    /* ---------- 卡片网格 ---------- */
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+    a.card {
+        --c: 79,110,242;
+        --tint: .085;
+        display: flex; flex-direction: column;
+        position: relative; text-decoration: none; color: var(--text);
+        background:
+            radial-gradient(125% 125% at 0% 0%, rgba(var(--c), var(--tint)), rgba(var(--c), 0) 58%),
+            linear-gradient(160deg, #ffffff 0%, #fcfdfe 100%);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 20px 20px 18px;
+        box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,.85);
+        transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
+    }
+    a.card:hover { transform: translateY(-2px); border-color: rgba(var(--c), .32); box-shadow: var(--shadow-h);
+        background:
+            radial-gradient(125% 125% at 0% 0%, rgba(var(--c), .13), rgba(var(--c), 0) 58%),
+            linear-gradient(160deg, #ffffff 0%, #fcfdfe 100%); }
+    a.card:focus-visible { outline: 2px solid rgb(var(--c)); outline-offset: 3px; }
+
+    /* 图标块 */
+    .ic { width: 36px; height: 36px; border-radius: 10px; flex: none;
+        display: grid; place-items: center;
+        background: rgba(var(--c), .16);
+        box-shadow: inset 0 0 0 1px rgba(var(--c), .10);
+        color: rgb(var(--c));
+        transition: background .18s ease, transform .18s ease, box-shadow .18s ease; }
+    .ic svg { width: 19px; height: 19px; }
+    a.card:hover .ic { background: rgba(var(--c), .24); box-shadow: inset 0 0 0 1px rgba(var(--c), .18); transform: translateY(-1px); }
+
+    a.card h2 { font-size: 16px; font-weight: 600; margin: 13px 0 6px; letter-spacing: .2px; }
+    a.card p { font-size: 13px; line-height: 1.65; color: var(--text2); }
+
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .tags span { font-size: 11.5px; line-height: 1; padding: 5px 8px; border-radius: 6px;
+        background: rgba(var(--c), .07); color: var(--text2); white-space: nowrap; }
+
+    .go { margin-top: auto; padding-top: 15px; display: flex; align-items: center; gap: 5px;
+        font-size: 13px; font-weight: 600; color: rgb(var(--ct, var(--c))); }
+    .go svg { width: 14px; height: 14px; transition: transform .18s ease; }
+    a.card:hover .go svg { transform: translateX(3px); }
+
+    /* 第五张：通栏横排，补齐网格 */
+    a.card.wide { grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 16px; padding: 18px 20px; }
+    a.card.wide .ic { width: 40px; height: 40px; border-radius: 11px; }
+    a.card.wide .ic svg { width: 21px; height: 21px; }
+    a.card.wide .wb { flex: 1; min-width: 0; }
+    a.card.wide h2 { margin: 0 0 4px; }
+    a.card.wide .tags { margin-top: 8px; }
+    a.card.wide .go { margin: 0; padding: 0 4px 0 0; flex: none; }
+    @media (max-width: 720px) {
+        a.card.wide { flex-direction: column; align-items: stretch; padding: 20px 20px 18px; }
+        a.card.wide .ic { width: 36px; height: 36px; border-radius: 10px; }
+        a.card.wide .ic svg { width: 19px; height: 19px; }
+        a.card.wide h2 { margin: 13px 0 6px; }
+        a.card.wide .tags { margin-top: 12px; }
+        a.card.wide .go { margin-top: auto; padding: 15px 0 0; }
+    }
+
+    /* 每卡主题色：--c 图标取色，--ct 文字取色（更深，保证对比度） */
+    a.card.c-blue   { --c: 59,130,246;  --ct: 37,99,235; }
+    a.card.c-violet { --c: 139,92,246;  --ct: 109,40,217; }
+    a.card.c-sky    { --c: 14,165,233;  --ct: 3,105,161; }
+    a.card.c-teal   { --c: 13,148,136;  --ct: 15,118,110; }
+    a.card.c-slate  { --c: 100,116,139; --ct: 71,85,105; }
+
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --bg: #0b1220; --panel: #151e30; --text: #e2e8f0; --text2: #94a3b8; --text3: #7c8aa0;
+            --border: rgba(255,255,255,.07); --accent: #60a5fa; --tag-bg: rgba(255,255,255,.05);
+            --shadow: 0 1px 2px rgba(0,0,0,.3);
+            --shadow-h: 0 14px 30px -16px rgba(0,0,0,.8);
+        }
+        body::before {
+            background:
+                radial-gradient(620px 440px at 6% -6%, rgba(37,99,235,.26), transparent 65%),
+                radial-gradient(720px 480px at 96% -2%, rgba(14,116,144,.22), transparent 65%),
+                radial-gradient(680px 540px at -8% 82%, rgba(30,64,175,.24), transparent 65%),
+                radial-gradient(760px 580px at 102% 96%, rgba(79,70,229,.20), transparent 65%),
+                linear-gradient(180deg, #0b1220 0%, #0e1729 100%);
+        }
+        .hdic { background: rgba(96,165,250,.14); color: #93b4f7; }
+        a.card {
+            background:
+                radial-gradient(115% 130% at 100% 100%, rgba(var(--c), .12), rgba(var(--c), 0) 62%),
+                linear-gradient(180deg, #18222f 0%, #131b28 100%);
+            box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,.04);
+        }
+        a.card:hover {
+            background:
+                radial-gradient(115% 130% at 100% 100%, rgba(var(--c), .20), rgba(var(--c), 0) 62%),
+                linear-gradient(180deg, #1a2432 0%, #141d2a 100%);
+        }
+        .ic { background: rgba(var(--c), .20); box-shadow: inset 0 0 0 1px rgba(var(--c), .16); }
+        a.card:hover .ic { background: rgba(var(--c), .30); box-shadow: inset 0 0 0 1px rgba(var(--c), .26); }
+        a.card.c-blue   { --c: 96,165,250;  --ct: 165,196,252; }
+        a.card.c-violet { --c: 167,139,250; --ct: 196,181,253; }
+        a.card.c-sky    { --c: 56,189,248;  --ct: 125,211,252; }
+        a.card.c-teal   { --c: 45,212,191;  --ct: 153,246,228; }
+        a.card.c-slate  { --c: 148,163,184; --ct: 203,213,225; }
+    }
+</style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="hd">
+            <div class="hd-t">
+                <span class="hdic">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                    </svg>
+                </span>
+                <h1>阅读工具箱</h1>
+            </div>
+            <p class="sub">5 个工具 · 全部本地运行，文件不上传</p>
+        </div>
+        <hr class="rule">
+
+        <div class="grid">
+            <a class="card c-blue" href="font-tool.html?v=20261031">
+                <span class="ic">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="4 7 4 4 20 4 20 7"/>
+                        <line x1="9" y1="20" x2="15" y2="20"/>
+                        <line x1="12" y1="4" x2="12" y2="20"/>
+                    </svg>
+                </span>
+                <h2>字体修改工具</h2>
+                <p>一键同步行距与字号，跨字体借字替换，改动随时撤销。</p>
+                <div class="tags"><span>行距 / 字号</span><span>跨字体借字</span><span>撤销</span></div>
+                <span class="go">进入工具
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+                </span>
+            </a>
+
+            <a class="card c-violet" href="highlight.html?v=20261031b">
+                <span class="ic">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m9 11-6 6v3h9l3-3"/>
+                        <path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4z"/>
+                    </svg>
+                </span>
+                <h2>高亮制作工具</h2>
+                <p>对话气泡与标题装饰，引号、九宫格或整图拉伸、贴图挂在文字一侧。</p>
+                <div class="tags"><span>对话气泡</span><span>标题装饰</span><span>.red 规则包</span></div>
+                <span class="go">进入工具
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+                </span>
+            </a>
+
+            <a class="card c-sky" href="template-editor.html?v=20261106c">
+                <span class="ic">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2.5"/>
+                        <path d="M3 9h18"/><path d="M9 21V9"/>
+                    </svg>
+                </span>
+                <h2>页面模板编辑器</h2>
+                <p>直接改页面模板的四格代码，右侧实时预览，导出即用。</p>
+                <div class="tags"><span>四格代码</span><span>实时预览</span><span>导入 / 导出</span></div>
+                <span class="go">进入工具
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+                </span>
+            </a>
+
+            <a class="card c-teal" href="template-maker.html?v=20261107c">
+                <span class="ic">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14.5 4.5 19.5 9.5 7 22H2v-5z"/>
+                        <path d="M13 6 18 11"/>
+                        <path d="M19 2v3"/><path d="M21.5 3.5h-3"/>
+                    </svg>
+                </span>
+                <h2>页面模板简易制作器</h2>
+                <p>以简约模板为底稿「制作」模板，一句话就能让 AI 改一版。</p>
+                <div class="tags"><span>AI 改版</span><span>三栏页眉页脚</span><span>拖拽定位</span></div>
+                <span class="go">进入工具
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+                </span>
+            </a>
+
+            <a class="card c-slate wide" href="links.html?v=20261031">
+                <span class="ic">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                    </svg>
+                </span>
+                <div class="wb">
+                    <h2>阅读相关网站</h2>
+                    <p>收藏的阅读相关在线网站导航，可自行添加与移除。</p>
+                    <div class="tags"><span>在线导航</span><span>自定义收藏</span></div>
+                </div>
+                <span class="go">进入板块
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+                </span>
+            </a>
+        </div>
+    </div>
+</body>
+</html>
