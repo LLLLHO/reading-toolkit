@@ -50,4 +50,16 @@ bash "D:/ChromeDownloads/阅读ARC相关/同步到GitHub.sh"
 
 ## 部署
 
-`.github/workflows/deploy-pages.yml`：push 到 `main` 触发，`actions/upload-pages-artifact` 传整仓，`actions/deploy-pages` 发布。仓库 Settings → Pages 的 Source 需设为 **GitHub Actions**。
+`.github/workflows/deploy-pages.yml`：push 到 `main` 触发，`actions/upload-pages-artifact` 传整仓，`actions/deploy-pages` 发布。Pages 的 Source 已设为 **GitHub Actions**（`build_type=workflow`）。
+
+## 本机环境备忘
+
+这台机器上 git 走 GitHub 需要两处本地配置，已写进本仓库 `.git/config`，换机器要重设：
+
+```bash
+git config http.proxy http://127.0.0.1:7897      # Clash 代理，直连不通
+git config http.sslBackend openssl                # schannel 吊销检查连不上 CRL
+git config http.sslCAInfo "D:/WorkBuddy/resources/vendor/PortableGit/mingw64/etc/ssl/certs/ca-bundle.crt"
+git config http.version HTTP/1.1                  # 否则 HTTP2 framing 报错
+```
+
