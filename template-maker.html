@@ -962,7 +962,9 @@
           <button class="btn pri" id="btn-exp-zip">导出 ZIP（推荐）</button>
           <button class="btn" id="btn-exp-json">导出 JSON</button>
         </div>
-        <div class="hint" style="margin-top:8px">两种都能在 App「页面模板 → 导入」里用。ZIP 里有两个文件：<code>readerTemplate.json</code>（App 认这个）+ <code>arcmaker.json</code>（只存本工具的设置，App 不会读，也不影响 CSS）。<br><b>CSS 里不再写设置注释了</b>，导出的 CSS 可以直接在 App 里改，不会卡。单份 JSON 没有第二个文件可放设置，才在 CSS 末尾写一段每行 76 字符的注释。<br>若在预览面板里点下载没反应（blob 被拦），请用系统浏览器打开本工具再导出。</div>
+        <div class="sw" style="margin-top:10px"><input type="checkbox" id="opt-fold"><span style="color:var(--txt)">把图片 base64 折成短行（推荐）</span></div>
+        <div class="hint" id="fold-tip">开：导出的 CSS 里再长的图片也按每行 76 字符折开，在 App 里改 CSS 不卡。<br>关：图片那行会很长（几万到几十万字符），App 的 CSS 编辑器可能卡住或改不动。</div>
+        <div class="hint" style="margin-top:8px">ZIP 里<b>只有一个</b> <code>readerTemplate.json</code>（App 遇到多出来的文件会报「模板内有未知文件」而拒绝导入）。工具的设置藏在 CSS 末尾的注释里，每行 76 字符，不影响渲染。<br>若在预览面板里点下载没反应（blob 被拦），请用系统浏览器打开本工具再导出。</div>
       </div>
       <div class="card">
         <h2>导入</h2>
@@ -2482,11 +2484,11 @@ function buildCSS(opt){
       });
     }
   }
-  /* 设置默认不再写进 CSS：ZIP 导出时单独存 arcmaker.json（App 不读它，也看不见）。
-     只有「导出单份 JSON」没有第二个文件可放，才退化成折行注释（每行 76 字符，
-     避免出现几十万字符的超长行，把 App 的 CSS 编辑器卡死）。
-     opt.foldCfg = true 时才写。 */
-  if (opt && opt.foldCfg){
+  /* 设置写在 CSS 末尾的注释里（App 的模板导入只认 readerTemplate.json 一个文件，
+     多放一个 arcmaker.json 会报「模板内有未知文件」）。
+     但 base64 必须折行：每行 76 字符，否则一行几十万字符会把 App 的 CSS 编辑器卡死。
+     opt.cfg = true 时才写（只有导出走这条；工具里的预览 / 代码面板保持干净）。 */
+  if (opt && opt.cfg){
     L.push('');
     L.push('');
     L.push(cfgComment());
@@ -2501,6 +2503,30 @@ function cfgComment(){
   for (let i = 0; i < b.length; i += 76) out.push('   ' + b.slice(i, i + 76));
   out.push('   :: */');
   return out.join('\n');
+}
+
+/* 把 url("data:...") 里的 base64 折成每行 76 字符。
+   CSS 里「反斜杠 + 换行」是续行符（字符串内容不变），Chromium/WebView 都认，
+   这样导出的 CSS 没有几十万字符的超长行，在 App 里才改得动。
+   注意：只能用在 CSS 里；HTML 属性里不能折。 */
+function foldCSS(css){
+  return String(css || '').replace(/url\((['"])(data:[^'"\n]{600,})\1\)/g, (m, q, data) => {
+    const body = data.match(/[\s\S]{1,76}/g) || [data];
+    return 'url(' + q + body.join('\\\n') + q + ')';
+  });
+}
+/* 反向：把续行符去掉，还原成一整串（导入时用，扫描图片的正则只认连续串） */
+function unfoldCSS(css){
+  return String(css || '').replace(/\\\r?\n/g, '');
+}
+/* 「图片折短行」开关：默认开。只在 App 里背景图显示不出来时才需要关掉 */
+const FOLD_KEY = 'arcMaker.fold.v1';
+function foldOn(){
+  try { const v = localStorage.getItem(FOLD_KEY); return v === null ? true : v === '1'; } catch (e){ return true; }
+}
+function setFold(on){
+  try { localStorage.setItem(FOLD_KEY, on ? '1' : '0'); } catch (e){}
+  const el = $('#opt-fold'); if (el) el.checked = !!on;
 }
 
 /* ===================== JS 生成 ===================== */
@@ -3312,6 +3338,7 @@ function genId(){
 }
 function buildTemplateJSON(opt){
   const s = currentSlots(opt);
+  const css = (opt && opt.fold) ? foldCSS(s.css) : s.css;
   return {
     schemaVersion: 1,
     id: (cfg.id || '').trim() || genId(),
@@ -3321,17 +3348,12 @@ function buildTemplateJSON(opt){
     firstPageHtml: s.firstPageHtml,
     otherPageHtml: s.otherPageHtml,
     scrollHtml: '',
-    css: s.css,
+    css: css,
     javascript: s.javascript
   };
 }
-/* ZIP 里伴随的设置文件；App 只认 readerTemplate.json，不会读它 */
-const SIDECAR = 'arcmaker.json';
-function sidecarJSON(){
-  const o = Object.assign({}, cfg);
-  o.id = (cfg.id || '').trim() || genId();
-  return JSON.stringify(o);
-}
+/* App 的模板导入只接受压缩包内**只有一个** readerTemplate.json，
+   多放任何文件都会报「模板内有未知文件」而拒绝导入 —— 所以设置只能塞回 CSS 注释里。 */
 function download(name, blob){
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -3466,7 +3488,7 @@ function setCodeModeUI(){
     ? '<div class="modeBanner">当前是<b>结构化模式</b>：这四格由左侧的「背景 / 页眉 / 页脚 / 正文 / 首字 / 标题 / 装饰」自动生成，改设置即改代码。想直接改源码 → 导出后用「导入模板」再打开，或用下面 io 页的扫描工具。</div>'
     : '<div class="modeBanner">当前是<b>通用模式</b>（导入的模板）：四格可直接编辑，改完立即更新预览；也可以用 io 页的扫描工具批量换图 / 换字 / 调数值变量。</div>';
   $('#code-note').innerHTML = ro
-    ? '结构化模式下四格是镜像，改动请回对应标签页。导出 ZIP 时设置存在 <code>arcmaker.json</code> 里（不进 CSS），再导入本工具可继续可视化编辑。'
+    ? '结构化模式下四格是镜像，改动请回对应标签页。导出时设置会写进 CSS 末尾的注释（每行 76 字符），再导入本工具可继续可视化编辑。'
     : '编辑的是导入模板的原始四格，导出时按当前内容写回。<b>注意</b>：这里改的是源码，可视化面板对它无效。';
   /* 通用模式下结构化面板整片锁灰；「外部图片」「模拟预览」两张卡是给导入模板用的，标了 .keep 不锁 */
   $$('.panel[data-panel="bg"], .panel[data-panel="top"], .panel[data-panel="foot"], .panel[data-panel="flow"], .panel[data-panel="cap"], .panel[data-panel="title"], .panel[data-panel="deco"]').forEach(p => {
@@ -3512,7 +3534,8 @@ function applyTemplate(obj, sidecar){
   raw = {
     firstPageHtml: obj.firstPageHtml || '',
     otherPageHtml: obj.otherPageHtml || obj.firstPageHtml || '',
-    css: obj.css || '',
+    /* 导出时图片 base64 可能被折成短行（CSS 续行符），读进来先还原成一整串 */
+    css: unfoldCSS(obj.css || ''),
     javascript: obj.javascript || ''
   };
   const c = (sidecar && sidecar.bars) ? sidecar : extractCfg(obj.css);
@@ -4325,18 +4348,21 @@ function bindAll(){
   });
 
   /* 导出 / 导入 */
+  setFold(foldOn());
+  $('#opt-fold').addEventListener('change', e => {
+    setFold(e.target.checked);
+    toast(e.target.checked ? '导出时会把长图片折成短行（App 里更好改）' : '导出保持原样，图片那行会很长');
+  });
   $('#btn-export').addEventListener('click', () => { $('#btn-exp-zip').click(); });
   $('#btn-exp-json').addEventListener('click', () => {
-    /* 单份 JSON 没有第二个文件可放设置，退化成折行注释（每行 76 字符，不会卡 App） */
-    const obj = buildTemplateJSON({ foldCfg: true });
+    const obj = buildTemplateJSON({ cfg: true, fold: foldOn() });
     download(safeName() + '.json', new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' }));
   });
   $('#btn-exp-zip').addEventListener('click', () => {
-    const obj = buildTemplateJSON();               /* CSS 里不再有设置注释 */
-    const te = new TextEncoder();
-    const files = [{ name: 'readerTemplate.json', bytes: te.encode(JSON.stringify(obj, null, 2)) }];
-    if (mode === 'maker') files.push({ name: SIDECAR, bytes: te.encode(sidecarJSON()) });
-    const zip = makeZip(files);
+    const obj = buildTemplateJSON({ cfg: true, fold: foldOn() });
+    const bytes = new TextEncoder().encode(JSON.stringify(obj, null, 2));
+    /* 只放这一个文件：App 遇到多出来的文件会直接报「模板内有未知文件」 */
+    const zip = makeZip([{ name: 'readerTemplate.json', bytes }]);
     download(safeName() + '.zip', zip);
   });
   $('#btn-import').addEventListener('click', () => $('#file-in').click());
