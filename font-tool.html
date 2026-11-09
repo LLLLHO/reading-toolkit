@@ -1828,13 +1828,83 @@ return ret;
     function doExport(tgt) {
         if (!tgt || !tgt.dirty) return;
         const outName = tgt.name.replace(/\.[^.]+$/, '') + '-已修改.' + (tgt.type === 'otf' ? 'otf' : 'ttf');
+/* ---------- 保存兜底：安卓 WebView 浏览器（Via 等）读不到 blob: 链接 ----------
+   blob: 只活在当前 WebView 进程里，Via 把下载交给系统下载器后就读不到了，
+   表现就是「弹了保存文件、点完却什么都没存」。
+   这里保留原来的 a[download] 直点，再在底部飘一条兜底：data: 直链（字节写在链接里，
+   系统下载器读得到）＋系统分享（走分享面板存进「文件」，完全绕开浏览器下载器）。 */
+function arcSaveFallback(blob, name){
+  let bar = document.getElementById('arcSaveBar');
+  if (bar) bar.remove();
+  bar = document.createElement('div');
+  bar.id = 'arcSaveBar';
+  bar.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:12px;z-index:99999;'
+    + 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;max-width:calc(100% - 20px);'
+    + 'background:#242830;color:#fff;border-radius:10px;padding:9px 12px;font-size:12.5px;'
+    + 'box-shadow:0 8px 24px rgba(0,0,0,.35);line-height:1.5';
+  const msg = document.createElement('span');
+  msg.textContent = '没存下来？';
+  bar.appendChild(msg);
+
+  const btn = (label, css) => {
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.style.cssText = 'border:none;border-radius:7px;padding:7px 12px;font-size:12.5px;cursor:pointer;' + (css || '');
+    return b;
+  };
+
+  /* data: 直链——先把 blob 读成 base64 备好，点的时候才不用 await（保住手势） */
+  const dataBtn = btn('换个方式保存', 'background:#3b82f6;color:#fff;opacity:.55');
+  dataBtn.disabled = true;
+  let dataUrl = '';
+  try{
+    const fr = new FileReader();
+    fr.onload = () => { dataUrl = String(fr.result || ''); dataBtn.disabled = false; dataBtn.style.opacity = '1'; };
+    fr.readAsDataURL(blob);
+  }catch(_){}
+  dataBtn.addEventListener('click', () => {
+    if (!dataUrl) return;
+    const a = document.createElement('a');
+    a.href = dataUrl; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    msg.textContent = '已改用直链保存，看一眼通知栏';
+  });
+
+  bar.appendChild(dataBtn);
+
+  try{
+    if (window.File && navigator.canShare && navigator.canShare({ files: [new File([blob], name)] })){
+      const sb = btn('系统分享', 'background:#3f4654;color:#fff');
+      sb.addEventListener('click', () => {
+        navigator.share({ files: [new File([blob], name)], title: name }).catch(() => {});
+      });
+      bar.appendChild(sb);
+    }
+  }catch(_){}
+
+  const x = btn('✕', 'background:transparent;color:#9aa4b2;padding:7px 6px');
+  x.addEventListener('click', () => bar.remove());
+  bar.appendChild(x);
+  document.body.appendChild(bar);
+  setTimeout(() => { if (bar.isConnected) bar.remove(); }, 60000);
+}
+function arcSaveBlob(blob, name){
+  try{
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a);
+    try{ a.click(); }catch(_){}
+    setTimeout(() => {
+      try{ a.remove(); }catch(_){}
+      try{ URL.revokeObjectURL(url); }catch(_){}
+    }, 5000);
+  }catch(_){}
+  arcSaveFallback(blob, name);
+}
         const blob = new Blob([tgt.buffer], { type: 'font/ttf' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = outName;
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(a.href), 3000);
-        log('⬇️ 已导出：' + outName, 'ok');
+        arcSaveBlob(blob, outName);
+        log('⬇️ 已导出：' + outName + '（Via 这类浏览器没反应时，点页面底部的「换个方式保存」）', 'ok');
     }
     $('btnExportSync').addEventListener('click', () => doExport(state.syncTgt));
     $('btnExportSwap').addEventListener('click', () => doExport(state.swapTgt));

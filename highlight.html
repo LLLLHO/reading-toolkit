@@ -246,10 +246,11 @@
           带圆角、花纹、小符号的气泡图必须切，否则整张图被压扁时角落的符号就糊了。全填 0＝不用九宫格，整张图硬拉伸。
         </div>
         <div class="row" style="margin-top:8px">
-          <label style="display:flex;gap:6px;align-items:center;font-size:12.5px;color:var(--sub)">
-            <input type="checkbox" id="nsBasis" checked> 顺带写入 <code>nine-slice-basis: bubble</code>（气泡跟着字变大变小）
-          </label>
+          <button class="btn sm" id="btnPadAlign" title="真机上四角图案按原图像素画，内边距不够就会被图案压住 → 把内边距放大到四角那么大">内边距对齐四角</button>
+          <button class="btn sm" id="btnFitCaps" title="反过来：把气泡图按比例缩小，让四角图案正好等于现在的内边距——真机效果就和预览一模一样">四角对齐内边距</button>
+          <button class="btn sm" id="btnImgScale" title="手动指定气泡图输出尺寸（%）">输出缩放…</button>
         </div>
+        <div class="hint" id="capPxOut" style="color:var(--sub)"></div>
       </div>
 
       <div id="tagPanel" hidden>
@@ -328,9 +329,7 @@
         <label style="display:flex;gap:6px;align-items:center;font-size:13px"><input type="checkbox" id="dlgEnabled" checked> 导入后立即启用</label>
       </div>
       <details>
-        <summary>高级：nine-slice 边框粗细 / 基础颜色值</summary>
-        <label class="fld">nine-slice-scale（9-Slice 边框画多粗，留空则不写）</label>
-        <input type="text" id="nsScale" placeholder="留空；不确定就先不填">
+        <summary>高级：基础颜色值</summary>
         <label class="fld">styleColorType（基础颜色标识，默认 purple）</label>
         <input type="text" id="dlgColorType" value="purple">
       </details>
@@ -971,7 +970,8 @@ function showSavePanel(opt){
       ? 'background:var(--accent);color:#fff;border-radius:8px;padding:9px 16px;text-decoration:none;font-size:13px;border:none;cursor:pointer;'
       : '';
 
-    // ① 系统分享：安卓上最靠谱的一条，能直接存进「文件」或传给别的 App
+    // ① 系统分享：安卓上最稳的一条（走系统分享面板 →「保存到文件」），
+    //    完全不经过浏览器的下载器，blob 读不到的问题也就绕开了
     let shareBtn = null;
     if (opt.bytes){
       try{
@@ -986,17 +986,34 @@ function showSavePanel(opt){
       }catch(_){}
     }
 
-    // ② 真链接保存。WebView 上不设 target：带 _blank 时它会把 blob 当新标签打开（空白页），
-    //    不设 target 才会走 shouldOverrideUrlLoading 的下载分支——这也是「以前能导出」的那条路。
+    // ② 直接保存：blob 链接。Chrome / 夸克这类自带下载器的能吃下；Via 近几个版本可能读不到
     const a = document.createElement('a');
     a.href = opt.url;
     a.download = opt.filename;
     if (!opt.frameMode){ a.target = '_blank'; a.rel = 'noopener'; }
-    a.textContent = opt.frameMode ? '点这里存文件' : '保存文件';
+    a.textContent = '保存文件';
     a.style.cssText = 'background:var(--accent);color:#fff;border:1px solid var(--line);border-radius:8px;'
       + 'padding:9px 16px;text-decoration:none;font-size:13px;';
 
-    // ③ 复制 Base64：最后的兜底
+    // ③ data: 链接保存：字节直接写在链接里，不依赖 WebView 进程 → 系统下载器也读得到
+    let dataBtn = null;
+    if (opt.bytes){
+      dataBtn = document.createElement('a');
+      dataBtn.href = '#';
+      dataBtn.textContent = '换个方式保存';
+      dataBtn.className = 'btn sm';
+      dataBtn.style.cssText = btnStyle(false);
+      dataBtn.addEventListener('click', e => {
+        e.preventDefault();
+        try{
+          const u = dataUrlOf(opt.bytes, 'application/octet-stream');
+          clickDownload(u, opt.filename, false);
+          toast('已改用直链保存，看通知栏/下载列表', true);
+        }catch(err){ toast('这条也失败了：' + (err.message || err), false); }
+      });
+    }
+
+    // ④ 复制 Base64：最后的兜底
     let cpBtn = null;
     if (opt.bytes){
       cpBtn = document.createElement('button');
@@ -1011,18 +1028,14 @@ function showSavePanel(opt){
 
     const dg = makeDiagBtn(bar, opt);
 
-    const order = [a, shareBtn, cpBtn, dg];
+    const order = [shareBtn, a, dataBtn, cpBtn, dg];
     order.forEach(el => { if (el) row.appendChild(el); });
 
     const tip = document.createElement('div');
     tip.style.cssText = 'color:var(--sub);font-size:11.5px;line-height:1.6;';
-    if (opt.frameMode){
-      tip.innerHTML = '如果没存下来：点「点这里存文件」再试一次（若跳出一个空白页，返回本页即可，设置不会丢）；'
-        + (shareBtn ? '或者用「系统分享」存进「文件」；' : '')
-        + '实在不行点「复制 Base64」到电脑上还原。';
-    } else {
-      tip.innerHTML = '没弹出下载？点上面「保存文件」；或用「复制 Base64」在另一台设备上还原。';
-    }
+    tip.innerHTML = (shareBtn ? '<b>系统分享</b>最稳（存进「文件」或发给自己）；' : '')
+      + 'Via 这类 WebView 浏览器有时读不到下载链接，点<b>换个方式保存</b>再试一次；'
+      + '还不行就用<b>复制 Base64</b>，到电脑上粘进本工具「从 Base64 还原」。';
     bar.append(row, tip);
   } else {
     const row = document.createElement('div');
@@ -1056,38 +1069,32 @@ async function copyText(t){
   }catch(_){ return false; }
 }
 
-/* 只负责把已有链接点下去（必须同步调用，手势才有效） */
-function clickDownload(url, filename){
+/* 只负责把已有链接点下去（必须同步调用，手势才有效）。
+   newTab：设 target=_blank。安卓 WebView 上带 _blank 会把 blob 当普通导航开个空白标签，
+   不带才会走下载分支，所以 WebView 一律不设。 */
+function clickDownload(url, filename, newTab){
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
-  a.target = '_blank';      // 万一浏览器忽略 download，也只是多开一个标签，不会把本页顶掉
-  a.rel = 'noopener';
+  if (newTab){ a.target = '_blank'; a.rel = 'noopener'; }
   document.body.appendChild(a);
   let threw = '';
   try { a.click(); } catch (e){ threw = String(e && e.message || e); }
   a.remove();
   return threw;
 }
-
-/* 让隐藏 iframe 去导航 blob：WebView 系浏览器可能把它交给下载器（成功落盘），
-   也可能只是在 iframe 内部渲染——但主页面完好，不会变空白页。 */
-function frameDownload(url){
-  try{
-    const f = document.createElement('iframe');
-    f.setAttribute('aria-hidden', 'true');
-    f.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:2px;height:2px;border:0;opacity:0;';
-    f.src = url;
-    document.body.appendChild(f);
-    setTimeout(() => { try{ f.remove(); }catch(_){ } }, 120000);
-    return '';
-  }catch(e){ return String(e && e.message || e); }
+/* blob: 只能被「创建它的那个 WebView」读到。Via 这类浏览器把下载交给系统的下载器，
+   系统进程拿不到 blob，于是弹完「保存文件」就没了下文——这就是新版 WebView 上
+   「点了保存却什么都没存」的根因。data: URL 把字节直接写进链接本身，不依赖进程，
+   是目前唯一还能骗过系统下载器的写法；大文件用它换来的代价只是链接变长。 */
+function dataUrlOf(bytes, mime){
+  return 'data:' + (mime || 'application/octet-stream') + ';base64,' + toB64(bytes);
 }
 
-/* 统一出口：能正常吃 a[download] 的浏览器就直点，WebView 系改走 iframe。
-   两种情况都必须在 click 事件里同步调用，否则用户手势失效（手机一律拒下）。 */
+/* 统一出口：一律同步点 a[download]。WebView（Via 就是）不设 target，
+   否则它会把 blob 当普通导航开个空白标签。 */
 function startDownload(url, filename){
-  return LEGACY_WEBVIEW ? frameDownload(url) : clickDownload(url, filename);
+  return clickDownload(url, filename, !LEGACY_WEBVIEW);
 }
 
 function download(bytes, filename, mime, opt){
@@ -1356,6 +1363,7 @@ async function loadDlgPng(file){
     img.src = DLG.url;
     await img.decode();
     DLG.W = img.naturalWidth; DLG.H = img.naturalHeight;
+    DLG.base = { bytes: buf, w: DLG.W, h: DLG.H };   // 原图留一份，缩放时从它重采样
     try{ DLG.imgB64 = toB64(await gzipBytes(buf)); }catch(_){ DLG.imgB64 = ''; }
     $('dlgInfo').style.display = '';
     $('dlgInfo').textContent = `${file.name} · ${DLG.W} × ${DLG.H} px · ${(buf.length / 1024).toFixed(1)} KB`;
@@ -1537,6 +1545,81 @@ $('btnNsZero').addEventListener('click', () => {
   syncNsInputs(); syncNsOff(); dlgRender();
   toast('已关闭九宫格：整张图压进每一行，角落符号会跟着行高变形');
 });
+/* 真机上四角图案按**原图像素**画（ARC 的 border-image-width:auto），
+   内边距比它小就会被图案压住 —— 一键把内边距设成四角像素数。 */
+$('btnPadAlign').addEventListener('click', () => {
+  if (!DLG.bytes) return toast('请先上传气泡图', false);
+  if (!dlgNineOn()) return toast('九宫格还没切，先点「自动识别」', false);
+  const fs = (parseFloat($('bodyFs').value) || 20) * (parseFloat($('stSize').value) || 1);
+  const toEm = px => Math.round(px / fs * 1000) / 1000;
+  $('stPl').value = toEm(DLG.ns.l);
+  $('stPr').value = toEm(DLG.ns.r);
+  $('stPt').value = toEm(DLG.ns.t);
+  $('stPb').value = toEm(DLG.ns.b);
+  dlgRender();
+  toast('内边距已对齐四角图案（字号 ' + Math.round(fs) + 'px → 左 ' + toEm(DLG.ns.l) + 'em）', true);
+});
+
+/* 反过来调：把图缩到「四角像素＝当前内边距像素」，真机画出来就和预览一致 */
+$('btnFitCaps').addEventListener('click', async () => {
+  if (!DLG.bytes) return toast('请先上传气泡图', false);
+  if (!dlgNineOn()) return toast('九宫格还没切，先点「自动识别」', false);
+  const fs = (parseFloat($('bodyFs').value) || 20) * (parseFloat($('stSize').value) || 1);
+  const pl = (parseFloat($('stPl').value) || 0) * fs;
+  const pr = (parseFloat($('stPr').value) || 0) * fs;
+  const pt = (parseFloat($('stPt').value) || 0) * fs;
+  const pb = (parseFloat($('stPb').value) || 0) * fs;
+  const ratio = Math.min(
+    DLG.ns.l ? pl / DLG.ns.l : 9,
+    DLG.ns.r ? pr / DLG.ns.r : 9,
+    DLG.ns.t ? pt / DLG.ns.t : 9,
+    DLG.ns.b ? pb / DLG.ns.b : 9
+  );
+  if (!isFinite(ratio) || ratio <= 0) return toast('内边距是 0，先填个值', false);
+  if (ratio >= 0.98 && ratio <= 1.02) return toast('现在就是对齐的：四角像素 ≈ 内边距', true);
+  if (ratio > 1.5) return toast('内边距比四角大很多，不用缩图（把内边距调小更快）', false);
+  await rescaleBubble(Math.max(0.05, ratio));
+});
+/* 气泡图输出缩放：真机上四角多粗只由图片自身像素决定，缩小图片＝缩小四角。
+   每次从原图重采样，不会越缩越糊。 */
+$('btnImgScale').addEventListener('click', async () => {
+  if (!DLG.base) return toast('请先上传气泡图', false);
+  const cur = Math.round(DLG.W / DLG.base.w * 100);
+  const v = prompt('气泡图输出尺寸（%）：\n100＝保持原样，越小四角图案越小（真机就越好塞）。\n原图 ' + DLG.base.w + '×' + DLG.base.h + '，当前 ' + Math.round(DLG.W) + '×' + Math.round(DLG.H) + '（' + cur + '%）', String(cur));
+  if (v == null) return;
+  const pct = Math.max(10, Math.min(200, parseFloat(v) || 100));
+  await rescaleBubble(pct / 100);
+});
+async function rescaleBubble(ratio){
+  const b = DLG.base;
+  if (!b) return;
+  try{
+    const w = Math.max(4, Math.round(b.w * ratio)), h = Math.max(4, Math.round(b.h * ratio));
+    const bmp = await createImageBitmap(new Blob([b.bytes], { type: 'image/png' }));
+    const cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    const ctx = cv.getContext('2d');
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(bmp, 0, 0, w, h);
+    const blob = await new Promise(res => cv.toBlob(res, 'image/png'));
+    if (!blob) throw new Error('canvas 导出失败');
+    const buf = new Uint8Array(await blob.arrayBuffer());
+    const k = DLG.W ? w / DLG.W : 1;      // 切点跟着图片一起缩放
+    DLG.bytes = buf; DLG.W = w; DLG.H = h;
+    DLG.ns = {
+      l: Math.round(DLG.ns.l * k), t: Math.round(DLG.ns.t * k),
+      r: Math.round(DLG.ns.r * k), b: Math.round(DLG.ns.b * k)
+    };
+    if (DLG.url) URL.revokeObjectURL(DLG.url);
+    DLG.url = URL.createObjectURL(blob);
+    $('dlgImg').src = DLG.url;
+    try{ DLG.imgB64 = toB64(await gzipBytes(buf)); }catch(_){ DLG.imgB64 = ''; }
+    $('dlgInfo').textContent = '缩放后 ' + w + ' × ' + h + ' px · ' + (buf.length / 1024).toFixed(1) + ' KB';
+    syncNsInputs(); dlgRender();
+    toast('气泡图已缩放到 ' + w + '×' + h + 'px（四角图案 ' + DLG.ns.l + 'px）', true);
+  }catch(err){ toast('缩放失败：' + err.message, false); }
+}
+
 $('nsOff').addEventListener('change', () => {
   syncNsOff(); dlgRender();
   if (formRestoring) return;   // 恢复上次设置时别弹提示
@@ -1600,18 +1683,46 @@ function renderStage(){
   core.style.height = (h / DLG.H * 100) + '%';
   $('nsOut').textContent = nsOff()
     ? '不切片 · 整图压进每一行' + (bgFlow() === 'inline' ? '（行内＝每行各一份花纹）' : '（整段只画一次，会被整体拉长）')
-    : dlgNineStr();
+    : (dlgNineOn()
+      ? '导出：reeden-background-nine-slice: ' + dlgNineRect()
+        + '\n真机四角按原图像素画：左 ' + DLG.ns.l + 'px · 上 ' + DLG.ns.t + 'px · 右 ' + DLG.ns.r + 'px · 下 ' + DLG.ns.b + 'px'
+      : '九宫格全为 0 · 整图硬拉伸');
 }
 
-/* ---- nine-slice 字符串：上 右 下 左（CSS 四值顺序） ---- */
+/* ---- nine-slice 字符串 ----
+   ⚠ 这里以前写的是「上 右 下 左」四个内切值（CSS border-image-slice 的顺序），
+   但阅读 ARC 的 reeden-background-nine-slice 走的是 Reeden 那套「可拉伸矩形」坐标：
+       x1 y1 x2 y2 [/ 图宽 图高]
+   x1,y1 是矩形左上角，x2,y2 是右下角，单位是**原图像素**。ARC 解析时先判
+   `x1>=x2 || y1>=y2 || x2>W || y2>H` 就整条丢掉（HighlightStyle.kt 的 nineSlice()）。
+   我们传「20 20 20 20」这种内切值必然 x1==x2 → 九宫格被丢弃 → 气泡退回
+   `background-size:100% 100%`，整张图被硬拉进每一行，于是「预览里好好的、真机上被拉扁」。
+   现在按矩形换算：x1=左切点、y1=上切点、x2=图宽-右切点、y2=图高-下切点。 */
 function nsOn(){ return (DLG.ns.l + DLG.ns.r + DLG.ns.t + DLG.ns.b) > 0; }
 /* 显式「不切片」：整张图压进每一行（旧版那种每行两端各一朵花）。
    勾上后不写 nine-slice，ARC 就退回最朴素的 background-size:100% 100% + clone。 */
 function nsOff(){ return !!($('nsOff') && $('nsOff').checked); }
-function dlgNineStr(){
-  if (!DLG.W || nsOff() || !nsOn()) return '';
-  // 四值顺序跟 CSS 一致：上 右 下 左；某一边填 0 会让那条边画不出来，统一兜到 1px
-  return [DLG.ns.t, DLG.ns.r, DLG.ns.b, DLG.ns.l].map(v => Math.max(1, Math.round(v) || 0)).join(' ');
+function dlgNineOn(){ return !!(DLG.W && !nsOff() && nsOn()); }
+function dlgNineRect(){
+  if (!dlgNineOn()) return '';
+  const W = Math.round(DLG.W), H = Math.round(DLG.H);
+  const l = Math.max(1, Math.round(DLG.ns.l) || 0), t = Math.max(1, Math.round(DLG.ns.t) || 0);
+  const r = Math.max(1, Math.round(DLG.ns.r) || 0), b = Math.max(1, Math.round(DLG.ns.b) || 0);
+  const x1 = Math.min(l, W - 2), y1 = Math.min(t, H - 2);
+  const x2 = Math.max(x1 + 1, W - r), y2 = Math.max(y1 + 1, H - b);
+  return [x1, y1, x2, y2].join(' ') + ' / ' + W + ' ' + H;
+}
+/* 预览用的百分比切点（ARC 内部就是这么换算的：上=y1/H、右=(W-x2)/W、下=(H-y2)/H、左=x1/W） */
+function dlgSlicePct(){
+  if (!dlgNineOn()) return null;
+  const W = DLG.W, H = DLG.H;
+  const f = v => (Math.round(v * 1000000) / 10000) + '%';
+  return [f(DLG.ns.t / H), f(DLG.ns.r / W), f(DLG.ns.b / H), f(DLG.ns.l / W)].join(' ');
+}
+/* 四角图案在真机上按**原图像素**画（ARC 写的是 border-image-width:auto），
+   所以这几条边实际多粗＝切点像素数，跟内边距的 em 值没关系。 */
+function dlgCapPx(){
+  return { l: Math.round(DLG.ns.l), t: Math.round(DLG.ns.t), r: Math.round(DLG.ns.r), b: Math.round(DLG.ns.b) };
 }
 
 function dlgContentRect(){
@@ -1721,13 +1832,9 @@ function dlgCssBase(resId){
 function dlgCss(resId){
   const p = dlgBgDecls(resId);
   if (bgMode() !== 'tag'){
-    const ns = dlgNineStr();
-    if (ns){
-      p.push('reeden-background-nine-slice: ' + ns);
-      const sc = ($('nsScale').value || '').trim();
-      if (sc) p.push('reeden-background-nine-slice-scale: ' + sc);
-      if ($('nsBasis').checked) p.push('reeden-background-nine-slice-basis: bubble');
-    }
+    const ns = dlgNineRect();
+    // 只写这一个字段：ARC 的白名单里没有 nine-slice-scale / -basis，写了也被丢掉
+    if (ns) p.push('reeden-background-nine-slice: ' + ns);
   }
   return p.concat(dlgTextDecls()).join('; ') + ';';
 }
@@ -1735,6 +1842,16 @@ function dlgCss(resId){
 /* 预览 CSS：切了九宫格时，把「内边距」换成等宽的透明「边框」，再用 border-image 画九宫格。
    浏览器没有 nine-slice，border-image 是唯一等价画法——四角等比、不被拉长，
    而边框宽度＝内边距，所以文字位置和气泡外框尺寸跟导出的一模一样。 */
+/* 预览必须「照抄真机」。ARC 拿到我们导出的声明后还会再加工一遍（HighlightStyle.css()），
+   这里把那段加工照做，预览才是所见即所得：
+   · 九宫格：ARC 把 reeden-background-nine-slice 换算成百分比 border-image-slice，
+     并且写死 border-image-width: auto —— 四角按**原图像素**画，不会被内边距压小；
+   · 行内档：ARC 把 padding/margin 清零、改用 border-image-outset = 内边距，
+     再把行高抬到 calc(max(行高,1.5em) + 上下内边距)，所以真机上气泡比文字行高大一圈；
+   · 不切片档：ARC 会用 inlineImageCaps() 自己算一套切点（横 min(W/8,H/2)、竖 (H-1)/2），
+     同样是 auto 宽度 —— 并不是「整图硬拉伸」。
+   以前预览把 border-width 直接写成内边距 em，四角被缩成和内边距一样大，
+   真机却按原图像素画 —— 这就是「预览好看、真机被拉扁又压字」的来源。 */
 function dlgCssPreview(url){
   // 贴图模式不用九宫格，导出的那份 CSS 直接套上去就是真机效果
   // （行内时千万别加 box-decoration-break:clone，否则每一行都会各画一张图）
@@ -1742,42 +1859,62 @@ function dlgCssPreview(url){
     return dlgCss(url);
   }
   const pl = num($('stPl').value), pt = num($('stPt').value), pr = num($('stPr').value), pb = num($('stPb').value);
+  const inline = bgFlow() === 'inline';
   const p = [];
   p.push('color: ' + dlgColor());
   p.push('font-size: ' + num($('stSize').value) + 'em');
   p.push('line-height: ' + num($('stLh').value));
   const ls = parseFloat($('stLs').value) || 0;
   if (ls) p.push('letter-spacing: ' + num(ls) + 'px');
-  const ns = dlgNineStr();
-  if (url && ns){
+  let slice = null;
+  if (url){
+    if (dlgNineOn()) slice = dlgSlicePct();
+    else if (inline) slice = dlgAutoCapsPct();   // ARC 在不切片时自己算的那套切点
+  }
+  if (slice){
     p.push('border-style: solid');
     p.push('border-color: transparent');
-    p.push('border-width: ' + pt + 'em ' + pr + 'em ' + pb + 'em ' + pl + 'em');
+    p.push('border-width: 0');
     p.push('border-image-source: url("' + url + '")');
-    p.push('border-image-slice: ' + ns + ' fill');
-    p.push('border-image-width: ' + pt + 'em ' + pr + 'em ' + pb + 'em ' + pl + 'em');
+    p.push('border-image-slice: ' + slice + ' fill');
+    p.push('border-image-width: auto');
     p.push('border-image-repeat: stretch');
-    if (bgFlow() === 'inline'){
-      p.push('box-decoration-break: clone');
-      p.push('-webkit-box-decoration-break: clone');
+    p.push('background-image: none');
+    if (inline){
+      /* 行内档：ARC 把内边距改成 outset，文字框本身不带内边距 */
+      p.push('border-image-outset: ' + pt + 'em ' + pr + 'em ' + pb + 'em ' + pl + 'em');
+    } else {
+      p.push('padding: ' + pt + 'em ' + pr + 'em ' + pb + 'em ' + pl + 'em');
     }
   } else if (url){
     p.push('background-image: url("' + url + '")');
     p.push('background-position: center');
     p.push('background-repeat: no-repeat');
     p.push('background-size: 100% 100%');
-    p.push('padding: ' + pt + 'em ' + pr + 'em ' + pb + 'em ' + pl + 'em');
-    /* 这里必须和导出对齐：导出的行内档带 box-decoration-break:clone，
-       漏了它浏览器会把整段当成一张图切片画——第一行左边、末行右边各露出半朵花，
-       中间行什么都没有，于是预览和实机完全不是一回事。 */
-    if (bgFlow() === 'inline'){
-      p.push('box-decoration-break: clone');
-      p.push('-webkit-box-decoration-break: clone');
-    }
+    if (!inline) p.push('padding: ' + pt + 'em ' + pr + 'em ' + pb + 'em ' + pl + 'em');
+  }
+  if (inline && url){
+    p.push('padding: 0');
+    p.push('margin: 0');
+    p.push('box-decoration-break: clone');
+    p.push('-webkit-box-decoration-break: clone');
+    /* ARC 的行高补偿：上下各加一条「最大内边距」，气泡才包得住文字 */
+    const v = 'max(' + pt + 'em,' + pb + 'em)';
+    p.push('line-height: calc(max(' + num($('stLh').value) + ', 1.5em) + ' + v + ' + ' + v + ')');
   }
   const mb = parseFloat($('stMb').value) || 0;
   if (mb) p.push('margin-bottom: ' + num(mb) + 'px');
   return p.concat(flowDecls()).join('; ') + ';';
+}
+/* 「不切片」时 ARC 自己算的切点（HighlightStyle.inlineImageCaps）：
+   横＝min(W/8, H/2)、竖＝(H-1)/2，单位是原图像素，换算成百分比 */
+function dlgAutoCapsPct(){
+  if (!DLG.W || !DLG.H) return null;
+  const W = DLG.W, H = DLG.H;
+  const hor = Math.min(W / 8, H / 2) / W;
+  const ver = ((H - 1) / 2) / H;
+  const f = v => (Math.round(v * 1000000) / 10000) + '%';
+  return [f(ver), f(hor), f(ver), f(hor)].join(' ');
 }
 
 /* 用一个隐藏样本量出「单行气泡盒子」的真实尺寸和四边内边距 */
@@ -1899,6 +2036,17 @@ function dlgRender(){
   if (ct) DLG.ct = { l: ct[0], t: ct[1], r: DLG.W - ct[2], b: DLG.H - ct[3] };
   renderStage();
   $('dlgCssOut').value = dlgCss(md5Hex(DLG.bytes));
+  const capOut = $('capPxOut');
+  if (capOut){
+    if (DLG.W && dlgNineOn()){
+      const fs = (parseFloat($('bodyFs').value) || 20) * (parseFloat($('stSize').value) || 1);
+      capOut.textContent = '真机四角实际尺寸：左 ' + DLG.ns.l + ' · 上 ' + DLG.ns.t + ' · 右 ' + DLG.ns.r
+        + ' · 下 ' + DLG.ns.b + ' px（按原图像素画，不跟字号变）。当前字号约 ' + Math.round(fs)
+        + 'px，要盖不住字需要内边距 ≥ ' + (DLG.ns.l / fs).toFixed(2) + 'em。';
+    } else {
+      capOut.textContent = '';
+    }
+  }
   // 设置一变就悄悄把 .red 预先压好，导出时能同步点下载（手机浏览器只认点击那一刻的手势）
   clearTimeout(dlgRedTimer);
   dlgRedTimer = setTimeout(rebuildDlgRed, 500);
@@ -1944,8 +2092,7 @@ $('btnTagApply').addEventListener('click', () => { applyTagPad(); syncBgMode(); 
   DLG.ns[id.slice(2).toLowerCase()] = v;
   dlgRender();
 }));
-$('nsScale').addEventListener('input', dlgRender);
-$('nsBasis').addEventListener('change', dlgRender);
+/* nsScale / nsBasis 已移除：ARC 的白名单里没有这两条，写了也会被丢掉 */
 $('dlgText').addEventListener('input', dlgRender);
 $('btnDlgResetText').addEventListener('click', () => {
   $('dlgText').value = $('dlgText').defaultValue;
@@ -2142,9 +2289,6 @@ $('dlgImportFile').addEventListener('change', async e => {
     // 文件里没有 nine-slice 字段 ＝ 这条规则本来就不切片（旧版导出的就是这种），把开关同步过来
     $('nsOff').checked = !nsRaw;
     syncNsOff();
-    $('nsBasis').checked = /nine-slice-basis\s*:\s*bubble/i.test(css);
-    const sc = (css.match(/nine-slice-scale:\s*([^;]+)/) || [])[1];
-    $('nsScale').value = sc ? sc.trim() : '';
 
     const fs = cssVal(css, 'font-size'); if (fs && /em/.test(fs)) $('stSize').value = parseFloat(fs);
     const lh = cssVal(css, 'line-height'); if (lh) $('stLh').value = parseFloat(lh);
@@ -2182,6 +2326,7 @@ $('dlgImportFile').addEventListener('change', async e => {
       img.src = DLG.url;
       await img.decode();
       DLG.W = img.naturalWidth; DLG.H = img.naturalHeight;
+      DLG.base = { bytes: raw, w: DLG.W, h: DLG.H };
       $('dlgImg').src = DLG.url;
       $('dlgStage').style.display = 'flex';
       $('dlgStageTip').style.display = '';
