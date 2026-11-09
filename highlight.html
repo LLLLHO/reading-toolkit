@@ -130,7 +130,15 @@
   #cp-hue::-webkit-slider-thumb,#cp-a::-webkit-slider-thumb{-webkit-appearance:none; width:15px; height:15px; border-radius:50%; background:#fff; border:2px solid #fff; box-shadow:0 0 3px rgba(0,0,0,.6); cursor:pointer;}
   .cp-row{display:flex; align-items:center; gap:8px;}
   #cp-sw{width:36px; height:26px; border-radius:6px; border:1px solid var(--line); flex:none;}
-  #cp-hex{flex:1; min-width:0; font-family:Consolas,monospace; font-size:11.5px;}
+  #cp-hex{flex:1; min-width:0; font-family:Consolas,monospace; font-size:11.5px;
+    -webkit-user-select:text; user-select:text; -webkit-touch-callout:default; touch-action:auto;}
+  @media (max-width:860px){
+    /* 16px：小于 16px 的输入框在 iOS/部分 WebView 上会被放大或点不进 */
+    #cp-hex{font-size:16px; line-height:1.25; padding:8px 10px; height:40px;}
+    #cp-sw{width:40px; height:40px;}
+    #cp-box{padding:12px;}
+    .cp-btns .btn{padding:9px 14px;}
+  }
   .cp-btns{display:flex; justify-content:flex-end; gap:8px;}
   .cp-btns .btn{padding:4px 14px;}
   .cp-btns .pri{background:var(--accent); color:#fff; border-color:var(--accent);}
@@ -1160,10 +1168,12 @@ function rgbHex(r, g, b){
   return '#' + [r, g, b].map(v => ('0' + q(v).toString(16)).slice(-2)).join('');
 }
 let cpAnchor = null;
+let cpAnchorEl = null;
 function openPicker(anchorEl, hex, alphaPct, cb){
   const [h, s, v] = rgbToHsv(parseInt(hex.slice(1, 3), 16) / 255, parseInt(hex.slice(3, 5), 16) / 255, parseInt(hex.slice(5, 7), 16) / 255);
   CP.h = h; CP.s = s; CP.v = v; CP.a = alphaPct / 100;
   CP.cb = cb;
+  cpAnchorEl = anchorEl;
   cpAnchor = { hex, alphaPct };
   CP.mask.hidden = false;
   cpPlace(anchorEl);
@@ -1184,18 +1194,48 @@ function cpLive(){
   aIn.style.backgroundSize = 'auto,10px 10px';
   aIn.value = a;
   q('#cp-hue').value = Math.round(CP.h);
-  q('#cp-hex').value = hex + (CP.a < 1 ? Math.round(CP.a * 255).toString(16).padStart(2, '0') : '');
+  const hx = q('#cp-hex');
+  if (document.activeElement !== hx) hx.value = hex + (CP.a < 1 ? Math.round(CP.a * 255).toString(16).padStart(2, '0') : '');
   q('#cp-sw').style.background = hexToRgba(hex, a);
 }
 function cpPlace(anchorEl){
   const box = CP.box;
+  const vp = cpVP();
+  const mobile = innerWidth < 560 || vp.w < 560;
+  /* 键盘顶上来后可视高度只剩三四百像素：色域先压矮，保证色值输入框和按钮露得出来 */
+  const sv = box.querySelector('#cp-sv');
+  if (sv) sv.style.height = vp.h < 470 ? '84px' : '';
+  if (mobile){
+    box.style.width = Math.max(236, vp.w - 24) + 'px';
+    box.style.left = Math.round(vp.l + 12) + 'px';
+    const bh = box.offsetHeight;
+    let top = vp.t + Math.max(8, (vp.h - bh) / 2);
+    const maxTop = vp.t + vp.h - bh - 8;
+    if (top > maxTop) top = maxTop;
+    if (top < vp.t + 8) top = vp.t + 8;
+    box.style.top = Math.round(top) + 'px';
+    return;
+  }
+  box.style.width = '';
+  if (!anchorEl || !anchorEl.isConnected){
+    box.style.left = Math.round(vp.l + Math.max(8, (vp.w - box.offsetWidth) / 2)) + 'px';
+    box.style.top = Math.round(vp.t + Math.max(8, (vp.h - box.offsetHeight) / 2)) + 'px';
+    return;
+  }
   const r = anchorEl.getBoundingClientRect();
-  let x = Math.min(r.left, innerWidth - box.offsetWidth - 10);
+  let x = Math.min(r.left, vp.l + vp.w - box.offsetWidth - 10);
   let y = r.bottom + 8;
-  if (y + box.offsetHeight > innerHeight - 8) y = Math.max(8, r.top - box.offsetHeight - 8);
-  box.style.left = Math.max(8, x) + 'px';
-  box.style.top = Math.max(8, y) + 'px';
+  if (y + box.offsetHeight > vp.t + vp.h - 8) y = Math.max(vp.t + 8, r.top - box.offsetHeight - 8);
+  box.style.left = Math.max(vp.l + 8, x) + 'px';
+  box.style.top = Math.max(vp.t + 8, y) + 'px';
 }
+/* 可视区域：手机键盘弹起时 visualViewport 会缩，window.innerHeight 在部分内核里不变 */
+function cpVP(){
+  const vv = window.visualViewport;
+  if (!vv || !vv.width) return { l: 0, t: 0, w: innerWidth, h: innerHeight };
+  return { l: vv.offsetLeft, t: vv.offsetTop, w: vv.width, h: vv.height };
+}
+function cpRefit(){ if (CP.mask && !CP.mask.hidden) cpPlace(cpAnchorEl); }
 (function initPicker(){
   const mask = document.createElement('div');
   mask.id = 'cp-mask'; mask.hidden = true;
@@ -1204,7 +1244,8 @@ function cpPlace(anchorEl){
     + '<div id="cp-sv"><div id="cp-cur"></div></div>'
     + '<input type="range" id="cp-hue" min="0" max="360" step="1">'
     + '<input type="range" id="cp-a" min="0" max="100" step="1">'
-    + '<div class="cp-row"><span id="cp-sw"></span><input type="text" id="cp-hex" spellcheck="false" placeholder="#rrggbb"></div>'
+    + '<div class="cp-row"><span id="cp-sw"></span><input type="text" id="cp-hex" spellcheck="false" placeholder="#rrggbb"'
+    + ' autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="done" inputmode="text"></div>'
     + '<div class="cp-btns"><button class="btn" id="cp-cancel">取消</button><button class="btn pri" id="cp-ok">确定</button></div>'
     + '</div>';
   document.body.appendChild(mask);
@@ -1237,6 +1278,18 @@ function cpPlace(anchorEl){
   };
   hexIn.addEventListener('change', apply);
   hexIn.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); apply(); } });
+  /* 手机上点进输入框 → 弹输入法 → 页面被顶动：只把弹窗贴回可视区，绝不挪走或收起 */
+  hexIn.addEventListener('focus', () => {
+    if (matchMedia('(pointer:coarse)').matches){ try { hexIn.select(); } catch (_){} }
+    setTimeout(cpRefit, 60);
+    setTimeout(cpRefit, 320);
+  });
+  addEventListener('resize', () => { if (CP.mask && !CP.mask.hidden) cpRefit(); });
+  if (window.visualViewport){
+    const vv = window.visualViewport;
+    vv.addEventListener('resize', () => { if (CP.mask && !CP.mask.hidden) cpRefit(); });
+    vv.addEventListener('scroll', () => { if (CP.mask && !CP.mask.hidden) cpRefit(); });
+  }
   q('#cp-ok').addEventListener('click', () => { mask.hidden = true; });
   q('#cp-cancel').addEventListener('click', () => {
     if (cpAnchor && CP.cb) CP.cb(cpAnchor.hex, cpAnchor.alphaPct);

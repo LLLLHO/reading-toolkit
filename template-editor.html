@@ -183,8 +183,15 @@
 #rcpick-hue{background:linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)}
 #rcpick-hue::-webkit-slider-thumb,#rcpick-a::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:#fff;border:2px solid #fff;box-shadow:0 0 3px rgba(0,0,0,.6);cursor:pointer}
 .rcpick-row{display:flex;align-items:center;gap:8px}
-#rcpick-hex{flex:1;min-width:0;font-family:var(--mono);font-size:11.5px;border:1px solid var(--line);border-radius:6px;padding:5px 7px;background:var(--bg);color:var(--ink)}
+#rcpick-hex{flex:1;min-width:0;font-family:var(--mono);font-size:11.5px;border:1px solid var(--line);border-radius:6px;padding:5px 7px;background:var(--bg);color:var(--ink);
+  -webkit-user-select:text;user-select:text;-webkit-touch-callout:default;touch-action:auto}
 #rcpick-hex:focus{outline:none;border-color:#2f6fed}
+@media (max-width:760px){
+  /* 16px：小于 16px 的输入框在 iOS/部分 WebView 上会被放大或点不进 */
+  #rcpick-hex{font-size:16px;line-height:1.25;padding:8px 10px;height:40px}
+  #rcpick-box{padding:12px}
+  .rcpick-btns .btn{padding:9px 14px}
+}
 .rcpick-btns{display:flex;justify-content:flex-end;gap:8px}
 .rcpick-btns .btn{padding:4px 14px}
 #rcpick-drop{margin-right:auto;display:inline-flex;align-items:center;gap:5px;padding:4px 10px}
@@ -3076,7 +3083,7 @@ function rcRgbToHsv(r, g, b){
   }
   return [h, max ? d / max : 0, max];
 }
-const RCP = { open: false, th: null, k: null, h: 0, s: 0, v: 0, a: 1, anchor: null, box: null };
+const RCP = { open: false, th: null, k: null, h: 0, s: 0, v: 0, a: 1, anchor: null, box: null, el: null, openedAt: 0 };
 /* 目标色块的 CSS 背景（兼容 %23 SVG 前缀 / hex8 / rgba/hsl） */
 function rcSwatchCss(tok){
   let t = String(tok);
@@ -3117,7 +3124,8 @@ function rcPickEnsure(){
     + '<input type="range" id="rcpick-hue" min="0" max="360" step="1" title="色相">'
     + '<input type="range" id="rcpick-a" min="0" max="100" step="1" title="透明度">'
     + '<div class="rcpick-row"><span id="rcpick-sw"></span>'
-    + '<input type="text" id="rcpick-hex" spellcheck="false" placeholder="#rrggbb 或 #rrggbbaa" title="支持 8 位 hex 携带透明度">'
+    + '<input type="text" id="rcpick-hex" spellcheck="false" placeholder="#rrggbb 或 #rrggbbaa" title="支持 8 位 hex 携带透明度"'
+    + ' autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="done" inputmode="text">'
     + '</div>'
     + '<div class="rcpick-btns"><button class="btn" id="rcpick-drop" title="屏幕取色：从整个屏幕任意位置吸取颜色">'
     + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 22 1-1h3l9-9"/><path d="M3 21v-3l9-9"/><path d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4Z"/></svg>'
@@ -3160,6 +3168,12 @@ function rcPickEnsure(){
   };
   hexIn.addEventListener('change', hexApply);
   hexIn.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); hexApply(); hexIn.blur(); } });
+  /* 手机上点进输入框 → 弹输入法 → 页面被顶动：此时只把弹窗贴回可视区，不收起 */
+  hexIn.addEventListener('focus', () => {
+    if(matchMedia('(pointer:coarse)').matches){ try{ hexIn.select(); }catch(err){} }
+    setTimeout(rcPickRefit, 60);
+    setTimeout(rcPickRefit, 320);
+  });
   $p('#rcpick-cancel').addEventListener('click', rcPickCancel);
   /* 屏幕取色：EyeDropper API（Chromium），取到后走 hex 回填路径实时预览；不支持则隐藏按钮 */
   const dropBtn = $p('#rcpick-drop');
@@ -3177,10 +3191,34 @@ function rcPickEnsure(){
   });
   mask.addEventListener('pointerdown', e => { if(e.target === mask) rcPickCancel(); });
   document.addEventListener('keydown', e => { if(RCP.open && e.key === 'Escape') rcPickCancel(); });
-  /* 列表滚动或窗口缩放会让锚定位置失效——直接收起（取消） */
-  document.addEventListener('scroll', () => { if(RCP.open) rcPickCancel(); }, true);
-  window.addEventListener('resize', () => { if(RCP.open) rcPickCancel(); });
+  /* 旧逻辑：任何 scroll / resize 都直接取消。手机弹输入法必然触发这两个事件，
+     于是键盘刚出来弹窗就被关掉——表现就是「弹不出输入法、也没法选中复制」。
+     现在：正在弹窗里输入时忽略；否则才收起（锚点已失效），并顺手贴回可视区。 */
+  document.addEventListener('scroll', () => {
+    if(!RCP.open) return;
+    if(rcFocusInside()) return;
+    if(Date.now() - RCP.openedAt < 350) return;
+    rcPickCancel();
+  }, true);
+  window.addEventListener('resize', () => { if(RCP.open) rcPickRefit(); });
+  if(window.visualViewport){
+    const vv = window.visualViewport;
+    vv.addEventListener('resize', () => { if(RCP.open) rcPickRefit(); });
+    vv.addEventListener('scroll', () => { if(RCP.open) rcPickRefit(); });
+  }
 }
+/* 焦点是否在弹窗内的输入框（手机输入法已弹出） */
+function rcFocusInside(){
+  const a = document.activeElement;
+  return !!(a && RCP.box && RCP.box.contains(a) && /^(INPUT|TEXTAREA)$/.test(a.tagName));
+}
+/* 可视区域：键盘弹起时 visualViewport 缩小，window.innerHeight 在部分内核里不变 */
+function rcVP(){
+  const vv = window.visualViewport;
+  if(!vv || !vv.width) return { l: 0, t: 0, w: window.innerWidth, h: window.innerHeight };
+  return { l: vv.offsetLeft, t: vv.offsetTop, w: vv.width, h: vv.height };
+}
+function rcPickRefit(){ if(RCP.open && RCP.box) rcPickPlace(RCP.el); }
 function rcPickOpen(th, k, anchorEl){
   let c;
   if(k === '@theme'){
@@ -3199,24 +3237,43 @@ function rcPickOpen(th, k, anchorEl){
   RCP.anchor = k === '@theme' ? { hex: RC.theme.hex, a: 1 } : (RC.custom[k] ? { hex: c.hex, a: c.a } : null);
   rcPickEnsure();
   RCP.box.hidden = false; RCP.open = true;
+  RCP.el = anchorEl; RCP.openedAt = Date.now();
   rcPickPlace(anchorEl);
   rcPickLive();
 }
 /* 弹窗锚定在色块旁：下方优先，横向大致对准色块，两端夹在视口内（参考旧版 cpOpen） */
 function rcPickPlace(anchorEl){
   const box = RCP.box.firstElementChild;
+  const vp = rcVP();
+  const mobile = window.innerWidth < 560 || vp.w < 560;
+  /* 键盘顶上来后可视高度只剩三四百像素：色域先压矮，保证颜色值输入框和按钮还露在外面 */
+  const sv = box.querySelector('#rcpick-sv');
+  if(sv) sv.style.height = vp.h < 470 ? '84px' : '';
+  if(mobile){
+    const bw = Math.max(236, vp.w - 24);
+    box.style.width = bw + 'px';
+    box.style.left = Math.round(vp.l + 12) + 'px';
+    const bh = box.offsetHeight;
+    let top = vp.t + Math.max(8, (vp.h - bh) / 2);
+    const maxTop = vp.t + vp.h - bh - 8;
+    if(top > maxTop) top = maxTop;
+    if(top < vp.t + 8) top = vp.t + 8;
+    box.style.top = Math.round(top) + 'px';
+    return;
+  }
+  box.style.width = '';
   if(!anchorEl || !anchorEl.isConnected){
-    box.style.left = Math.max(8, (window.innerWidth - box.offsetWidth) / 2) + 'px';
-    box.style.top = Math.max(8, (window.innerHeight - box.offsetHeight) / 2) + 'px';
+    box.style.left = Math.round(vp.l + Math.max(8, (vp.w - box.offsetWidth) / 2)) + 'px';
+    box.style.top = Math.round(vp.t + Math.max(8, (vp.h - box.offsetHeight) / 2)) + 'px';
     return;
   }
   const r = anchorEl.getBoundingClientRect();
   const bw = box.offsetWidth, bh = box.offsetHeight;
   let x = r.left - 90;
-  if(x + bw > window.innerWidth - 8) x = window.innerWidth - bw - 8;
-  if(x < 8) x = 8;
+  if(x + bw > vp.l + vp.w - 8) x = vp.l + vp.w - bw - 8;
+  if(x < vp.l + 8) x = vp.l + 8;
   let y = r.bottom + 6;
-  if(y + bh > window.innerHeight - 8) y = Math.max(8, r.top - bh - 6);
+  if(y + bh > vp.t + vp.h - 8) y = Math.max(vp.t + 8, r.top - bh - 6);
   box.style.left = Math.round(x) + 'px';
   box.style.top = Math.round(y) + 'px';
 }

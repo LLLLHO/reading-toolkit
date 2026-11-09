@@ -238,7 +238,14 @@
   #cphue::-webkit-slider-thumb{-webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:#fff; border:2px solid #fff; box-shadow:0 0 3px rgba(0,0,0,.6); cursor:pointer;}
   #cphue::-moz-range-thumb{width:14px; height:14px; border-radius:50%; background:#fff; border:2px solid #fff; box-shadow:0 0 3px rgba(0,0,0,.6);}
   .cprow{display:flex; align-items:center; gap:8px;}
-  #cphex{flex:1; min-width:0; font:11.5px/1.2 Consolas,monospace; border:1px solid var(--line); border-radius:7px; padding:6px 8px; background:var(--field); color:var(--txt);}
+  #cphex{flex:1; min-width:0; font:11.5px/1.2 Consolas,monospace; border:1px solid var(--line); border-radius:7px; padding:6px 8px; background:var(--field); color:var(--txt);
+    -webkit-user-select:text; user-select:text; -webkit-touch-callout:default; touch-action:auto;}
+  @media (max-width:760px){
+    /* 16px：iOS/部分 WebView 上小于 16px 的输入框会被放大或点不进；同时把这一行抬高，手指好点 */
+    #cphex{font-size:16px; line-height:1.25; padding:8px 10px; height:40px;}
+    #cpbox{padding:12px;}
+    .cpbtns .btn{padding:10px 14px;}
+  }
   .cpbtns{display:flex; gap:8px; justify-content:flex-end;}
   @media (min-width: 1081px){
     main > .col:first-child{position:sticky; top:70px; max-height:calc(100vh - 84px); overflow-y:auto; scrollbar-width:thin; padding-right:2px;}
@@ -1397,7 +1404,7 @@ function getPath(o, p){ return p.split('.').reduce((a, k) => a == null ? a : a[k
 function setPath(o, p, v){ const ks = p.split('.'); let t = o; for (let i = 0; i < ks.length - 1; i++) t = t[ks[i]]; t[ks[ks.length - 1]] = v; }
 
 /* ===================== 取色器（与「页面模板编辑器」同一套手感） ===================== */
-const CP = { open: false, input: null, box: null, h: 0, s: 0, v: 0, orig: '' };
+const CP = { open: false, input: null, box: null, h: 0, s: 0, v: 0, orig: '', anchor: null, openedAt: 0 };
 function cpRgb(h, s, v){
   const f = n => { const k = (n + h / 60) % 6; return v - v * s * Math.max(0, Math.min(k, 4 - k, 1)); };
   return [f(5), f(3), f(1)];
@@ -1430,7 +1437,8 @@ function cpEnsure(){
   mask.innerHTML = '<div id="cpbox">'
     + '<div id="cpsv"><div id="cpcur"></div></div>'
     + '<input type="range" id="cphue" min="0" max="360" step="1" aria-label="色相">'
-    + '<div class="cprow"><input type="text" id="cphex" spellcheck="false" placeholder="#rrggbb" aria-label="颜色值">'
+    + '<div class="cprow"><input type="text" id="cphex" spellcheck="false" placeholder="#rrggbb" aria-label="颜色值"'
+    + ' autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="done" inputmode="text">'
     + '<button class="btn sm" id="cpdrop" title="屏幕取色（支持时可用）">🎯</button></div>'
     + '<div class="cpbtns"><button class="btn sm" id="cpcancel">取消</button><button class="btn sm pri" id="cpok">确定</button></div>'
     + '</div>';
@@ -1460,6 +1468,13 @@ function cpEnsure(){
   };
   hexIn.addEventListener('change', hexApply);
   hexIn.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); hexApply(); } });
+  /* 手机上点进输入框 → 弹输入法 → 页面被顶动；这时只把弹窗重新贴回可视区，绝不收起 */
+  hexIn.addEventListener('focus', () => {
+    /* 手机上一进来就全选：省得长按选不中、也方便直接覆盖粘贴 */
+    if (matchMedia('(pointer:coarse)').matches){ try{ hexIn.select(); }catch (e) {} }
+    setTimeout(cpRefit, 60);
+    setTimeout(cpRefit, 320);
+  });
   $p('#cpcancel').addEventListener('click', cpCancel);
   $p('#cpok').addEventListener('click', cpCommit);
   const drop = $p('#cpdrop');
@@ -1471,13 +1486,35 @@ function cpEnsure(){
   });
   mask.addEventListener('pointerdown', e => { if (e.target === mask) cpCancel(); });
   document.addEventListener('keydown', e => { if (CP.open && e.key === 'Escape') cpCancel(); }, true);
-  window.addEventListener('resize', () => { if (CP.open) cpCancel(); });
+  /* 旧逻辑：resize / 任何 scroll 都直接 cpCancel()。手机弹输入法时这两件事必然发生，
+     于是键盘刚出来弹窗就被关掉，看起来就是「根本弹不出输入法、也没法选中复制」。
+     现在：正在这个弹窗里输入时一律忽略；否则才收起（锚点已失效）。 */
+  window.addEventListener('resize', () => { if (CP.open) cpRefit(); });
   document.addEventListener('scroll', e => {
     if (!CP.open) return;
+    if (cpFocusInside()) return;
+    if (Date.now() - CP.openedAt < 350) return;
     if (CP.box && e.target && e.target.nodeType === 1 && CP.box.contains(e.target)) return;
     cpCancel();
   }, true);
+  if (window.visualViewport){
+    const vv = window.visualViewport;
+    vv.addEventListener('resize', () => { if (CP.open) cpRefit(); });
+    vv.addEventListener('scroll', () => { if (CP.open) cpRefit(); });
+  }
 }
+/* 焦点是否在弹窗内的输入框上（手机输入法已弹出） */
+function cpFocusInside(){
+  const a = document.activeElement;
+  return !!(a && CP.box && CP.box.contains(a) && /^(INPUT|TEXTAREA)$/.test(a.tagName));
+}
+/* 可视区域：手机键盘弹起时 visualViewport 会缩，window.innerHeight 在部分内核里不变 */
+function cpVP(){
+  const vv = window.visualViewport;
+  if (!vv || !vv.width) return { l: 0, t: 0, w: window.innerWidth, h: window.innerHeight };
+  return { l: vv.offsetLeft, t: vv.offsetTop, w: vv.width, h: vv.height };
+}
+function cpRefit(){ if (CP.open && CP.box) cpPlace(CP.anchor); }
 function cpWrite(v, commit){
   const inp = CP.input;
   if (!inp) return;
@@ -1494,7 +1531,8 @@ function cpWrite(v, commit){
     CP.box.querySelector('#cpsv').style.background =
       'linear-gradient(to top,#000,rgba(0,0,0,0)),linear-gradient(to right,#fff,rgba(255,255,255,0)),hsl(' + CP.h + ',100%,50%)';
     CP.box.querySelector('#cphue').value = CP.h;
-    CP.box.querySelector('#cphex').value = v;
+    const hx = CP.box.querySelector('#cphex');
+    if (hx && document.activeElement !== hx) hx.value = v;
   }
 }
 function cpLive(){ cpWrite(cpHex.apply(null, cpRgb(CP.h, CP.s, CP.v)), false); }
@@ -1503,29 +1541,44 @@ function cpOpen(input){
   const hsv = cpFromHex(input.value) || [210, 0.6, 0.9];
   CP.input = input; CP.orig = input.value;
   CP.h = hsv[0]; CP.s = hsv[1]; CP.v = hsv[2];
-  CP.box.hidden = false; CP.open = true;
+  CP.box.hidden = false; CP.open = true; CP.openedAt = Date.now();
   cpWrite(input.value || '#000000', false);
   const anchor = input.nextElementSibling && input.nextElementSibling.classList.contains('cbtn')
     ? input.nextElementSibling : input;
+  CP.anchor = anchor;
   cpPlace(anchor);
 }
 function cpPlace(anchor){
   const box = CP.box.firstElementChild;
-  const mobile = window.innerWidth < 560;
+  const vp = cpVP();
+  const mobile = window.innerWidth < 560 || vp.w < 560;
+  /* 键盘顶上来后可视高度只剩三四百像素：色域先压矮，保证色值输入框和按钮还露在外面 */
+  const sv = box.querySelector('#cpsv');
+  if (sv) sv.style.height = vp.h < 470 ? '84px' : '';
   if (mobile){
-    box.style.width = 'calc(100vw - 24px)';
-    box.style.left = '12px';
-    box.style.top = Math.max(12, (window.innerHeight - box.offsetHeight) / 2) + 'px';
+    box.style.width = Math.max(236, vp.w - 24) + 'px';
+    box.style.left = Math.round(vp.l + 12) + 'px';
+    const bh = box.offsetHeight;
+    let top = vp.t + Math.max(8, (vp.h - bh) / 2);
+    const maxTop = vp.t + vp.h - bh - 8;
+    if (top > maxTop) top = maxTop;
+    if (top < vp.t + 8) top = vp.t + 8;
+    box.style.top = Math.round(top) + 'px';
     return;
   }
   box.style.width = '';
+  if (!anchor || !anchor.isConnected){
+    box.style.left = Math.round(vp.l + Math.max(8, (vp.w - box.offsetWidth) / 2)) + 'px';
+    box.style.top = Math.round(vp.t + Math.max(8, (vp.h - box.offsetHeight) / 2)) + 'px';
+    return;
+  }
   const r = anchor.getBoundingClientRect();
   const bw = box.offsetWidth || 252, bh = box.offsetHeight || 260;
   let x = r.left + r.width / 2 - bw / 2;
-  if (x + bw > window.innerWidth - 8) x = window.innerWidth - bw - 8;
-  if (x < 8) x = 8;
+  if (x + bw > vp.l + vp.w - 8) x = vp.l + vp.w - bw - 8;
+  if (x < vp.l + 8) x = vp.l + 8;
   let y = r.bottom + 6;
-  if (y + bh > window.innerHeight - 8) y = Math.max(8, r.top - bh - 6);
+  if (y + bh > vp.t + vp.h - 8) y = Math.max(vp.t + 8, r.top - bh - 6);
   box.style.left = Math.round(x) + 'px';
   box.style.top = Math.round(y) + 'px';
 }
