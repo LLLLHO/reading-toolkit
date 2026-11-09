@@ -219,6 +219,9 @@
         <b>行内</b>最贴近 ARC 默认效果：气泡会跟着每一行重新画一次，长句折行后是「两截气泡」；
         想<b>让一张会拉伸的气泡包住整段</b>，就选后两档——整段只会画一次，九宫格把中间拉长、四角不动。
         <b>整块嵌在行里</b>不会另起段落，句子还在原来的位置；<b>独立成段</b>会让它前后换行，并撑满整栏（引文块那种效果）。
+        <br><b>要知道的一件事</b>：ARC 只看样式里有没有 <code>display:inline</code>。没有的话，
+        整段命中的规则会被直接挂到段落上——于是「一个框包住整段」、且「短句也占满一整行」。
+        选「行内」时导出里一定会写上这一条。
       </div>
 
       <div id="nsPanel">
@@ -1779,6 +1782,12 @@ function flowDecls(){
   const p = [];
   if (f === 'iblock') p.push('display: inline-block', 'max-width: 100%', 'text-indent: 0');
   else if (f === 'block') p.push('display: block', 'text-indent: 0', 'margin-top: 0.2em', 'margin-bottom: 0.2em');
+  /* 行内档必须显式写 display:inline——ARC 拿它当「要不要拆成逐行 span」的开关：
+     styleCssText 里没有 display:inline 时，整段命中的规则会被直接挂到 <p> 上，
+     于是一个框包住整段、短句也撑满整行；写上之后 ARC 才会按行拆 span，
+     并且 HighlightStyle.inlineLayout() 才会把 padding 换成 border-image-outset、补上行高。
+     （见 HighlightDocument.apply 里的 inlineStyle 判断） */
+  else p.push('display: inline');
   return p;
 }
 /* 行内贴图时背景只按第一行定位，垂直方向得贴 top；整块时居中才好看 */
@@ -1898,9 +1907,14 @@ function dlgCssPreview(url){
     p.push('margin: 0');
     p.push('box-decoration-break: clone');
     p.push('-webkit-box-decoration-break: clone');
-    /* ARC 的行高补偿：上下各加一条「最大内边距」，气泡才包得住文字 */
+    /* ARC 的行高补偿：上下各加一条「最大内边距」，气泡才包得住文字。
+       ARC 会先把无单位的行高（如 1.3）换算成 em 再进 calc；
+       直接写 max(1.3, 1.5em) 是非法长度，整条 calc 会被丢掉，
+       行高补偿就白写了（预览会挤成一团、上下两行的气泡打架） */
     const v = 'max(' + pt + 'em,' + pb + 'em)';
-    p.push('line-height: calc(max(' + num($('stLh').value) + ', 1.5em) + ' + v + ' + ' + v + ')');
+    const lhRaw = String($('stLh').value).trim();
+    const lhBase = /^[0-9]*\.?[0-9]+$/.test(lhRaw) ? num(lhRaw) + 'em' : num(lhRaw);
+    p.push('line-height: calc(max(' + lhBase + ', 1.5em) + ' + v + ' + ' + v + ')');
   }
   const mb = parseFloat($('stMb').value) || 0;
   if (mb) p.push('margin-bottom: ' + num(mb) + 'px');
@@ -1963,7 +1977,7 @@ function buildOne(l, r, keep, nl){
 function isTitleLine(s){
   return /^\s*(第[0-9０-９零〇一二三四五六七八九十百千万两]{1,12}[章节回卷部篇集幕折]|序章|楔子|引子|前言|后记|终章|尾声|番外|外传|附录|正文)/.test(s);
 }
-function renderTextInto(area, text, ranges, css){
+function renderTextInto(area, text, ranges, css, wrap){
   let offset = 0;
   text.split('\n').forEach(line => {
     const lS = offset, lE = offset + line.length;
@@ -1978,7 +1992,22 @@ function renderTextInto(area, text, ranges, css){
         const sp = document.createElement('span');
         applyCss(sp, css);
         sp.textContent = text.slice(i, end);
-        p.appendChild(sp);
+        /* ARC 的 inline 档把内边距搬到 border-image-outset 上（画在字形框外面），
+           同时在匹配两端套一层带 margin 的 -spacing 包裹，把隔壁的字让开。
+           预览少了这一层，气泡的四角就会压住旁边的字——所以这里照做一遍；
+           段落首尾真机会把那一侧的 margin 归零，这里也一样。 */
+        let box = sp;
+        if (wrap){
+          let st = '';
+          if (i > lS) st += 'margin-left:' + wrap.l + 'em;';
+          if (end < lE) st += 'margin-right:' + wrap.r + 'em;';
+          if (st){
+            box = document.createElement('span');
+            box.setAttribute('style', st);
+            box.appendChild(sp);
+          }
+        }
+        p.appendChild(box);
         i = end;
       } else {
         let next = lE;
@@ -2031,7 +2060,14 @@ function dlgRender(){
       }
     }catch(err){ toast('正则不合法：' + err.message, false); }
   }
-  renderTextInto(area, $('dlgText').value, ranges, resolveTokens(css, 'pvBgColor', 'pvPriColor'));
+  /* 行内 + 有图：真机会在匹配两端留出跟内边距一样宽的空白（ARC 生成的 -spacing 包裹），
+     预览照着留，才不会出现「气泡压住隔壁的字」这种只存在于预览里的毛病 */
+  let wrap = null;
+  if (DLG.url && bgMode() !== 'tag' && bgFlow() === 'inline'){
+    const wl = parseFloat($('stPl').value) || 0, wr = parseFloat($('stPr').value) || 0;
+    if (wl > 0 || wr > 0) wrap = { l: num(wl), r: num(wr) };
+  }
+  renderTextInto(area, $('dlgText').value, ranges, resolveTokens(css, 'pvBgColor', 'pvPriColor'), wrap);
   const ct = dlgContentRect();
   if (ct) DLG.ct = { l: ct[0], t: ct[1], r: DLG.W - ct[2], b: DLG.H - ct[3] };
   renderStage();
@@ -2077,7 +2113,7 @@ function syncBgMode(){
   }
   const f = bgFlow();
   $('flowOut').textContent = f === 'inline'
-    ? '当前：行内 → 折行的每一行都会各自画一遍背景（气泡会断成两截）'
+    ? '当前：display:inline → 折行的每一行各自画一遍背景（导出里会明确写上这条，ARC 才会按行拆开）'
     : (f === 'iblock'
       ? '当前：display:inline-block + max-width:100% → 整段一个背景，宽度贴字，不会另起段落'
       : '当前：display:block → 整段一个背景，但会另起一行且撑满整栏');
