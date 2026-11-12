@@ -168,6 +168,16 @@
   .decoRow img{width:44px; height:44px; object-fit:contain; border-radius:6px; background:repeating-conic-gradient(var(--chk-a) 0 25%, var(--chk-b) 0 50%) 0 0/8px 8px; flex:none; cursor:pointer; border:1px solid var(--line);}
   .decoRow .decMain{flex:1; min-width:0; display:flex; flex-direction:column; gap:6px;}
   .decoRow .decMain .miniRow{padding-top:0;}
+  /* 字段候选弹层：点静态文字输入框时贴在下面 */
+  .fpick{position:fixed; z-index:9998; display:none; flex-direction:column; gap:6px; padding:8px 9px;
+    background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    box-shadow:0 12px 30px rgba(0,0,0,.18); max-width:320px;}
+  .fpick.on{display:flex;}
+  .fpick-t{font-size:10.5px; color:var(--sub);}
+  .fpick-b{display:flex; flex-wrap:wrap; gap:6px;}
+  .fpick button{font-family:inherit; font-size:12px; line-height:1.2; padding:5px 9px; border-radius:999px;
+    border:1px solid var(--line); background:var(--field); color:var(--txt); cursor:pointer;}
+  .fpick button:hover{border-color:var(--accent); color:var(--accent); background:var(--accent-light);}
   /* 预览 */
   .pvbar{display:flex; gap:8px; align-items:center; flex-wrap:wrap; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:9px 12px;}
   .pill{font-size:11.5px; color:var(--sub); border:1px solid var(--line); border-radius:20px; padding:2px 10px; white-space:nowrap;}
@@ -644,6 +654,8 @@
             <p><b>4. 最容易写错的四处</b>：① 括号必须是半角 <code>{ }</code>，中文全角 <code>｛ ｝</code> 不认；② 名字区分大小写，<code>{PageIndex}</code> 无效；③ 名字只能是英文字母，<code>{页码}</code> 不认；④ 花括号和名字之间不能有空格，<code>{ pageIndex }</code> 不认。<br>判断方法很简单：预览里如果原样显示出「{pageIndex}」这几个字，就是没认出来。</p>
             <p><b>5. 只想要固定文字</b>：那就一个字段都别插，直接写「※※※」「未完待续」「—— 卷一 完 ——」这类内容，它就是个纯文字标签。内容清空这条元素就不显示；只想首页出现，把「显示于」设成「仅首页」。</p>
             <p><b>6. 和「动态字段」的区别</b>：动态字段只能单独输出一个值（下拉里选一个）；静态文字能把这个值夹在固定文字中间 —— 想显示「第 3 页」而不是孤零零一个「3」，就用静态文字。</p>
+            <p><b>7. 不用背字段名了</b>：点一下静态文字的输入框，下面会弹出<b>书名 / 章节名 / 时间 / 电量 / 当前页码 / 总页数 / 页码总页数 / 进度 / 本章进度</b> 这些中文标签，
+              点一个就插到光标处（例如先点「书名」和「电量」，再补上自己的字，就成了 <code>当前在读{bookName}，电量还剩{battery}</code>）。页眉页脚的静态文字里也能这样点。</p>
           </div>
         </details>
       </div>
@@ -696,6 +708,7 @@
             </div>
             <p><b>3. 常用写法</b>：<code>第 {pageIndex} 页 / 共 {pageCount} 页</code>　<code>{page}</code>　<code>{progress}%</code>　<code>— {pageIndex} —</code></p>
             <p><b>4. 四条硬规矩</b>：半角 <code>{ }</code>（全角不行）、名字区分大小写、名字只能是英文字母、括号和名字之间不能有空格。<br>预览里如果原样显示「{pageIndex}」这几个字，就是没认出来。</p>
+            <p><b>5. 不想记名字</b>：点输入框，下面会弹出中文候选（书名、章节名、时间、电量、页码…），点一下就插进去，再接着写自己的字。</p>
           </div>
         </details>
       </div>
@@ -919,7 +932,7 @@
         </div>
         <div class="hint" style="margin-top:6px">每条装饰右边有三个小按钮：<b>首页 / 续页 / 两页</b> —— 想只放在首页就点「首页」。</div>
         <div id="deco-drop2" class="drop" style="margin-top:8px">点击或拖入 <b>进度条 SVG</b>（.svg / .txt）—— 会随页数走动</div>
-        <div class="hint" style="margin-top:6px">勾上「文字下层」＝垫在正文后面当暗纹（不挡字），取消就浮到字上面。打开「🖐 在预览里拖动」后，每条装饰四角会出现小圆点，拖它就能随意改大小（等比缩放、不会变形）；拖动图片本身是挪位置。翻页看效果：点预览上的 ◀ ▶。</div>
+        <div class="hint" style="margin-top:6px">勾上「文字下层」＝垫在正文后面当暗纹（不挡字），取消就浮到字上面。打开「🖐 在预览里拖动」后，每条装饰四角会出现小圆点，拖它就能随意改大小（图片默认等比、不会变形，勾「可拉伸」就宽高各走各的；文字装饰拖角改的是字号）；拖动图片本身是挪位置。拖动时会<b>自动吸附</b>：靠近别的装饰的边或中线、或页面边和十字中线，就会贴上去并闪一条蓝虚线。翻页看效果：点预览上的 ◀ ▶。</div>
         <div id="deco-list" style="display:flex; flex-direction:column; gap:8px; margin-top:10px"></div>
         <div class="hint" style="margin-top:8px">位置用 <b>left/top/width 百分比</b>（相对整页），换机型不会错位。开启拖动后直接在右侧预览里拖，松手即记下坐标。</div>
         <div class="hint" style="margin-top:6px"><b>同步移动</b>：开着时拖其中一页，另一页实时跟着走（两页共用一个位置）；关掉后拖哪页只改哪页，另一页停原处、会记成「两页位置不同」，想合回一处点「对齐两页」。想让两页各摆不同位置又可以随便拖，就点每条的「<b>拆</b>」把它拆成首页/续页两份。</div>
@@ -940,9 +953,11 @@
               <code>{battery}</code><span>电量，如 87%</span>
             </div>
             <p>不认识的普通文字原样显示，所以 <code>— 第 {pageIndex} 页 —</code>、<code>※※※</code>、章节编号、分隔符、署名、版权年份都能直接写。</p>
-            <p><b>3. 位置</b>：left / top 是相对整页的百分比（左上角是 0,0）。左 6、上 92 就是左下角附近。文字永远单行不换行，太长会伸出屏幕 —— 调小字号或改 left。</p>
-            <p><b>4. 显示范围</b>：都显示 / 仅首页 / 仅续页。勾<b>仅夜间</b> = 只在深色模式出现，适合放一套夜里才露出的花纹或编号。</p>
-            <p><b>5. 样式</b>：字 = 字号 px；右边色块 = 颜色；转 = 旋转角度；透 = 透明度（0 全透明，1 不透明）。</p>
+            <p><b>3. 位置</b>：left / top 是相对整页的百分比（左上角是 0,0）。左 6、上 92 就是左下角附近。<b>太长会自己折行</b>：不给「宽」时宽度跟着文字走，
+              最多撑到页面右边剩的地方，所以「我记得我在读《书名》」这种长句不会戳出屏幕；想固定每行多宽就填「宽」。</p>
+            <p><b>4. 显示范围</b>：都显示 / 仅夜间 / 仅日间。放一整套「夜里才露出的花纹」选<b>仅夜间</b>；只想白天出现的记号（比如日间版的页码框）选<b>仅日间</b>。</p>
+            <p><b>5. 样式</b>：字 = 字号 px；色 = 颜色，点<b>↺ 正文色</b>清空后<b>跟随正文颜色</b>（日间夜间自动切）；宽 = 这条文字的宽度百分比（留空＝自动）；对齐 = 折行后靠左/中/右；转 = 旋转；透 = 透明度（0 全透明，1 不透明）。</p>
+            <p><b>5.1 字号怎么调最快</b>：开「🖐 在预览里拖动」后拖这条文字的<b>四角小圆点</b>，字号和整块一起缩放，字多了自动折行。</p>
             <p><b>6. 想加图片</b>：不用这里，把图拖到上面的虚线框（装饰图）。角标、花纹、贴纸都走这条路，多一个「宽」= 宽度占页面百分比，高度按原图比例自动。</p>
             <p><b>7. 快捷摆位</b>：点「🖐 在预览里拖动」，直接拖右侧预览里的装饰，松手自动写回 left/top，比手填快。</p>
           </div>
@@ -1356,7 +1371,7 @@
   }
   function addHandles(el){
     dropHandles(el);
-    if(el.classList.contains('s-deco-txt')) return;   /* 纯文字装饰不缩放 */
+    /* 文字装饰也给把手：拖角改的是字号 */
     Object.keys(HPOS).forEach(function(k){
       var h = document.createElement('i');
       h.className = 's-deco-h';
@@ -1367,7 +1382,56 @@
       el.appendChild(h);
     });
   }
-  var rsEl = null, rsStart = null, rsPage = null, rsKey = '', rsMoved = false;
+  var rsEl = null, rsStart = null, rsPage = null, rsKey = '', rsMoved = false, rsTxtFs = 14;
+  /* ---- 吸附：别的装饰的左右边 / 中线、页面四边和十字中线，都算参考线 ---- */
+  var SNAP_PX = 6;
+  function snapAxes(pgEl, el, lpx, tpx, w, h){
+    var pr = pgEl.getBoundingClientRect();
+    var xs = [0, pr.width / 2, pr.width], ys = [0, pr.height / 2, pr.height];
+    Array.prototype.forEach.call(pgEl.querySelectorAll('.s-deco'), function(o){
+      if(o === el) return;
+      var r = o.getBoundingClientRect();
+      var L = r.left - pr.left, T = r.top - pr.top;
+      xs.push(L, L + r.width / 2, L + r.width);
+      ys.push(T, T + r.height / 2, T + r.height);
+    });
+    var mineX = [lpx, lpx + w / 2, lpx + w], mineY = [tpx, tpx + h / 2, tpx + h];
+    var bx = null, bxd = SNAP_PX + 0.01, gx = null;
+    xs.forEach(function(tg){ mineX.forEach(function(m){
+      var dd = Math.abs(m - tg);
+      if(dd < bxd){ bxd = dd; bx = lpx + (tg - m); gx = tg; }
+    }); });
+    var by = null, byd = SNAP_PX + 0.01, gy = null;
+    ys.forEach(function(tg){ mineY.forEach(function(m){
+      var dd = Math.abs(m - tg);
+      if(dd < byd){ byd = dd; by = tpx + (tg - m); gy = tg; }
+    }); });
+    return { left: bx == null ? lpx : bx, top: by == null ? tpx : by,
+      gx: bx == null ? null : gx, gy: by == null ? null : gy };
+  }
+  function clearGuides(){
+    Array.prototype.forEach.call(document.querySelectorAll('.s-guide'), function(g){
+      if(g.parentNode) g.parentNode.removeChild(g);
+    });
+  }
+  function showGuides(pgEl, vx, hy){
+    clearGuides();
+    if(vx == null && hy == null) return;
+    var g = document.createElement('div');
+    g.className = 's-guide';
+    g.style.cssText = 'position:absolute;left:0;top:0;right:0;bottom:0;pointer-events:none;z-index:9';
+    if(vx != null){
+      var a = document.createElement('i');
+      a.style.cssText = 'position:absolute;top:0;bottom:0;border-left:1px dashed #2f6fed;opacity:.85;left:' + vx.toFixed(1) + 'px';
+      g.appendChild(a);
+    }
+    if(hy != null){
+      var b = document.createElement('i');
+      b.style.cssText = 'position:absolute;left:0;right:0;border-top:1px dashed #2f6fed;opacity:.85;top:' + hy.toFixed(1) + 'px';
+      g.appendChild(b);
+    }
+    pgEl.appendChild(g);
+  }
   function onDown(e){
     if(!dragOn) return;
     var tgt = e.target;
@@ -1379,18 +1443,27 @@
     var pr = dragPage.getBoundingClientRect();
     var er = el.getBoundingClientRect();
     if(hk){
-      /* 缩放：以对角为锚点等比放大，图片不会变形 */
+      /* 缩放：图片默认等比（锚在对角），文字改字号，勾了「可拉伸」就宽高各自跟手 */
       rsEl = el; rsKey = hk; rsMoved = false;
+      var cs = window.getComputedStyle(el);
+      var wpct = parseFloat(el.style.width);
       rsStart = {
         px: e.clientX, py: e.clientY,
         left: er.left - pr.left, top: er.top - pr.top, w: er.width, h: er.height,
-        pw: pr.width, ph: pr.height
+        pw: pr.width, ph: pr.height,
+        fs: parseFloat(cs.fontSize) || 14,
+        txt: el.classList.contains('s-deco-txt'),
+        free: el.classList.contains('s-deco-stretch'),
+        w0: /%\s*$/.test(el.style.width || ''),
+        wpct: isFinite(wpct) ? wpct : (er.width / pr.width * 100)
       };
+      rsTxtFs = rsStart.fs;
       try{ el.setPointerCapture(e.pointerId); }catch(err){}
       return;
     }
     dragEl = el;
-    dragStart = {px: e.clientX, py: e.clientY, left: er.left - pr.left, top: er.top - pr.top, w: pr.width, h: pr.height};
+    dragStart = {px: e.clientX, py: e.clientY, left: er.left - pr.left, top: er.top - pr.top,
+      w: pr.width, h: pr.height, ew: er.width, eh: er.height};
     dragMoved = false;
     try{ el.setPointerCapture(e.pointerId); }catch(err){}
   }
@@ -1401,15 +1474,48 @@
       if(Math.abs(rdx) > 1 || Math.abs(rdy) > 1) rsMoved = true;
       var sx = rsKey.indexOf('w') >= 0 ? -1 : 1;
       var sy = rsKey.indexOf('n') >= 0 ? -1 : 1;
-      /* 沿对角投影：横拖竖拖都算数，手感比只认一个方向顺 */
-      var den = rsStart.w * rsStart.w + rsStart.h * rsStart.h;
-      var k = 1 + (rdx * sx * rsStart.w + rdy * sy * rsStart.h) / (den || 1);
-      k = Math.max(0.05, Math.min(20, k));
-      var w = rsStart.w * k, h = rsStart.h * k;
-      var l = sx < 0 ? rsStart.left + rsStart.w - w : rsStart.left;
-      var t = sy < 0 ? rsStart.top + rsStart.h - h : rsStart.top;
-      putBox(rsEl, Math.max(-20, Math.min(100, l / rsStart.pw * 100)), Math.max(-20, Math.min(100, t / rsStart.ph * 100)),
-        w / rsStart.pw * 100, h / rsStart.ph * 100);
+      /* 文字装饰：改的是字号（宽填过 % 就一起放大），字多了自己折行 */
+      if(rsStart.txt){
+        var den0 = rsStart.w * rsStart.w + rsStart.h * rsStart.h;
+        var k0 = 1 + (rdx * sx * rsStart.w + rdy * sy * rsStart.h) / (den0 || 1);
+        k0 = Math.max(0.2, Math.min(8, k0));
+        var fs = Math.max(6, Math.min(96, rsStart.fs * k0));
+        rsEl.style.fontSize = fs.toFixed(1) + 'px';
+        rsTxtFs = fs;
+        if(rsStart.w0) rsEl.style.width = Math.max(4, Math.min(140, rsStart.wpct * k0)).toFixed(1) + '%';
+        var nr = rsEl.getBoundingClientRect();
+        var nl2 = rsStart.left, nt2 = rsStart.top;
+        if(sx < 0 && rsStart.w0) nl2 = rsStart.left + rsStart.w - nr.width;
+        if(sy < 0) nt2 = rsStart.top + rsStart.h - nr.height;
+        putPos(rsEl, Math.max(-20, Math.min(100, nl2 / rsStart.pw * 100)),
+          Math.max(-20, Math.min(100, nt2 / rsStart.ph * 100)));
+        if(dragSync) peersOf(rsEl).forEach(function(o){
+          o.style.fontSize = rsEl.style.fontSize;
+          if(rsStart.w0) o.style.width = rsEl.style.width;
+          o.style.left = rsEl.style.left; o.style.top = rsEl.style.top;
+        });
+        return;
+      }
+      if(rsStart.free){
+        /* 可拉伸：宽、高各自跟手，图会被拉扁（要的就是这个） */
+        var wf = Math.max(6, rsStart.w + rdx * sx), hf = Math.max(4, rsStart.h + rdy * sy);
+        var lf = sx < 0 ? rsStart.left + rsStart.w - wf : rsStart.left;
+        var tf = sy < 0 ? rsStart.top + rsStart.h - hf : rsStart.top;
+        putBox(rsEl, Math.max(-20, Math.min(100, lf / rsStart.pw * 100)), Math.max(-20, Math.min(100, tf / rsStart.ph * 100)),
+          wf / rsStart.pw * 100, hf / rsStart.ph * 100);
+      } else {
+        /* 沿对角投影：横拖竖拖都算数，手感比只认一个方向顺 */
+        var den = rsStart.w * rsStart.w + rsStart.h * rsStart.h;
+        var k = 1 + (rdx * sx * rsStart.w + rdy * sy * rsStart.h) / (den || 1);
+        k = Math.max(0.05, Math.min(20, k));
+        var w = rsStart.w * k, h = rsStart.h * k;
+        var l = sx < 0 ? rsStart.left + rsStart.w - w : rsStart.left;
+        var t = sy < 0 ? rsStart.top + rsStart.h - h : rsStart.top;
+        putBox(rsEl, Math.max(-20, Math.min(100, l / rsStart.pw * 100)), Math.max(-20, Math.min(100, t / rsStart.ph * 100)),
+          w / rsStart.pw * 100, h / rsStart.ph * 100);
+      }
+      var imLive = rsEl.querySelector('.s-deco-img');
+      if(imLive) imLive.style.height = '100%';
       if(dragSync) peersOf(rsEl).forEach(function(o){
         o.style.width = rsEl.style.width; o.style.height = rsEl.style.height;
         o.style.left = rsEl.style.left; o.style.top = rsEl.style.top;
@@ -1420,9 +1526,12 @@
     e.preventDefault();
     var dx = e.clientX - dragStart.px, dy = e.clientY - dragStart.py;
     if(Math.abs(dx) > 1 || Math.abs(dy) > 1) dragMoved = true;
-    var l2 = Math.max(-20, Math.min(100, (dragStart.left + dx) / dragStart.w * 100));
-    var t2 = Math.max(-20, Math.min(100, (dragStart.top + dy) / dragStart.h * 100));
+    /* 吸附：拖到跟别的装饰（或页面边/中线）差不多齐的时候，自己贴上去并画条虚线 */
+    var sn = snapAxes(dragPage, dragEl, dragStart.left + dx, dragStart.top + dy, dragStart.ew, dragStart.eh);
+    var l2 = Math.max(-20, Math.min(100, sn.left / dragStart.w * 100));
+    var t2 = Math.max(-20, Math.min(100, sn.top / dragStart.h * 100));
     putPos(dragEl, l2, t2);
+    showGuides(dragPage, sn.gx, sn.gy);
     /* 同步移动打开时，另一页那份实时跟着走（松手才写回配置） */
     if(dragSync) peersOf(dragEl).forEach(function(o){ putPos(o, l2, t2); });
   }
@@ -1430,6 +1539,8 @@
     var pg = dragPage ? (dragPage.getAttribute('data-page') || 'first') : 'first';
     if(rsEl){
       var e2 = rsEl, moved2 = rsMoved;
+      /* 松手前先把「是不是文字 / 原来有没有填宽」记下来——下面几行会把 rsStart 清空 */
+      var wasTxt = !!(rsStart && rsStart.txt), wasW0 = !!(rsStart && rsStart.w0);
       var o = {
         t: 'decoSized', id: e2.getAttribute('data-deco-id') || '',
         left: Math.round((parseFloat(e2.style.left) || 0) * 10) / 10,
@@ -1438,8 +1549,15 @@
         height: Math.round((parseFloat(e2.style.height) || 0) * 10) / 10,
         page: pg, sync: dragSync
       };
+      if(wasTxt){
+        o.txt = 1;
+        o.size = Math.round(rsTxtFs * 10) / 10;
+        o.height = null;                 /* 文字装饰没有「高」，高度由字号和行数决定 */
+        if(!wasW0) o.width = null;       /* 没填过宽 = 保持「跟着文字自动撑开」 */
+      }
       rsEl = null; rsStart = null; rsKey = ''; rsMoved = false; dragPage = null;
       if(moved2) send(o);
+      clearGuides();
       return;
     }
     if(!dragEl) return;
@@ -1447,6 +1565,7 @@
     var l = parseFloat(dragEl.style.left) || 0, t = parseFloat(dragEl.style.top) || 0;
     var moved = dragMoved;
     dragEl = null; dragStart = null; dragPage = null; dragMoved = false;
+    clearGuides();
     if(moved) send({t:'decoMoved', id: id, left: Math.round(l * 10) / 10, top: Math.round(t * 10) / 10, page: pg, sync: dragSync});
   }
   /* 主机改完坐标后原地刷一遍，不重载 iframe（重载会把续页的滚动位置带回第 1 页） */
@@ -1456,7 +1575,9 @@
       var pg = pageOf(el).getAttribute('data-page');
       var p = (pg === 'other' && m.p2) ? m.p2 : m;
       el.style.left = p.left + '%'; el.style.top = p.top + '%';
+      if(p.size != null) el.style.fontSize = p.size + 'px';
       if(p.width != null) el.style.width = p.width + '%';
+      else if(el.classList.contains('s-deco-txt')) el.style.width = 'max-content';
       if(p.height) el.style.height = p.height + '%';
       else if(p.width != null) el.style.height = '';
       var im = el.querySelector('.s-deco-img');
@@ -2004,12 +2125,29 @@ function decoHTML(page){
     const st = ['left:' + n2(P.left, 0) + '%', 'top:' + n2(P.top, 0) + '%',
       'opacity:' + n2(d.opacity, 1)];
     if (d.rot) st.push('transform:rotate(' + n2(d.rot, 0) + 'deg)');
-    const cls = 's-deco' + (d.night ? ' s-deco-night' : '') + (d.kind === 'text' ? ' s-deco-txt' : '') + (d.back ? ' s-deco-back' : '');
+    /* 显示范围：都显示 / 仅夜间 / 仅日间（老配置只有 night 布尔，照样认） */
+    const when = d.when || (d.night ? 'night' : 'all');
+    const cls = 's-deco'
+      + (when === 'night' ? ' s-deco-night' : '') + (when === 'day' ? ' s-deco-day' : '')
+      + (d.kind === 'text' ? ' s-deco-txt' : '') + (d.back ? ' s-deco-back' : '')
+      + (d.stretch ? ' s-deco-stretch' : '');
     const idattr = ' data-deco-id="' + d.id + '"';
     if (d.kind === 'text'){
       st.push('font-size:' + n2(d.size, 14) + 'px');
+      /* 颜色留空 = 这条不写 color，跟着 .simple 的正文色走，日间/夜间自动切 */
       if (d.color) st.push('color:' + d.color);
-      st.push('white-space:nowrap');
+      if (n2(d.width, 0) > 0){
+        /* 填了宽：就以这个宽度排版，超了自动换行 */
+        st.push('width:' + n2(d.width, 60) + '%');
+        if (d.nowrap) st.push('white-space:nowrap');
+      } else {
+        /* 没填宽：宽度跟着文字走（短句不占满一行），
+           但最多到「右边还剩的地方」—— 书名再长也会自己折行，不会戳出页面 */
+        const room = Math.max(12, Math.min(100, 100 - n2(P.left, 0) - 2));
+        st.push('width:max-content', 'max-width:' + n2(room, 60) + '%');
+      }
+      st.push('overflow-wrap:break-word', 'word-break:break-word',
+        'text-align:' + (d.align === 'center' || d.align === 'right' ? d.align : 'left'), 'line-height:1.35');
       return '  <div class="' + cls + '"' + idattr + ' style="' + st.join(';') + '">' + textInner(d.text) + '</div>\n';
     }
     st.push('width:' + n2(d.width, 20) + '%');
@@ -2717,11 +2855,20 @@ function buildCSS(opt){
     L.push('.s-deco-img { display: block; width: 100%; height: auto; }');
     L.push('/* 文字下层：垫在正文后面当暗纹，压不到字 */');
     L.push('.s-deco-back { z-index: -1; }');
+    L.push('/* 仅夜间：日间藏起来 */');
     L.push('.s-deco-night { display: none; }');
     L.push(':root[data-night] .s-deco-night { display: block; }');
     L.push('@media (prefers-color-scheme: dark) {');
     L.push('  :root:not([data-day]) .s-deco-night { display: block; }');
     L.push('}');
+    L.push('/* 仅日间：夜间藏起来 */');
+    L.push('.s-deco-day { display: none; }');
+    L.push(':root[data-day] .s-deco-day { display: block; }');
+    L.push('@media (prefers-color-scheme: light) {');
+    L.push('  :root:not([data-night]) .s-deco-day { display: block; }');
+    L.push('}');
+    L.push('/* 文字装饰：颜色没写就继承正文色；超宽自动折行，不戳出页面 */');
+    L.push('.s-deco-txt { overflow-wrap: break-word; word-break: break-word; }');
     const pbars = cfg.deco.filter(d => d.kind === 'pbar');
     if (pbars.length){
       L.push('');
@@ -3063,22 +3210,31 @@ window.addEventListener('message', e => {
     const it = cfg.deco.find(x => x.id === d.id);
     if (it){
       const page = d.page === 'other' ? 'other' : 'first';
-      const box = { left: d.left, top: d.top, width: d.width, height: d.height };
+      /* 文字装饰拖角改的是字号（两页共用一份），宽为 null = 回到「跟着文字自动撑开」 */
+      if (d.size != null) it.size = d.size;
+      if (d.txt){ if (d.width == null) delete it.width; delete it.h; }
+      const patch = { left: d.left, top: d.top };
+      if (d.width != null) patch.width = d.width;
+      if (d.height != null) patch.h = d.height;
+      if (d.txt && d.width == null) delete patch.width;
       if (state.syncMove || it.page !== 'both'){
         delete it.p2;
-        Object.assign(it, { left: box.left, top: box.top, width: box.width, h: box.height });
+        Object.assign(it, patch);
       } else if (page === 'other'){
-        it.p2 = box;
+        it.p2 = Object.assign({}, it.p2 || {}, patch);
       } else {
-        Object.assign(it, { left: box.left, top: box.top, width: box.width, h: box.height });
+        Object.assign(it, patch);
       }
       renderDecoList();
       /* 原地改尺寸，不重新 srcdoc：重排会把续页的滚动位置打回第 1 页 */
       sendToFrame({ t: 'decoPos', id: it.id, left: n2(it.left, 0), top: n2(it.top, 0),
-        width: n2(it.width, 20), height: n2(it.h, 0), p2: it.p2 || null });
+        width: it.width == null || it.width === '' ? null : n2(it.width, 20),
+        height: it.h ? n2(it.h, 0) : null,
+        size: it.kind === 'text' ? n2(it.size, 14) : null,
+        p2: it.p2 || null });
       syncCodePanel();
       scheduleSave();
-      toast('大小已记录：宽 ' + d.width + '% / 高 ' + d.height + '%');
+      toast(d.txt ? '字号已记录：' + n2(it.size, 14) + 'px' : '大小已记录：宽 ' + d.width + '% / 高 ' + d.height + '%');
     }
   }
 });
@@ -3173,7 +3329,7 @@ function itemCard(it){
       + FIELD_OPTIONS.map(([v, l]) => '<option value="' + v + '"' + (it.field === v ? ' selected' : '') + '>' + l + '</option>').join('')
       + '</select>';
   } else if (it.kind === 'text'){
-    body = '<input type="text" data-f="text" class="grow" value="' + esc(it.text) + '" placeholder="文字，可插 {pageIndex} 等字段">';
+    body = '<input type="text" data-f="text" data-fp="1" class="grow" value="' + esc(it.text) + '" placeholder="文字，点一下就出字段候选">';
   } else {
     body = '<button class="btn sm" data-act="pick">' + (it.src ? '换图' : '选图') + '</button>'
       + '<span>高</span><input type="number" data-f="imgH" value="' + n2(it.imgH, 12) + '" min="4" max="90" step="1" style="width:56px">';
@@ -3381,6 +3537,12 @@ function renderDecoList(){
       : isPbar ? '<div style="' + cls + '" title="进度条 SVG">▤</div>'
       : (d.src ? '<img src="' + d.src + '" alt="">' : '<div style="' + cls + 'border-style:dashed">□</div>');
     const title = isText ? '文字' : isPbar ? '进度条' : '图 ' + (i + 1);
+    /* 显示范围：都显示 / 仅夜间 / 仅日间（老配置只有 night 布尔，照样读得懂） */
+    const when = d.when || (d.night ? 'night' : 'all');
+    const segWhen = '<span class="seg mini" title="这条装饰在什么时候出现">'
+      + [['all', '都显示'], ['night', '仅夜间'], ['day', '仅日间']].map(([v, l]) =>
+        '<button type="button" data-dact="when" data-pv="' + v + '"' + (when === v ? ' class="on"' : '') + '>' + l + '</button>').join('')
+      + '</span>';
     /* 放在哪几页：三个按钮比下拉好按，手机上也点得中 */
     const segPage = '<span class="seg mini">'
       + [['first', '首页'], ['other', '续页'], ['both', '两页']].map(([v, l]) =>
@@ -3393,9 +3555,19 @@ function renderDecoList(){
     if (d.p2) body += '<div class="miniRow" style="color:var(--accent)">这条两页位置不同'
       + '<button class="btn sm" data-dact="align" title="以首页那份位置为准，把两页合回一处">对齐两页</button></div>';
     if (isText){
-      body += '<div class="miniRow"><input type="text" data-df="text" class="grow" value="' + esc(d.text) + '" placeholder="装饰文字，可用 {pageIndex} 等字段">'
-        + '字<input type="number" data-df="size" value="' + n2(d.size, 14) + '" min="6" max="72" style="width:54px">'
-        + '<input type="color" data-df="color" value="' + (d.color || '#9a9a9a') + '" style="width:30px;height:22px;padding:1px"></div>';
+      body += '<div class="miniRow"><input type="text" data-df="text" data-fp="1" class="grow" value="' + esc(d.text) + '" placeholder="装饰文字，点一下就出字段候选">'
+        + '</div>'
+        + '<div class="miniRow">字<input type="number" data-df="size" value="' + n2(d.size, 14) + '" min="6" max="96" step="0.5" style="width:54px">'
+        + '色<input type="color" data-df="color" value="' + (d.color || '#9a9a9a') + '" title="留空/点右边按钮 = 跟随正文色" style="width:30px;height:22px;padding:1px">'
+        + '<button class="btn sm" data-dact="nocolor" title="清空颜色，跟随正文色（日夜自动切）">↺ 正文色</button>'
+        + '宽<input type="number" data-df="width" value="' + (n2(d.width, 0) > 0 ? n2(d.width, 60) : '') + '" min="2" max="120" step="0.5" placeholder="自动" style="width:56px">%'
+        + '</div>'
+        + '<div class="miniRow">对齐<select data-df="align" style="width:auto">'
+        + [['left', '左'], ['center', '中'], ['right', '右']].map(([v, l]) =>
+          '<option value="' + v + '"' + ((d.align || 'left') === v ? ' selected' : '') + '>' + l + '</option>').join('')
+        + '</select>'
+        + '<label class="sw" style="font-size:11.5px" title="不勾：太长就自动折行（推荐）"><input type="checkbox" data-df="nowrap"' + (d.nowrap ? ' checked' : '') + '>不换行</label>'
+        + '</div>';
     }
     if (isPbar){
       body += '<div class="miniRow">日<input type="color" data-df="color" value="' + (d.color || '#8a8a8a') + '" title="日间颜色；清空=跟随正文" style="width:30px;height:22px;padding:1px">'
@@ -3409,8 +3581,13 @@ function renderDecoList(){
       + '</div>'
       + '<div class="miniRow">转<input type="number" data-df="rot" value="' + n2(d.rot, 0) + '" min="-180" max="180" step="1" style="width:52px">°'
       + '透<input type="number" data-df="opacity" value="' + n2(d.opacity, 1) + '" min="0" max="1" step="0.05" style="width:52px">'
-      + '<label class="sw" style="font-size:11.5px"><input type="checkbox" data-df="night"' + (d.night ? ' checked' : '') + '>仅夜间</label>'
+      + segWhen
+      + '</div>'
+      + '<div class="miniRow">'
       + '<label class="sw" style="font-size:11.5px" title="勾上就垫在正文后面（当暗纹用，不挡字）；取消就浮到字上面"><input type="checkbox" data-df="back"' + (d.back ? ' checked' : '') + '>文字下层</label>'
+      + (d.kind === 'img'
+        ? '<label class="sw" style="font-size:11.5px" title="勾上后拖四角是自由变形：宽高各走各的，图片会被拉扁/拉长；不勾就等比缩放"><input type="checkbox" data-df="stretch"' + (d.stretch ? ' checked' : '') + '>可拉伸</label>'
+        : '')
       + '</div>';
     return '<div class="decoRow" data-did="' + d.id + '">' + thumb
       + '<div class="decMain">' + body + '</div></div>';
@@ -3433,8 +3610,9 @@ function bindDeco(){
     if (!t.dataset || !t.dataset.df) return;
     const row = t.closest('.decoRow'); if (!row) return;
     const d = cfg.deco.find(x => x.id === row.dataset.did); if (!d) return;
-    if (t.dataset.df === 'page'){ d.page = t.value; render(); }
-    if (t.type === 'checkbox'){ d.night = t.checked; render(); }
+    const k = t.dataset.df;
+    /* 复选框一律按自己的字段名存，别再写死 night（不然新加的「可拉伸」会把仅夜间顶掉） */
+    if (t.type === 'checkbox'){ d[k] = t.checked; renderDecoList(); render(); }
   });
   box.addEventListener('click', e => {
     const btn = e.target.closest('[data-dact]'); if (!btn) return;
@@ -3447,6 +3625,13 @@ function bindDeco(){
       renderDecoList(); render();
       toast(d.page === 'both' ? '这条两页都显示（位置共用）'
         : d.page === 'first' ? '这条只在首页显示' : '这条只在续页显示');
+      return;
+    }
+    if (act === 'when'){
+      d.when = btn.dataset.pv;
+      if (d.when === 'night') d.night = true; else delete d.night;
+      renderDecoList(); render();
+      toast(d.when === 'night' ? '这条只在夜间显示' : d.when === 'day' ? '这条只在日间显示' : '这条日夜都显示');
       return;
     }
     if (act === 'align'){
@@ -3482,6 +3667,61 @@ function bindDeco(){
     cfg.deco = cfg.deco.filter(x => x.id !== row.dataset.did);
     renderDecoList(); render();
   });
+}
+/* ===================== 字段候选：点静态文字输入框，下面弹中文标签，点一下就插 {字段} ===================== */
+const FPICK_ROWS = [
+  ['bookName', '书名'], ['chapterTitle', '章节名'], ['time', '时间'], ['battery', '电量'],
+  ['pageIndex', '当前页码'], ['pageCount', '总页数'], ['page', '页码/总页数'],
+  ['progress', '进度'], ['chapterProgress', '本章进度']
+];
+function initFieldPicker(){
+  const box = document.createElement('div');
+  box.className = 'fpick';
+  box.innerHTML = '<div class="fpick-t">点一个，插到光标处；再接着打字就行</div>'
+    + '<div class="fpick-b">' + FPICK_ROWS.map(([v, l]) =>
+      '<button type="button" data-ph="' + v + '">' + l + '</button>').join('') + '</div>';
+  document.body.appendChild(box);
+  let cur = null;
+
+  function hide(){ box.classList.remove('on'); cur = null; }
+  function show(inp){
+    cur = inp;
+    box.classList.add('on');
+    const r = inp.getBoundingClientRect();
+    const bw = box.offsetWidth || 220, bh = box.offsetHeight || 60;
+    let left = Math.max(8, Math.min(window.innerWidth - bw - 8, r.left));
+    let top = r.bottom + 6;
+    if (top + bh > window.innerHeight - 8) top = Math.max(8, r.top - bh - 6);
+    box.style.left = left + 'px';
+    box.style.top = top + 'px';
+  }
+  function insertPh(inp, name){
+    const code = '{' + name + '}';
+    const a = inp.selectionStart == null ? inp.value.length : inp.selectionStart;
+    const b = inp.selectionEnd == null ? a : inp.selectionEnd;
+    inp.value = inp.value.slice(0, a) + code + inp.value.slice(b);
+    const pos = a + code.length;
+    try { inp.setSelectionRange(pos, pos); } catch (err) {}
+    /* 走一遍原有的 input 流程：配置和预览一起更新 */
+    inp.dispatchEvent(new Event('input', { bubbles: true }));
+    setTimeout(() => { if (!document.body.contains(inp)) hide(); }, 0);
+  }
+  document.addEventListener('focusin', e => {
+    const t = e.target;
+    if (t && t.dataset && t.dataset.fp != null && t.tagName === 'INPUT') show(t);
+  });
+  document.addEventListener('click', e => {
+    const t = e.target;
+    const btn = t && t.closest ? t.closest('.fpick button[data-ph]') : null;
+    if (btn){ if (cur) insertPh(cur, btn.getAttribute('data-ph')); return; }
+    if (t && t.dataset && t.dataset.fp != null && t.tagName === 'INPUT'){ show(t); return; }
+    if (cur && !(t.closest && t.closest('.fpick'))) hide();
+  }, true);
+  /* 弹层里按下鼠标时别抢焦点，否则输入框一失焦弹层就没了 */
+  box.addEventListener('pointerdown', e => { e.preventDefault(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') hide(); });
+  window.addEventListener('scroll', hide, true);
+  window.addEventListener('resize', hide);
 }
 function addDecoFromFile(file){
   /* SVG 走进度条那条路：当图片塞进 <img> 的话，里面的表达式永远不会被算出来 */
@@ -3944,7 +4184,11 @@ function normalizeCfg(c){
       s[sk] = (s[sk] || []).map(it => Object.assign(item(it.kind || 'field'), it, { id: it.id || uid() }));
     });
   });
-  out.deco = (c && c.deco || []).map(d => Object.assign({ id: uid(), kind: 'img', src: '', page: 'both', left: 6, top: 8, width: 24, opacity: 1, rot: 0, night: false, text: '', size: 14, color: '#9a9a9a' }, d, { id: d.id || uid() }));
+  out.deco = (c && c.deco || []).map(d => Object.assign({ id: uid(), kind: 'img', src: '', page: 'both', left: 6, top: 8, width: 24, opacity: 1, rot: 0, when: 'all', text: '', size: 14, color: '' }, d, {
+    id: d.id || uid(),
+    /* 老配置只有 night 布尔：换成新的 when，仅日间才用得上 day */
+    when: d.when || (d.night ? 'night' : 'all')
+  }));
   return out;
 }
 function applyTemplate(obj, sidecar){
@@ -4645,7 +4889,7 @@ function bindAll(){
     Array.from(e.dataTransfer.files || []).filter(f => /^image\//.test(f.type)).forEach(addDecoFromFile);
   });
   $('#deco-add-text').addEventListener('click', () => {
-    cfg.deco.push({ id: uid(), kind: 'text', src: '', page: 'both', left: 6, top: 92, width: 20, opacity: 1, rot: 0, night: false, text: '— 第 {pageIndex} 页 —', size: 11, color: '#9a9a9a' });
+    cfg.deco.push({ id: uid(), kind: 'text', src: '', page: 'both', left: 6, top: 92, opacity: 1, rot: 0, when: 'all', align: 'left', text: '— 第 {pageIndex} 页 —', size: 11, color: '' });
     renderDecoList(); render();
   });
   /* 进度条 SVG：点选或拖入（.svg / .txt 都行） */
@@ -4699,6 +4943,7 @@ function bindAll(){
     }
   });
   bindDeco();
+  initFieldPicker();
   bindPresetGrids();
   bindCapTitle();
   bindCode();
@@ -5148,8 +5393,8 @@ function aiCheckOp(raw){
       const o = { id: uid(), kind: kind, src: '', text: '', page: (d.page === 'first' || d.page === 'other') ? d.page : 'both',
         left: aiNum(d.left, -30, 110), top: aiNum(d.top, -30, 110),
         width: aiNum(d.width, 2, 120) || 20, opacity: aiNum(d.opacity, 0, 1) === null ? 1 : aiNum(d.opacity, 0, 1),
-        rot: aiNum(d.rot, -180, 180) || 0, night: !!d.night,
-        size: aiNum(d.size, 6, 72) || 14, color: aiColor(d.color) || '#8a7a55' };
+        rot: aiNum(d.rot, -180, 180) || 0, when: d.when === 'night' || d.night ? 'night' : (d.when === 'day' ? 'day' : 'all'),
+        size: aiNum(d.size, 6, 72) || 14, color: aiColor(d.color) || '' };
       if (o.left === null) o.left = 50;
       if (o.top === null) o.top = 50;
       if (kind === 'text'){
