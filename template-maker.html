@@ -163,6 +163,10 @@
   .miniRow{display:flex; gap:6px; align-items:center; flex-wrap:wrap; font-size:11.5px; color:var(--sub);}
   .miniRow select,.miniRow input[type=text],.miniRow input[type=number]{padding:4px 7px; font-size:12px; width:auto;}
   .miniRow .grow{flex:1; min-width:80px;}
+  /* 装饰文字输入框：能用回车换行，所以是 textarea；字体跟界面一致，别用代码用的等宽字体 */
+  .miniRow textarea.deco-ta{flex:1 1 100%; width:100%; min-width:0; box-sizing:border-box;
+    font-family:inherit; font-size:12px; line-height:1.6; padding:5px 8px; border-radius:8px;
+    resize:vertical; min-height:46px; overflow-y:hidden;}
   /* 装饰列表 */
   .decoRow{display:flex; gap:9px; align-items:flex-start; border:1px solid var(--line); border-radius:10px; background:var(--slot); padding:8px;}
   .decoRow img{width:44px; height:44px; object-fit:contain; border-radius:6px; background:repeating-conic-gradient(var(--chk-a) 0 25%, var(--chk-b) 0 50%) 0 0/8px 8px; flex:none; cursor:pointer; border:1px solid var(--line);}
@@ -303,6 +307,7 @@
     .miniRow{gap:7px;}
     .miniRow input[type=number]{width:64px!important;}
     .miniRow .grow{flex:1 1 100%; min-width:0;}
+    .miniRow textarea.deco-ta{font-size:16px; padding:7px 9px;}
     .grid3, .grid4{grid-template-columns:1fr 1fr;}
     .grid2, .presetGrid{grid-template-columns:1fr 1fr;}
     .pgrid{grid-template-columns:repeat(3,1fr);}
@@ -2142,7 +2147,9 @@ function textInner(t){
   return String(t || '').split(/(\{[a-zA-Z]+\})/g).map(seg => {
     const m = seg.match(/^\{([a-zA-Z]+)\}$/);
     if (m && FIELD_LABEL[m[1]]) return '<span data-reader-field="' + m[1] + '"></span>';
-    return esc(seg);
+    /* 手打/粘贴的换行统一转成 <br>：不依赖阅读器的 white-space 设置，
+       导到手机上和预览里断的位置完全一致 */
+    return esc(seg).replace(/\r\n|\r|\n/g, '<br>');
   }).join('');
 }
 function itemHTML(it){
@@ -3583,6 +3590,17 @@ function bindCapTitle(){
 }
 
 /* ===================== 装饰 UI ===================== */
+/* 装饰文字框跟着内容长高：写几行就显示几行，超过 180px 才出滚动条 */
+function fitTa(t){
+  if(!t) return;
+  t.style.height = 'auto';
+  var h = Math.min(180, Math.max(46, t.scrollHeight));
+  t.style.height = h + 'px';
+  t.style.overflowY = t.scrollHeight > 180 ? 'auto' : 'hidden';
+}
+function fitTaAll(){
+  Array.prototype.forEach.call(document.querySelectorAll('#deco-list textarea.deco-ta'), fitTa);
+}
 function renderDecoList(){
   const box = $('#deco-list');
   if (!cfg.deco.length){ box.innerHTML = '<div class="empty">还没有装饰图。点上面的虚线框加图，或加一个文字装饰 / 进度条 SVG。</div>'; return; }
@@ -3611,7 +3629,7 @@ function renderDecoList(){
     if (d.p2) body += '<div class="miniRow" style="color:var(--accent)">这条两页位置不同'
       + '<button class="btn sm" data-dact="align" title="以首页那份位置为准，把两页合回一处">对齐两页</button></div>';
     if (isText){
-      body += '<div class="miniRow"><input type="text" data-df="text" data-fp="1" class="grow" value="' + esc(d.text) + '" placeholder="装饰文字，点一下就出字段候选">'
+      body += '<div class="miniRow"><textarea data-df="text" data-fp="1" class="grow deco-ta" rows="2" spellcheck="false" placeholder="装饰文字；要换行就直接按回车，点一下还会出字段候选">' + esc(d.text) + '</textarea>'
         + '</div>'
         + '<div class="miniRow">字<input type="number" data-df="size" value="' + n2(d.size, 14) + '" min="6" max="96" step="0.5" style="width:54px">'
         + '色<input type="color" data-df="color" value="' + (d.color || '#9a9a9a') + '" title="留空/点右边按钮 = 跟随正文色" style="width:30px;height:22px;padding:1px">'
@@ -3648,6 +3666,7 @@ function renderDecoList(){
     return '<div class="decoRow" data-did="' + d.id + '">' + thumb
       + '<div class="decMain">' + body + '</div></div>';
   }).join('');
+  fitTaAll();
 }
 function bindDeco(){
   const box = $('#deco-list');
@@ -3659,6 +3678,7 @@ function bindDeco(){
     if (t.type === 'checkbox') d[k] = t.checked;
     else if (t.type === 'number') d[k] = n2(t.value, 0);
     else d[k] = t.value;
+    if(t.tagName === 'TEXTAREA') fitTa(t);
     render();
   });
   box.addEventListener('change', e => {
@@ -3764,13 +3784,13 @@ function initFieldPicker(){
   }
   document.addEventListener('focusin', e => {
     const t = e.target;
-    if (t && t.dataset && t.dataset.fp != null && t.tagName === 'INPUT') show(t);
+    if (t && t.dataset && t.dataset.fp != null && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) show(t);
   });
   document.addEventListener('click', e => {
     const t = e.target;
     const btn = t && t.closest ? t.closest('.fpick button[data-ph]') : null;
     if (btn){ if (cur) insertPh(cur, btn.getAttribute('data-ph')); return; }
-    if (t && t.dataset && t.dataset.fp != null && t.tagName === 'INPUT'){ show(t); return; }
+    if (t && t.dataset && t.dataset.fp != null && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')){ show(t); return; }
     if (cur && !(t.closest && t.closest('.fpick'))) hide();
   }, true);
   /* 弹层里按下鼠标时别抢焦点，否则输入框一失焦弹层就没了 */
