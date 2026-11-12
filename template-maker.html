@@ -932,7 +932,7 @@
         </div>
         <div class="hint" style="margin-top:6px">每条装饰右边有三个小按钮：<b>首页 / 续页 / 两页</b> —— 想只放在首页就点「首页」。</div>
         <div id="deco-drop2" class="drop" style="margin-top:8px">点击或拖入 <b>进度条 SVG</b>（.svg / .txt）—— 会随页数走动</div>
-        <div class="hint" style="margin-top:6px">勾上「文字下层」＝垫在正文后面当暗纹（不挡字），取消就浮到字上面。打开「🖐 在预览里拖动」后，每条装饰四角会出现小圆点，拖它就能随意改大小（图片默认等比、不会变形，勾「可拉伸」就宽高各走各的；文字装饰拖角改的是字号）；拖动图片本身是挪位置。拖动时会<b>自动吸附</b>：靠近别的装饰的边或中线、或页面边和十字中线，就会贴上去并闪一条蓝虚线。翻页看效果：点预览上的 ◀ ▶。</div>
+        <div class="hint" style="margin-top:6px">勾上「文字下层」＝垫在正文后面当暗纹（不挡字），取消就浮到字上面。打开「🖐 在预览里拖动」后，每条装饰四角会出现小圆点，拖它就能随意改大小（图片默认等比、不会变形，勾「可拉伸」就宽高各走各的）；文字装饰更细：<b>拖左右边只改宽度</b>（每行放几个字）、<b>拖上下边只改字号</b>、拖四角两个一起改。拖动装饰本身是挪位置。拖动时会<b>自动吸附</b>：靠近别的装饰的边或中线、或页面边和十字中线，就会贴上去并闪一条蓝虚线。翻页看效果：点预览上的 ◀ ▶。</div>
         <div id="deco-list" style="display:flex; flex-direction:column; gap:8px; margin-top:10px"></div>
         <div class="hint" style="margin-top:8px">位置用 <b>left/top/width 百分比</b>（相对整页），换机型不会错位。开启拖动后直接在右侧预览里拖，松手即记下坐标。</div>
         <div class="hint" style="margin-top:6px"><b>同步移动</b>：开着时拖其中一页，另一页实时跟着走（两页共用一个位置）；关掉后拖哪页只改哪页，另一页停原处、会记成「两页位置不同」，想合回一处点「对齐两页」。想让两页各摆不同位置又可以随便拖，就点每条的「<b>拆</b>」把它拆成首页/续页两份。</div>
@@ -957,7 +957,9 @@
               最多撑到页面右边剩的地方，所以「我记得我在读《书名》」这种长句不会戳出屏幕；想固定每行多宽就填「宽」。</p>
             <p><b>4. 显示范围</b>：都显示 / 仅夜间 / 仅日间。放一整套「夜里才露出的花纹」选<b>仅夜间</b>；只想白天出现的记号（比如日间版的页码框）选<b>仅日间</b>。</p>
             <p><b>5. 样式</b>：字 = 字号 px；色 = 颜色，点<b>↺ 正文色</b>清空后<b>跟随正文颜色</b>（日间夜间自动切）；宽 = 这条文字的宽度百分比（留空＝自动）；对齐 = 折行后靠左/中/右；转 = 旋转；透 = 透明度（0 全透明，1 不透明）。</p>
-            <p><b>5.1 字号怎么调最快</b>：开「🖐 在预览里拖动」后拖这条文字的<b>四角小圆点</b>，字号和整块一起缩放，字多了自动折行。</p>
+            <p><b>5.1 字号和每行字数怎么调最快</b>：开「🖐 在预览里拖动」后，这条文字上会出现 8 个把手——
+            <b>左右两边的</b>只改宽度（每行放几个字，字数变了自己折行）、<b>上下两边的</b>只改字号、
+            <b>四角的</b>两个一起改，想怎么配就怎么拖；松手后自动记下来（宽会换算成百分比存进配置）。</p>
             <p><b>6. 想加图片</b>：不用这里，把图拖到上面的虚线框（装饰图）。角标、花纹、贴纸都走这条路，多一个「宽」= 宽度占页面百分比，高度按原图比例自动。</p>
             <p><b>7. 快捷摆位</b>：点「🖐 在预览里拖动」，直接拖右侧预览里的装饰，松手自动写回 left/top，比手填快。</p>
           </div>
@@ -1366,19 +1368,34 @@
     sw: 'left:-7px;bottom:-7px;cursor:nesw-resize',
     se: 'right:-7px;bottom:-7px;cursor:nwse-resize'
   };
+  /* 文字装饰额外的四个边把手：左右 = 只改宽（每行字数），上下 = 只改字号 */
+  var HEDGE = {
+    w: 'left:-7px;top:50%;margin-top:-6.5px;cursor:ew-resize',
+    e: 'right:-7px;top:50%;margin-top:-6.5px;cursor:ew-resize',
+    n: 'top:-7px;left:50%;margin-left:-6.5px;cursor:ns-resize',
+    s: 'bottom:-7px;left:50%;margin-left:-6.5px;cursor:ns-resize'
+  };
   function dropHandles(el){
     Array.prototype.forEach.call(el.querySelectorAll('.s-deco-h'), function(o){ o.parentNode.removeChild(o); });
   }
   function addHandles(el){
     dropHandles(el);
-    /* 文字装饰也给把手：拖角改的是字号 */
-    Object.keys(HPOS).forEach(function(k){
+    /* 文字装饰多给四个边把手：左右改宽、上下改字号；四角两个方向一起改 */
+    var isTxt = el.classList.contains('s-deco-txt');
+    var map = isTxt ? Object.assign({}, HPOS, HEDGE) : HPOS;
+    if(isTxt){
+      /* 单行小字（高不到 46px）上下边把手会和四角叠在一起，难按；这种就只留四角 */
+      var er0 = el.getBoundingClientRect();
+      if(er0.height < 46){ delete map.n; delete map.s; }
+      if(er0.width < 46){ delete map.w; delete map.e; }
+    }
+    Object.keys(map).forEach(function(k){
       var h = document.createElement('i');
       h.className = 's-deco-h';
       h.setAttribute('data-h', k);
       h.style.cssText = 'position:absolute;width:13px;height:13px;border-radius:50%;background:#fff;'
         + 'border:2px solid #2f6fed;box-shadow:0 1px 3px rgba(0,0,0,.35);box-sizing:border-box;'
-        + 'touch-action:none;' + HPOS[k];
+        + 'touch-action:none;' + map[k];
       el.appendChild(h);
     });
   }
@@ -1455,7 +1472,11 @@
         txt: el.classList.contains('s-deco-txt'),
         free: el.classList.contains('s-deco-stretch'),
         w0: /%\s*$/.test(el.style.width || ''),
-        wpct: isFinite(wpct) ? wpct : (er.width / pr.width * 100)
+        wpct: isFinite(wpct) ? wpct : (er.width / pr.width * 100),
+        /* 这条把手管哪个方向：四角两个轴都管，左右/上下边只管一个轴 */
+        hx: /[we]/.test(hk), hy: /[ns]/.test(hk),
+        sx: /w/.test(hk) ? -1 : 1, sy: /n/.test(hk) ? -1 : 1,
+        hitW: false
       };
       rsTxtFs = rsStart.fs;
       try{ el.setPointerCapture(e.pointerId); }catch(err){}
@@ -1472,26 +1493,41 @@
       e.preventDefault();
       var rdx = e.clientX - rsStart.px, rdy = e.clientY - rsStart.py;
       if(Math.abs(rdx) > 1 || Math.abs(rdy) > 1) rsMoved = true;
-      var sx = rsKey.indexOf('w') >= 0 ? -1 : 1;
-      var sy = rsKey.indexOf('n') >= 0 ? -1 : 1;
-      /* 文字装饰：改的是字号（宽填过 % 就一起放大），字多了自己折行 */
+      var sx = rsStart.sx, sy = rsStart.sy;
+      /* 文字装饰：横拖改「宽」（每行能放几个字），竖拖改「字号」，两个方向各管各的；
+         想同时变就斜着拖。以前四角只能等比缩放，字号和栏宽绑死，调不了每行字数。 */
       if(rsStart.txt){
-        var den0 = rsStart.w * rsStart.w + rsStart.h * rsStart.h;
-        var k0 = 1 + (rdx * sx * rsStart.w + rdy * sy * rsStart.h) / (den0 || 1);
-        k0 = Math.max(0.2, Math.min(8, k0));
-        var fs = Math.max(6, Math.min(96, rsStart.fs * k0));
+        if(Math.abs(rdx) > 3) rsStart.hitW = true;
+        var hitW = rsStart.hitW && rsStart.hx, hitF = rsStart.hy;
+        var rightEdge = rsStart.left + rsStart.w;
+        var wpx = rsStart.w, fs = rsStart.fs;
+        if(hitW){
+          /* 往左拖（sx<0）右边不动，往右拖左边不动，宽度上限到页面另一边为止 */
+          var cap = sx < 0 ? rightEdge - 2 : rsStart.pw - rsStart.left - 2;
+          wpx = rsStart.w + rdx * sx;
+          wpx = Math.max(16, Math.min(Math.max(20, cap), wpx));
+        }
+        if(hitF){
+          fs = rsStart.fs * (1 + (rdy * sy) / Math.max(24, rsStart.h));
+          fs = Math.max(6, Math.min(96, fs));
+        }
         rsEl.style.fontSize = fs.toFixed(1) + 'px';
         rsTxtFs = fs;
-        if(rsStart.w0) rsEl.style.width = Math.max(4, Math.min(140, rsStart.wpct * k0)).toFixed(1) + '%';
+        if(hitW || rsStart.w0){
+          rsEl.style.width = Math.round(wpx) + 'px';
+          /* 原本是自动宽（带 max-width 封顶）的，一旦手改成固定宽就得把封顶解开，
+             否则拖到超过那一档就拖不动了 */
+          rsEl.style.maxWidth = 'none';
+        }
         var nr = rsEl.getBoundingClientRect();
         var nl2 = rsStart.left, nt2 = rsStart.top;
-        if(sx < 0 && rsStart.w0) nl2 = rsStart.left + rsStart.w - nr.width;
-        if(sy < 0) nt2 = rsStart.top + rsStart.h - nr.height;
+        if(sx < 0 && (hitW || rsStart.w0)) nl2 = rightEdge - nr.width;
+        if(sy < 0 && hitF) nt2 = rsStart.top + rsStart.h - nr.height;
         putPos(rsEl, Math.max(-20, Math.min(100, nl2 / rsStart.pw * 100)),
           Math.max(-20, Math.min(100, nt2 / rsStart.ph * 100)));
         if(dragSync) peersOf(rsEl).forEach(function(o){
           o.style.fontSize = rsEl.style.fontSize;
-          if(rsStart.w0) o.style.width = rsEl.style.width;
+          if(hitW || rsStart.w0) o.style.width = rsEl.style.width;
           o.style.left = rsEl.style.left; o.style.top = rsEl.style.top;
         });
         return;
@@ -1541,6 +1577,8 @@
       var e2 = rsEl, moved2 = rsMoved;
       /* 松手前先把「是不是文字 / 原来有没有填宽」记下来——下面几行会把 rsStart 清空 */
       var wasTxt = !!(rsStart && rsStart.txt), wasW0 = !!(rsStart && rsStart.w0);
+      var wasHitW = !!(rsStart && rsStart.hitW), pageW0 = rsStart ? rsStart.pw : 0;
+      var wpxNow = parseFloat(e2.style.width);
       var o = {
         t: 'decoSized', id: e2.getAttribute('data-deco-id') || '',
         left: Math.round((parseFloat(e2.style.left) || 0) * 10) / 10,
@@ -1553,7 +1591,11 @@
         o.txt = 1;
         o.size = Math.round(rsTxtFs * 10) / 10;
         o.height = null;                 /* 文字装饰没有「高」，高度由字号和行数决定 */
-        if(!wasW0) o.width = null;       /* 没填过宽 = 保持「跟着文字自动撑开」 */
+        /* 宽度按页面百分比回写：拖过左右就固定成这个宽；
+           从没填过宽、这次也只拖了上下，就继续「跟着文字自动撑开」 */
+        if((wasW0 || wasHitW) && pageW0 > 0 && isFinite(wpxNow))
+          o.width = Math.round(wpxNow / pageW0 * 1000) / 10;
+        else o.width = null;
       }
       rsEl = null; rsStart = null; rsKey = ''; rsMoved = false; dragPage = null;
       if(moved2) send(o);
@@ -1573,15 +1615,27 @@
     Array.prototype.forEach.call(document.querySelectorAll('.s-deco'), function(el){
       if(el.getAttribute('data-deco-id') !== m.id) return;
       var pg = pageOf(el).getAttribute('data-page');
-      var p = (pg === 'other' && m.p2) ? m.p2 : m;
+      /* 续页有自己位置（p2）时只覆盖 left/top，尺寸/字号仍用同一条消息里的值 */
+      var p = (pg === 'other' && m.p2) ? Object.assign({}, m, m.p2) : m;
       el.style.left = p.left + '%'; el.style.top = p.top + '%';
       if(p.size != null) el.style.fontSize = p.size + 'px';
-      if(p.width != null) el.style.width = p.width + '%';
-      else if(el.classList.contains('s-deco-txt')) el.style.width = 'max-content';
-      if(p.height) el.style.height = p.height + '%';
-      else if(p.width != null) el.style.height = '';
-      var im = el.querySelector('.s-deco-img');
-      if(im) im.style.height = p.height ? '100%' : 'auto';
+      /* 只在消息里明确带了 width 才动宽度。单纯挪位置的消息（decoPos）不带 width，
+         以前这里会顺手把文字装饰打回 max-content —— 于是「填了宽也不换行、
+         一行一直伸到页面外面去」。这个坑就是这么来的。 */
+      if('width' in p){
+        if(p.width != null){ el.style.width = p.width + '%'; el.style.maxWidth = 'none'; }
+        else if(el.classList.contains('s-deco-txt')){
+          /* 回到「自动宽」：max-content + 右边还剩多少的封顶，长句才自己折行 */
+          el.style.width = 'max-content';
+          el.style.maxWidth = Math.max(12, Math.min(100, 100 - (parseFloat(p.left) || 0) - 2)) + '%';
+        }
+      }
+      if('height' in p){
+        if(p.height) el.style.height = p.height + '%';
+        else el.style.height = '';
+        var im = el.querySelector('.s-deco-img');
+        if(im) im.style.height = p.height ? '100%' : 'auto';
+      }
     });
   }
   function setDrag(on){
@@ -3234,7 +3288,9 @@ window.addEventListener('message', e => {
         p2: it.p2 || null });
       syncCodePanel();
       scheduleSave();
-      toast(d.txt ? '字号已记录：' + n2(it.size, 14) + 'px' : '大小已记录：宽 ' + d.width + '% / 高 ' + d.height + '%');
+      toast(d.txt
+        ? ('字号 ' + n2(it.size, 14) + 'px · ' + (d.width != null ? '每行宽 ' + d.width + '%' : '宽度自动'))
+        : ('大小已记录：宽 ' + d.width + '% / 高 ' + d.height + '%'));
     }
   }
 });
