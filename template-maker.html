@@ -431,6 +431,29 @@
     #mbody .panel.m-show{display:flex!important;}
     #mbody .card{background:rgba(255,255,255,.66);}
     html.dark #mbody .card{background:rgba(255,255,255,.05);}
+
+    /* ---- 抽屉顶部的分段标签：一次只显示一组，不用上下长滑 ---- */
+    #mtabs{display:none;}
+    /* 标签多的时候换行，别让它横着滚出去看不到（背景有 7 组） */
+    body.arc-mobile #mtabs{display:flex; flex-wrap:wrap; gap:5px; flex:none;
+      padding:0 12px 9px;}
+    body.arc-mobile #mtabs.empty{display:none;}
+    #mtabs::-webkit-scrollbar{display:none;}
+    #mtabs button{flex:0 0 auto; border:none; background:rgba(0,0,0,.06); color:var(--sub);
+      border-radius:999px; padding:6px 13px; font-size:12.5px; line-height:1.7; font-family:inherit; cursor:pointer;}
+    html.dark #mtabs button{background:rgba(255,255,255,.1);}
+    #mtabs button.on{background:var(--accent); color:#fff;}
+    /* 分段后只留当前这一组；被 JS 隐藏的卡片（如图片模式下的渐变）在这一组里要放出来 */
+    #mbody .m-sec-off{display:none!important;}
+    body.arc-mobile #mbody .card.m-force{display:block!important;}
+    /* 注释默认收起，点右上「说明」才展开 */
+    body.arc-mobile:not(.m-hints) #mbody .hint{display:none!important;}
+    #mh-back{display:none;}
+    body.m-back #mh-back{display:inline-flex; align-items:center;}
+    #mh-help{flex:none;}
+    body.m-hints #mh-help{background:var(--accent); color:#fff;}
+    /* 键盘弹出时把底部抽屉顶到键盘上方，不然整个人被键盘挡住 */
+    body.arc-mobile.m-kb #msheet:not(.top){bottom:var(--m-kb,0px);}
   }
 
   @media (max-width: 420px){
@@ -549,7 +572,7 @@
 
     <!-- ============ 背景 ============ -->
     <div class="panel" data-panel="bg">
-      <div class="card keep" id="ext-card" style="display:none">
+      <div class="card keep" id="ext-card" data-sec="模板图" style="display:none">
         <h2>模板自带的图片 <span class="tag" id="ext-badge">图不在文件里</span></h2>
         <div class="hint" id="ext-note" style="margin-top:6px"></div>
         <div id="ext-list" style="margin-top:10px"></div>
@@ -579,7 +602,7 @@
         </div>
       </div>
 
-      <div class="card keep" id="sim-card">
+      <div class="card keep" id="sim-card" data-sec="App 背景">
         <h2>预览模拟 App 背景图 <span class="tag">只影响预览</span></h2>
         <div class="hint" style="margin-top:6px">有些模板用 <code>var(--reader-page-background)</code> 取 App「选择背景图片」的那张图，还自带一套占位图。这里放一张，预览就按「App 已选背景图」的样子渲染（模板会自动藏掉自己的占位层）。<b>这张图不会写进模板。</b></div>
         <div class="row tight" style="margin-top:10px">
@@ -589,7 +612,7 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" data-sec="来源">
         <h2>背景来源</h2>
         <div class="seg" id="bg-mode">
           <button data-v="gradient">纯色渐变</button>
@@ -599,7 +622,7 @@
         <div class="hint" style="margin-top:8px">「无」= 完全透明，让 App 的「选择背景图片」或下面的图片层直接透出来。</div>
       </div>
 
-      <div class="card" id="bg-grad-box">
+      <div class="card" id="bg-grad-box" data-sec="渐变">
         <h2>渐变</h2>
         <div class="grid3 f4" id="bg-day-grad">
           <div><label>色 1</label><input type="color" data-k="bg.dayC1"></div>
@@ -620,7 +643,7 @@
 
       <div class="card" id="bg-img-box">
         <h2>背景图片 <span class="tag">内嵌进模板</span></h2>
-        <div class="grid2">
+        <div class="grid2" data-sec="图片">
           <div class="imgCard">
             <img class="thumb" id="th-day" alt="日间背景">
             <div class="cap" id="cap-day">日间：未选</div>
@@ -638,9 +661,9 @@
             </div>
           </div>
         </div>
-        <div class="sw" style="margin-top:10px"><input type="checkbox" id="bg-img-night-same">夜间沿用日间图（省体积）</div>
-        <label class="fld" style="margin-top:14px">分页图 <span class="tag">可选 · 留空用上面的通用图</span></label>
-        <div class="grid2">
+        <div class="sw" style="margin-top:10px" data-sec="图片"><input type="checkbox" id="bg-img-night-same">夜间沿用日间图（省体积）</div>
+        <label class="fld" style="margin-top:14px" data-sec="图片">分页图 <span class="tag">可选 · 留空用上面的通用图</span></label>
+        <div class="grid2" data-sec="图片">
           <div class="imgCard">
             <img class="thumb" id="th-first" alt="首页图">
             <div class="cap" id="cap-first">首页：未选</div>
@@ -658,16 +681,16 @@
             </div>
           </div>
         </div>
-        <div class="hint" style="margin-top:8px">分页图盖在通用背景之上，日夜都用这一张；铺法跟下面的设置一致。只设首页图 = 首页用这张、续页仍用通用图。</div>
-        <label class="fld" style="margin-top:12px">铺法</label>
-        <div class="seg" id="bg-img-fit">
+        <div class="hint" style="margin-top:8px" data-sec="图片">分页图盖在通用背景之上，日夜都用这一张；铺法跟下面的设置一致。只设首页图 = 首页用这张、续页仍用通用图。</div>
+        <label class="fld" style="margin-top:12px" data-sec="图片">铺法</label>
+        <div class="seg" id="bg-img-fit" data-sec="图片">
           <button data-v="cover">铺满裁切</button>
           <button data-v="stretch">拉伸填满</button>
           <button data-v="contain">完整显示</button>
         </div>
-        <div class="hint" style="margin-top:8px">整页「书页框」类图片（自带顶栏底栏）选<b>拉伸填满</b>才不会切掉边框；照片类用<b>铺满裁切</b>不变形。</div>
-        <label class="fld" style="margin-top:14px">压缩 <span class="tag">内嵌前先过一遍</span></label>
-        <div class="grid2">
+        <div class="hint" style="margin-top:8px" data-sec="图片">整页「书页框」类图片（自带顶栏底栏）选<b>拉伸填满</b>才不会切掉边框；照片类用<b>铺满裁切</b>不变形。</div>
+        <label class="fld" style="margin-top:14px" data-sec="压缩">压缩 <span class="tag">内嵌前先过一遍</span></label>
+        <div class="grid2" data-sec="压缩">
           <div><label>长边上限</label>
             <select id="bg-max">
               <option value="0">不压缩（原图）</option>
@@ -689,14 +712,14 @@
             </select>
           </div>
         </div>
-        <div class="row tight" style="margin-top:8px">
+        <div class="row tight" style="margin-top:8px" data-sec="压缩">
           <button class="btn sm" id="bg-recompress">↻ 按当前设置重新压缩</button>
           <span class="mini" id="bg-size-out" style="color:var(--sub)"></span>
         </div>
-        <div class="hint" style="margin-top:8px">上传时会先按这里压一遍再内嵌（改完点「重新压缩」立即生效，预览同步变）。手机拍的照片原图常有 3~5MB，压到 1600px / 90% 通常只剩 200~400KB；单张建议 &lt; 400KB，两张太大 App 导入会变慢。</div>
+        <div class="hint" style="margin-top:8px" data-sec="压缩">上传时会先按这里压一遍再内嵌（改完点「重新压缩」立即生效，预览同步变）。手机拍的照片原图常有 3~5MB，压到 1600px / 90% 通常只剩 200~400KB；单张建议 &lt; 400KB，两张太大 App 导入会变慢。</div>
       </div>
 
-      <div class="card">
+      <div class="card" data-sec="衬底">
         <h2>可读性衬底</h2>
         <label class="fld">遮罩浓度 <span id="veil-v" class="pill"></span></label>
         <input type="range" id="veil" min="0" max="0.85" step="0.05">
@@ -709,23 +732,23 @@
       <div class="card">
         <h2>页眉（顶部信息栏）</h2>
         <div class="sw"><input type="checkbox" id="top-show">显示页眉</div>
-        <div class="grid4 f4" style="margin-top:10px">
+        <div class="grid4 f4" style="margin-top:10px" data-sec="边距">
           <div><label>高度</label><input type="number" data-k="bars.top.h" min="0" max="120" step="1"></div>
           <div><label>上边距</label><input type="number" data-k="bars.top.shift" min="0" max="120" step="1" title="整条往下挪多少"></div>
           <div><label>左内距</label><input type="number" data-k="bars.top.padL" min="0" max="120" step="1"></div>
           <div><label>右内距</label><input type="number" data-k="bars.top.padR" min="0" max="120" step="1"></div>
         </div>
-        <div class="grid3 f4" style="margin-top:8px">
+        <div class="grid3 f4" style="margin-top:8px" data-sec="字号">
           <div><label>首页字号</label><input type="number" data-k="bars.top.size" min="6" max="40" step="0.5"></div>
           <div><label>续页字号</label><input type="number" data-k="bars.top.sizeOther" min="6" max="40" step="0.5"></div>
           <div><label>不透明度</label><input type="number" data-k="bars.top.opacity" min="0" max="1" step="0.05"></div>
         </div>
-        <div class="grid2 f4" style="margin-top:8px">
+        <div class="grid2 f4" style="margin-top:8px" data-sec="颜色">
           <div><label>文字色（日间 / 空=跟随正文）</label><input type="color" data-k="bars.top.colorDay"></div>
           <div><label>文字色（夜间）</label><input type="color" data-k="bars.top.colorNight"></div>
         </div>
       </div>
-      <div class="card">
+      <div class="card" data-sec="元素">
         <h2>页眉元素 <span class="tag">左 / 中 / 右 三槽</span></h2>
         <div class="slots" id="slots-top"></div>
         <div class="hint" style="margin-top:8px">同一个槽里加多个元素会按顺序横排；想完全空着就不加。默认版式：左=书名（首页）/章名（续页），右=电量。</div>
@@ -761,23 +784,23 @@
       <div class="card">
         <h2>页脚（底部信息栏）</h2>
         <div class="sw"><input type="checkbox" id="foot-show">显示页脚</div>
-        <div class="grid4 f4" style="margin-top:10px">
+        <div class="grid4 f4" style="margin-top:10px" data-sec="边距">
           <div><label>高度</label><input type="number" data-k="bars.foot.h" min="0" max="120" step="1"></div>
           <div><label>下边距</label><input type="number" data-k="bars.foot.shift" min="0" max="120" step="1" title="整条往上挪多少"></div>
           <div><label>左内距</label><input type="number" data-k="bars.foot.padL" min="0" max="120" step="1"></div>
           <div><label>右内距</label><input type="number" data-k="bars.foot.padR" min="0" max="120" step="1"></div>
         </div>
-        <div class="grid3 f4" style="margin-top:8px">
+        <div class="grid3 f4" style="margin-top:8px" data-sec="字号">
           <div><label>首页字号</label><input type="number" data-k="bars.foot.size" min="6" max="40" step="0.5"></div>
           <div><label>续页字号</label><input type="number" data-k="bars.foot.sizeOther" min="6" max="40" step="0.5"></div>
           <div><label>不透明度</label><input type="number" data-k="bars.foot.opacity" min="0" max="1" step="0.05"></div>
         </div>
-        <div class="grid2 f4" style="margin-top:8px">
+        <div class="grid2 f4" style="margin-top:8px" data-sec="颜色">
           <div><label>文字色（日间 / 空=跟随正文）</label><input type="color" data-k="bars.foot.colorDay"></div>
           <div><label>文字色（夜间）</label><input type="color" data-k="bars.foot.colorNight"></div>
         </div>
       </div>
-      <div class="card">
+      <div class="card" data-sec="元素">
         <h2>页脚元素 <span class="tag">左 / 中 / 右 三槽</span></h2>
         <div class="row tight" style="margin-bottom:10px">
           <button class="btn sm" id="foot-quick">左下 = 书名 / 章名</button>
@@ -811,7 +834,7 @@
 
     <!-- ============ 正文 ============ -->
     <div class="panel" data-panel="flow">
-      <div class="card">
+      <div class="card" data-sec="边距">
         <h2>正文边距</h2>
         <div class="grid4 f4">
           <div><label>上</label><input type="number" data-k="pad.t" min="0" max="160" step="1"></div>
@@ -821,7 +844,7 @@
         </div>
         <div class="hint" style="margin-top:8px">这是正文离屏幕边缘的距离，和页眉页脚的内边距互不影响。</div>
       </div>
-      <div class="card">
+      <div class="card" data-sec="排版">
         <h2>排版</h2>
         <div class="sw"><input type="checkbox" id="f-size-follow">字号跟随 App 阅读设置</div>
         <input type="number" id="f-size" min="8" max="60" step="0.5" style="margin-top:8px">
@@ -837,7 +860,7 @@
           <option value="left">左对齐</option>
         </select>
       </div>
-      <div class="card">
+      <div class="card" data-sec="颜色">
         <h2>文字颜色</h2>
         <div class="grid2 f4">
           <div><label>日间</label><input type="color" data-k="flow.colorDay"></div>
@@ -845,7 +868,7 @@
         </div>
         <div class="hint" style="margin-top:8px">正文、页眉、页脚默认共用这两个颜色（页眉页脚可单独覆盖）。</div>
       </div>
-      <div class="card">
+      <div class="card" data-sec="字体">
         <h2>字体引用槽 <span class="tag">可选</span></h2>
         <label class="fld">页眉字体</label>
         <input type="text" data-k="font.top" spellcheck="false" placeholder="留空 = 跟随「选择字体」">
@@ -855,7 +878,7 @@
         <input type="text" data-k="font.foot" spellcheck="false" placeholder="留空 = 跟随「选择字体」">
         <div class="hint" style="margin-top:8px">在 App「阅读素材 → 字体 → 复制引用」会得到形如 <code>'legado-resource-xxxx'</code> 的一串，原样粘进来即可。三格互不影响，留空就统一用 App 里选的字体。</div>
       </div>
-      <div class="card">
+      <div class="card" data-sec="其他">
         <h2>页面上推 <span class="tag">JS 开关</span></h2>
         <div class="sw"><input type="checkbox" id="f-pull">把模板拉到屏幕最顶端（消除顶部安全区空白）</div>
         <div class="hint" style="margin-top:8px">关掉后模板保留 App 留出的顶部空白，页眉会整体下移。</div>
@@ -864,7 +887,7 @@
 
     <!-- ============ 首字 ============ -->
     <div class="panel" data-panel="cap">
-      <div class="card">
+      <div class="card" data-sec="样式">
         <h2>首字高亮 <span class="tag">每章第一个字</span></h2>
         <div class="sw"><input type="checkbox" id="cap-on">开启首字高亮</div>
         <div class="pgrid" id="cap-presets" style="margin-top:10px"></div>
@@ -879,7 +902,7 @@
           </div>
         </details>
       </div>
-      <div class="card">
+      <div class="card" data-sec="文字">
         <h2>文字样式</h2>
         <div class="grid2">
           <div><label class="fld">字号（正文的倍数）</label><input type="number" data-k="cap.size" min="1" max="8" step="0.1"></div>
@@ -905,7 +928,7 @@
         </div>
         <div class="hint">颜色留空就跟随正文色（日夜间自动切）。方框线、反白底、描边、波浪线用的也是这个颜色。</div>
       </div>
-      <div class="card">
+      <div class="card" data-sec="图片">
         <h2>图片首字 <span class="tag">相框 / 花字</span></h2>
         <div class="row" style="margin-bottom:8px">
           <span class="seg mini" id="cap-mode">
@@ -938,7 +961,7 @@
         </div>
         <div class="hint">图片垫在文字后面：图里的框偏左，就把左边间距给小、右边给大。<b>字号</b>那一栏同时也是图的大小，想让图更大就调它。</div>
       </div>
-      <div class="card">
+      <div class="card" data-sec="配套">
         <h2>配套</h2>
         <div class="sw"><input type="checkbox" id="cap-lead">首段不缩进（首字贴着正文左边）</div>
         <div class="hint">不勾的话首段仍按「首行缩进」走，首字会跟着右移两个字的距离。</div>
@@ -947,7 +970,7 @@
 
     <!-- ============ 标题 ============ -->
     <div class="panel" data-panel="title">
-      <div class="card">
+      <div class="card" data-sec="样式">
         <h2>章节标题 <span class="tag">正文里那一行</span></h2>
         <div class="pgrid" id="title-presets"></div>
         <div class="hint" style="margin-top:8px">标题是阅读 App 注入正文的那一行（<code>.reader-chapter-title</code>），这里只管样式，不影响排版顺序。</div>
@@ -961,7 +984,7 @@
           </div>
         </details>
       </div>
-      <div class="card">
+      <div class="card" data-sec="文字">
         <h2>文字</h2>
         <div class="grid2">
           <div><label class="fld">字号（正文的倍数）</label><input type="number" data-k="title.size" min="1" max="4" step="0.05"></div>
@@ -998,7 +1021,7 @@
         <label class="fld">标题字体</label>
         <input type="text" data-k="title.family" spellcheck="false" placeholder="留空 = 跟随正文字体">
       </div>
-      <div class="card">
+      <div class="card" data-sec="颜色">
         <h2>颜色</h2>
         <div class="grid2 f4">
           <div><label>日间</label><input type="color" data-k="title.color"></div>
@@ -1018,20 +1041,30 @@
     <!-- ============ 装饰 ============ -->
     <div class="panel" data-panel="deco">
       <div class="card">
-        <h2>装饰图 <span class="tag">按页面百分比定位</span></h2>
-        <div class="drop" id="deco-drop">点击或拖入图片（PNG 透明底最佳）</div>
-        <div class="row tight">
-          <button class="btn sm" id="deco-drag">🖐 在预览里拖动</button>
-          <button class="btn sm pri" id="deco-sync" title="打开：首页和续页共用一份位置，拖动时两页实时一起走；关掉：两页各记各的位置">🔗 两页同步：开</button>
+        <h2>装饰 <span class="tag">按页面百分比定位</span></h2>
+
+        <div class="drop" id="deco-drop" data-sec="图片">点击或拖入图片（PNG 透明底最佳）</div>
+        <div class="hint" data-sec="图片" style="margin-top:6px">加好的图在「列表」里改宽/高、勾「可拉伸」；默认等比，不会变形。</div>
+
+        <div class="row tight" data-sec="文字" style="margin-top:2px">
           <button class="btn sm" id="deco-add-text" title="加一个纯文字装饰（如角落的编号）">＋ 文字装饰</button>
         </div>
-        <div class="hint" style="margin-top:6px">每条装饰右边有三个小按钮：<b>首页 / 续页 / 两页</b> —— 想只放在首页就点「首页」。</div>
-        <div id="deco-drop2" class="drop" style="margin-top:8px">点击或拖入 <b>进度条 SVG</b>（.svg / .txt）—— 会随页数走动</div>
-        <div class="hint" style="margin-top:6px">勾上「文字下层」＝垫在正文后面当暗纹（不挡字），取消就浮到字上面。打开「🖐 在预览里拖动」后，每条装饰四角会出现小圆点，拖它就能随意改大小（图片默认等比、不会变形，勾「可拉伸」就宽高各走各的）；文字装饰更细：<b>拖左右边只改宽度</b>（每行放几个字）、<b>拖上下边只改字号</b>、拖四角两个一起改。拖动装饰本身是挪位置。拖动时会<b>自动吸附</b>：靠近别的装饰的边或中线、或页面边和十字中线，就会贴上去并闪一条蓝虚线。翻页看效果：点预览上的 ◀ ▶。</div>
-        <div id="deco-list" style="display:flex; flex-direction:column; gap:8px; margin-top:10px"></div>
-        <div class="hint" style="margin-top:8px">位置用 <b>left/top/width 百分比</b>（相对整页），换机型不会错位。开启拖动后直接在右侧预览里拖，松手即记下坐标。</div>
-        <div class="hint" style="margin-top:6px"><b>同步移动</b>：开着时拖其中一页，另一页实时跟着走（两页共用一个位置）；关掉后拖哪页只改哪页，另一页停原处、会记成「两页位置不同」，想合回一处点「对齐两页」。想让两页各摆不同位置又可以随便拖，就点每条的「<b>拆</b>」把它拆成首页/续页两份。</div>
-        <details>
+        <div class="hint" data-sec="文字" style="margin-top:6px">文字装饰能插 {bookName}、{pageIndex} 这类字段，太长会自己折行。</div>
+
+        <div id="deco-drop2" class="drop" data-sec="SVG" style="margin-top:2px">点击或拖入 <b>进度条 SVG</b>（.svg / .txt）—— 会随页数走动</div>
+        <div class="hint" data-sec="SVG" style="margin-top:6px">导入后摆在页面正中、垫在正文后面；开「拖动」就能在预览里挪位置、拖四角缩放。</div>
+
+        <div id="deco-list" data-sec="列表" style="display:flex; flex-direction:column; gap:8px"></div>
+        <div class="hint" data-sec="列表" style="margin-top:8px">每条右边的 <b>首页 / 续页 / 两页</b> 决定放在哪一页；位置是相对整页的百分比，换机型不会错位。</div>
+
+        <div class="row tight" data-sec="拖动" style="margin-top:2px">
+          <button class="btn sm" id="deco-drag">🖐 在预览里拖动</button>
+          <button class="btn sm pri" id="deco-sync" title="打开：首页和续页共用一份位置，拖动时两页实时一起走；关掉：两页各记各的位置">🔗 两页同步：开</button>
+        </div>
+        <div class="hint" data-sec="拖动" style="margin-top:6px">勾上「文字下层」＝垫在正文后面当暗纹（不挡字），取消就浮到字上面。打开「🖐 在预览里拖动」后，每条装饰四角会出现小圆点，拖它就能随意改大小（图片默认等比、不会变形，勾「可拉伸」就宽高各走各的）；文字装饰更细：<b>拖左右边只改宽度</b>（每行放几个字）、<b>拖上下边只改字号</b>、拖四角两个一起改。拖动装饰本身是挪位置。拖动时会<b>自动吸附</b>：靠近别的装饰的边或中线、或页面边和十字中线，就会贴上去并闪一条蓝虚线。</div>
+        <div class="hint" data-sec="拖动" style="margin-top:6px"><b>同步移动</b>：开着时拖其中一页，另一页实时跟着走（两页共用一个位置）；关掉后拖哪页只改哪页，另一页停原处、会记成「两页位置不同」，想合回一处点「对齐两页」。想让两页各摆不同位置又可以随便拖，就点每条的「<b>拆</b>」把它拆成首页/续页两份。</div>
+
+        <details data-sec="说明">
           <summary>文字装饰怎么写？点开看说明</summary>
           <div class="helpBox">
             <p><b>1. 能加几条</b>：点「＋ 文字装饰」可一直加，每条独立定位。两条 left/top 一样就会叠在一起（后加的在上），想加阴影/描边效果就叠两层。</p>
@@ -1059,7 +1092,7 @@
             <p><b>7. 快捷摆位</b>：点「🖐 在预览里拖动」，直接拖右侧预览里的装饰，松手自动写回 left/top，比手填快。</p>
           </div>
         </details>
-        <details>
+        <details data-sec="说明">
           <summary>进度条 SVG 怎么用？点开看说明</summary>
           <div class="helpBox">
             <p><b>1. 什么样的能导</b>：整段 <code>&lt;svg …&gt;…&lt;/svg&gt;</code> 的进度条/刻度尺，拓展名是 <code>.svg</code> 或 <code>.txt</code> 都行。能跟着翻页走的写法有三种，导入时自动识别：</p>
@@ -1254,19 +1287,24 @@
   <button data-open="cap"><b>字</b><span>首字</span></button>
   <button data-open="flow"><b>¶</b><span>正文</span></button>
   <button data-open="deco"><b>✿</b><span>装饰</span></button>
+  <button data-open="bg"><b>▨</b><span>背景</span></button>
   <button data-open="ai"><b>✨</b><span>AI</span></button>
   <button data-open="foot"><b>▥</b><span>页脚</span></button>
   <button data-open="more"><b>⋯</b><span>更多</span></button>
 </div>
 <div id="mscrim"></div>
 <div id="msheet">
-  <div id="mh"><b id="m-title">装饰</b>
+  <div id="mh">
+    <button class="mh-btn" id="mh-back" aria-label="返回上一层" title="回到刚才那一层">←</button>
+    <b id="m-title">装饰</b>
+    <button class="mh-btn" id="mh-help" title="显示 / 收起这些面板里的说明文字">说明</button>
     <button class="mh-btn" id="mh-prev" aria-label="上一页">◀</button>
     <span class="mh-ind" id="mh-ind">首页</span>
     <button class="mh-btn" id="mh-next" aria-label="下一页">▶</button>
     <button class="mh-btn" id="m-peek">看预览</button>
     <button class="mh-btn" id="m-x">✕</button>
   </div>
+  <div id="mtabs"></div>
   <div id="mbody"></div>
 </div>
 
@@ -1275,7 +1313,6 @@
     <h2>打开面板 <span class="tag">手机端</span></h2>
     <div class="row tight">
       <button class="btn sm" data-mtab="base">模板信息</button>
-      <button class="btn sm" data-mtab="bg">背景</button>
       <button class="btn sm" data-mtab="code">代码</button>
       <button class="btn sm" data-mtab="io">导入 / 导出</button>
     </div>
@@ -1284,7 +1321,7 @@
       <button class="btn sm" id="m-do-import">📥 导入模板</button>
       <button class="btn sm" id="m-do-theme">🌙 工具深浅色</button>
     </div>
-    <div class="hint" style="margin-top:8px">页眉、标题、首字、正文、装饰、页脚在右侧竖排菜单里；这里放的是不常用但导出前要用的几项。</div>
+    <div class="hint" style="margin-top:8px">页眉、标题、首字、正文、装饰、背景、页脚都在右侧竖排菜单里；这里放的是导出前才用的几项。</div>
   </div>
   <div class="card">
     <h2>预览</h2>
@@ -1836,14 +1873,26 @@
       document.removeEventListener('pointercancel', onUp, true);
       try{ document.body.style.touchAction = ''; }catch(err){}
     }
-    Array.prototype.forEach.call(document.querySelectorAll('.s-deco'), function(el){
-      el.style.cursor = on ? 'grab' : '';
-      el.style.pointerEvents = on ? 'auto' : '';
-      if(on) addHandles(el); else dropHandles(el);
+    Array.prototype.forEach.call(document.querySelectorAll('.s-deco'), liftDeco);
+  }
+  /* 拖动时把这条装饰抬到最上层并让它可点。
+     勾了「文字下层」的装饰（进度条默认就是）是 z-index:-1，压在正文下面 ——
+     不抬起来的话手指点到的永远是正文，进度条根本拖不动，四角把手也按不到。 */
+  function liftDeco(el){
+    el.style.cursor = dragOn ? 'grab' : '';
+    el.style.pointerEvents = dragOn ? 'auto' : '';
+    el.style.zIndex = dragOn ? '9999' : '';
+    Array.prototype.forEach.call(el.querySelectorAll('*'), function(n){
+      n.style.pointerEvents = dragOn ? 'auto' : '';
     });
+    if(dragOn){
+      var sv = el.querySelector('svg');
+      if(sv){ sv.style.width = '100%'; sv.style.height = '100%'; }
+      addHandles(el);
+    } else dropHandles(el);
   }
   /* 排版重建后（翻页/换字段）把手也得跟着回来 */
-  function refreshHandles(){ if(dragOn) Array.prototype.forEach.call(document.querySelectorAll('.s-deco'), addHandles); }
+  function refreshHandles(){ if(dragOn) Array.prototype.forEach.call(document.querySelectorAll('.s-deco'), liftDeco); }
 
   function bootNow(){
     api.source = document.createElement('div');
@@ -3508,6 +3557,8 @@ window.addEventListener('message', e => {
       const patch = { left: d.left, top: d.top };
       if (d.width != null) patch.width = d.width;
       if (d.height != null) patch.h = d.height;
+      /* 进度条是矢量图，宽定了高度按比例就跟上了；存死「高」反而会把它压扁 */
+      if (it.kind === 'pbar'){ delete patch.h; delete it.h; }
       if (d.txt && d.width == null) delete patch.width;
       if (state.syncMove || it.page !== 'both'){
         delete it.p2;
@@ -3991,16 +4042,36 @@ function initFieldPicker(){
   let cur = null;
 
   function hide(){ box.classList.remove('on'); cur = null; }
-  function show(inp){
-    cur = inp;
-    box.classList.add('on');
-    const r = inp.getBoundingClientRect();
+  function vvBox(){
+    const v = window.visualViewport;
+    return v ? { top: v.offsetTop || 0, h: v.height } : { top: 0, h: window.innerHeight };
+  }
+  /* 摆位置：桌面上贴着输入框；手机上固定钉在「键盘上方」那一层。
+     手机上以前是贴输入框 + resize 就 hide —— 键盘一弹起来（触发 resize）候选就被藏掉了，
+     非得再点一次输入框才出来。现在改成跟着 visualViewport 重算位置，不再隐藏。 */
+  function place(){
+    if (!cur) return;
     const bw = box.offsetWidth || 220, bh = box.offsetHeight || 60;
-    let left = Math.max(8, Math.min(window.innerWidth - bw - 8, r.left));
+    if (state.mobile){
+      const vb = vvBox();
+      box.style.left = '8px';
+      box.style.right = 'auto';
+      box.style.width = Math.max(200, Math.min(window.innerWidth, 560) - 16) + 'px';
+      box.style.top = Math.max(8, vb.top + vb.h - bh - 10) + 'px';
+      return;
+    }
+    box.style.width = '';
+    const r = cur.getBoundingClientRect();
+    const left = Math.max(8, Math.min(window.innerWidth - bw - 8, r.left));
     let top = r.bottom + 6;
     if (top + bh > window.innerHeight - 8) top = Math.max(8, r.top - bh - 6);
     box.style.left = left + 'px';
     box.style.top = top + 'px';
+  }
+  function show(inp){
+    cur = inp;
+    box.classList.add('on');
+    place();
   }
   function insertPh(inp, name){
     const code = '{' + name + '}';
@@ -4027,8 +4098,17 @@ function initFieldPicker(){
   /* 弹层里按下鼠标时别抢焦点，否则输入框一失焦弹层就没了 */
   box.addEventListener('pointerdown', e => { e.preventDefault(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') hide(); });
-  window.addEventListener('scroll', hide, true);
-  window.addEventListener('resize', hide);
+  /* 滚动：桌面上滚走了就收起；手机上重算位置（候选是钉住的，不能因为滚动就没了） */
+  window.addEventListener('scroll', () => {
+    if (!cur) return;
+    if (state.mobile) place(); else hide();
+  }, true);
+  const reflow = () => { if (cur) place(); };
+  window.addEventListener('resize', reflow);
+  if (window.visualViewport){
+    window.visualViewport.addEventListener('resize', reflow);
+    window.visualViewport.addEventListener('scroll', reflow);
+  }
 }
 function addDecoFromFile(file){
   /* SVG 走进度条那条路：当图片塞进 <img> 的话，里面的表达式永远不会被算出来 */
@@ -4083,19 +4163,13 @@ function addPbarFromText(text){
   svg.removeAttribute('style');
   if (!svg.getAttribute('preserveAspectRatio')) svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
   const ratio = vh / vw;
-  /* 默认摆在页脚上方：宽度让高度约占页面 14%，再按比例算出 top；已有进度条就往上叠 */
+  /* 默认摆在页面正中（左右居中、上下也居中）：宽度让高度约占页面 14% */
   const width = Math.max(20, Math.min(72, Math.round(0.14 * state.VH / ratio / state.VW * 100)));
   const hPct = width * ratio * state.VW / state.VH;
-  let top = 100 - hPct - 3;
-  const prev = cfg.deco.filter(x => x.kind === 'pbar');
-  if (prev.length){
-    let minTop = 101;
-    prev.forEach(x => { minTop = Math.min(minTop, n2(x.top, 100)); });
-    top = minTop - hPct - 2;
-  }
   const it = {
     id: uid(), kind: 'pbar', svg: svg.outerHTML, ratio: Math.round(ratio * 1000) / 1000,
-    page: 'both', left: Math.max(0, Math.round((100 - width) / 2)), top: Math.max(0, Math.round(top)),
+    page: 'both', left: Math.max(0, Math.round((100 - width) / 2)),
+    top: Math.max(0, Math.round((100 - hPct) / 2)),
     width: width, opacity: 1, rot: 0, night: false, back: true,
     text: '', src: '', size: 14, color: '', colorNight: ''
   };
@@ -4103,9 +4177,9 @@ function addPbarFromText(text){
   renderDecoList(); render();
   const c = pbarCompile(it.svg);
   const isClip = /data-progress=/.test(it.svg);
-  toast(c.rows.length
-    ? '已添加进度条：' + c.rows.length + ' 处会随页码变化' + (isClip ? '（按裁剪宽度走）' : '') + '，翻页看效果'
-    : '已添加 SVG，但里面既没有 {= } 算式、也没有 data-progress，只能当静态图');
+    toast(c.rows.length
+    ? '已添加进度条（摆在页面正中）：' + c.rows.length + ' 处会随页码变化' + (isClip ? '（按裁剪宽度走）' : '') + '；开「拖动」可挪位置'
+    : '已添加 SVG（摆在页面正中）：里面既没有 {= } 算式、也没有 data-progress，当静态图用；开「拖动」可挪位置');
   return true;
 }
 
@@ -6245,7 +6319,9 @@ const M_TABS = {
   io:    { label: '导入 / 导出', side: 'bottom' },
   more:  { label: '更多',      side: 'bottom' }
 };
-const MS = { panel: null, parent: null, next: null, key: '' };
+const MS = { panel: null, parent: null, next: null, key: '', stack: [] };
+/* 分段标签的状态（当前抽屉里有哪几组、现在是哪一组） */
+let MSEC = { key: '', labels: [], blocks: [], cur: '' };
 
 function isMobileLayout(){
   try{ return window.matchMedia('(max-width: 760px)').matches; }catch (e) { return window.innerWidth <= 760; }
@@ -6284,11 +6360,75 @@ function mNavToggle(force){
   nav.classList.toggle('on', on);
   document.body.classList.toggle('nav-on', on);
 }
-function mSheetOpen(key){
+/* 把抽屉里那个面板搬回原位（只动 DOM，不动标题和返回栈） */
+function mDetachPanel(){
+  if (!MS.panel) return;
+  const p = MS.panel;
+  p.classList.remove('m-show');
+  if (MS.parent) MS.parent.insertBefore(p, MS.next || null);
+  MS.panel = null; MS.parent = null; MS.next = null;
+}
+/* ---- 分段：卡片本身带 data-sec 就整张算一组；不带就看它里面的 data-sec ---- */
+function mSecBlocks(panel){
+  const out = [];
+  Array.prototype.forEach.call(panel.children, card => {
+    if (!card.classList || !card.classList.contains('card')) return;
+    if (card.hasAttribute('data-sec')){ out.push({ label: card.getAttribute('data-sec'), node: card }); return; }
+    Array.prototype.forEach.call(card.children, ch => {
+      if (ch.hasAttribute && ch.hasAttribute('data-sec')) out.push({ label: ch.getAttribute('data-sec'), node: ch });
+    });
+  });
+  return out;
+}
+function mSecSet(label){
+  if (!MSEC.blocks.length) return;
+  MSEC.cur = label;
+  MSEC.blocks.forEach(b => b.node.classList.toggle('m-sec-off', b.label !== label));
+  $$('#mtabs button').forEach(x => x.classList.toggle('on', x.dataset.msec === label));
+  /* 被「背景模式」这类逻辑用 display:none 藏起来的卡片，在当前这一组里要放出来，否则整页空白 */
+  $$('#mbody .card.m-force').forEach(c => c.classList.remove('m-force'));
+  MSEC.blocks.forEach(b => {
+    if (b.label !== label) return;
+    const c = b.node.classList.contains('card') ? b.node : b.node.closest('.card');
+    if (c && c.style.display === 'none') c.classList.add('m-force');
+  });
+  const mb = $('#mbody'); if (mb) mb.scrollTop = 0;
+}
+function mBuildSec(key){
+  const panel = document.querySelector('.panel[data-panel="' + key + '"]');
+  const bar = $('#mtabs');
+  MSEC = { key: key, labels: [], blocks: [], cur: '' };
+  if (bar) bar.innerHTML = '';
+  const blocks = panel ? mSecBlocks(panel) : [];
+  blocks.forEach(b => { if (MSEC.labels.indexOf(b.label) < 0) MSEC.labels.push(b.label); });
+  if (MSEC.labels.length < 2){ if (bar) bar.classList.add('empty'); return; }
+  MSEC.blocks = blocks;
+  if (bar){
+    bar.classList.remove('empty');
+    MSEC.labels.forEach(lb => {
+      const bt = document.createElement('button');
+      bt.type = 'button'; bt.dataset.msec = lb; bt.textContent = lb;
+      bt.addEventListener('click', () => mSecSet(lb));
+      bar.appendChild(bt);
+    });
+  }
+  /* 打开时先落在最常用的那一组 */
+  let first = key === 'deco' ? ((cfg.deco && cfg.deco.length) ? '列表' : '图片')
+    : key === 'bg' ? '来源' : MSEC.labels[0];
+  if (MSEC.labels.indexOf(first) < 0) first = MSEC.labels[0];
+  mSecSet(first);
+}
+/* opt.push：从「更多」里点进去的，记住上一层，好按左上「←」退回来
+   opt.keep：退回上一层时别把返回栈清掉 */
+function mSheetOpen(key, opt){
+  opt = opt || {};
   const p = document.querySelector('.panel[data-panel="' + key + '"]');
   if (!p) return;
   const meta = M_TABS[key] || {};
-  if (MS.panel && MS.panel !== p) mSheetClose(true);
+  if (MS.panel && MS.panel !== p && opt.push && MS.key && MS.key !== key) MS.stack.push(MS.key);
+  if (MS.panel && MS.panel !== p) mDetachPanel();
+  /* 只有从侧栏直接点开时才清空返回栈；从「更多」点进去（push）和返回（keep）都要留着 */
+  if (!opt.keep && !opt.push) MS.stack.length = 0;
   if (!MS.panel){
     MS.panel = p; MS.parent = p.parentNode; MS.next = p.nextSibling;
     p.classList.add('m-show');
@@ -6300,18 +6440,19 @@ function mSheetOpen(key){
   sh.classList.toggle('top', meta.side === 'top');
   sh.classList.add('on');
   document.body.classList.add('m-sheet-open');
+  document.body.classList.toggle('m-back', MS.stack.length > 0);
+  mBuildSec(key);
   $('#mbody').scrollTop = 0;
   mNavToggle(false);
 }
 function mSheetClose(){
-  if (MS.panel){
-    const p = MS.panel;
-    p.classList.remove('m-show');
-    if (MS.parent) MS.parent.insertBefore(p, MS.next || null);
-    MS.panel = null; MS.parent = null; MS.next = null; MS.key = '';
-  }
-  $('#msheet').classList.remove('on');
-  document.body.classList.remove('m-sheet-open');
+  mDetachPanel();
+  MS.key = '';
+  MS.stack.length = 0;
+  MSEC = { key: '', labels: [], blocks: [], cur: '' };
+  const bar = $('#mtabs'); if (bar){ bar.innerHTML = ''; bar.classList.add('empty'); }
+  $('#msheet').classList.remove('on', 'top');
+  document.body.classList.remove('m-sheet-open', 'm-back');
 }
 function mScopePage(){
   return (state.scope === 'page') ? (state.page === 0 ? 'first' : 'other') : 'both';
@@ -6334,6 +6475,19 @@ function initMobile(){
     }
   });
   window.addEventListener('orientationchange', () => setTimeout(() => fitMobileStage(false), 280));
+  /* 键盘弹出（visualViewport 变矮）时把底部抽屉顶到键盘上方，输入框和候选才看得见 */
+  if (window.visualViewport){
+    const vv = window.visualViewport;
+    const syncKb = () => {
+      if (!state.mobile) return;
+      const kb = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+      document.documentElement.style.setProperty('--m-kb', kb + 'px');
+      document.body.classList.toggle('m-kb', kb > 80);
+    };
+    vv.addEventListener('resize', syncKb);
+    vv.addEventListener('scroll', syncKb);
+    window.addEventListener('resize', syncKb);
+  }
   setTimeout(() => toast('点正文中间调出菜单 · 左右滑动翻页'), 900);
 }
 function bindMobile(){
@@ -6346,6 +6500,16 @@ function bindMobile(){
   on($('#mh-next'), 'click', () => mGo(state.page + 1));
   on($('#mscrim'), 'click', () => mSheetClose());
   on($('#m-x'), 'click', () => mSheetClose());
+  on($('#mh-back'), 'click', () => {
+    const k = MS.stack.pop();
+    if (k){ mSheetOpen(k, { keep: true }); document.body.classList.toggle('m-back', MS.stack.length > 0); }
+    else mSheetClose();
+  });
+  on($('#mh-help'), 'click', () => {
+    const n = !document.body.classList.contains('m-hints');
+    document.body.classList.toggle('m-hints', n);
+    toast(n ? '说明已展开' : '说明已收起');
+  });
   on($('#m-peek'), 'click', () => { mSheetClose(); mNavToggle(true); });
   on($('#mnav'), 'click', e => {
     const b = e.target.closest('button[data-open]');
@@ -6353,7 +6517,7 @@ function bindMobile(){
   });
   on($('#pan-more'), 'click', e => {
     const t = e.target.closest('[data-mtab]');
-    if (t){ mSheetOpen(t.dataset.mtab); return; }
+    if (t){ mSheetOpen(t.dataset.mtab, { push: true }); return; }
     if (e.target.closest('#m-do-export')){ $('#btn-export').click(); return; }
     if (e.target.closest('#m-do-import')){ $('#btn-import').click(); return; }
     if (e.target.closest('#m-do-theme')){ $('#btn-theme').click(); return; }
