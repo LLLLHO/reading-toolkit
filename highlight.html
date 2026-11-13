@@ -113,10 +113,22 @@
   #ttPreviewBlock .ttPvImg{position:absolute; inset:0; background-size:100% 100%;
     background-repeat:no-repeat; opacity:0; pointer-events:none;}
   #ttPreviewBlock .ttPvHit.on{outline:2px solid var(--accent); outline-offset:-1px;}
-  #ttPreviewBlock .ttPvHd{position:absolute; width:13px; height:13px; background:var(--accent);
-    border:2px solid #fff; border-radius:3px; box-shadow:0 1px 4px rgba(0,0,0,.35); touch-action:none;}
-  #ttPreviewBlock .ttPvHd[data-hd="se"]{right:-7px; bottom:-7px; cursor:nwse-resize;}
-  #ttPreviewBlock .ttPvHd[data-hd="w"]{right:-7px; top:50%; margin-top:-7px; cursor:ew-resize;}
+  #ttPreviewBlock{--hd:13px;}
+  #ttPreviewBlock .ttPvHd{position:absolute; width:var(--hd); height:var(--hd); background:var(--accent);
+    border:2px solid #fff; border-radius:3px; box-shadow:0 1px 4px rgba(0,0,0,.35); touch-action:none; z-index:8;}
+  /* 八个把手：四角 + 四边中点（文字只有左右两个，它高矮由字号定） */
+  #ttPreviewBlock .ttPvHd[data-hd="nw"]{left:calc(var(--hd) / -2); top:calc(var(--hd) / -2); cursor:nwse-resize;}
+  #ttPreviewBlock .ttPvHd[data-hd="n"]{left:50%; margin-left:calc(var(--hd) / -2); top:calc(var(--hd) / -2); cursor:ns-resize;}
+  #ttPreviewBlock .ttPvHd[data-hd="ne"]{right:calc(var(--hd) / -2); top:calc(var(--hd) / -2); cursor:nesw-resize;}
+  #ttPreviewBlock .ttPvHd[data-hd="e"]{right:calc(var(--hd) / -2); top:50%; margin-top:calc(var(--hd) / -2); cursor:ew-resize;}
+  #ttPreviewBlock .ttPvHd[data-hd="se"]{right:calc(var(--hd) / -2); bottom:calc(var(--hd) / -2); cursor:nwse-resize;}
+  #ttPreviewBlock .ttPvHd[data-hd="s"]{left:50%; margin-left:calc(var(--hd) / -2); bottom:calc(var(--hd) / -2); cursor:ns-resize;}
+  #ttPreviewBlock .ttPvHd[data-hd="sw"]{left:calc(var(--hd) / -2); bottom:calc(var(--hd) / -2); cursor:nesw-resize;}
+  #ttPreviewBlock .ttPvHd[data-hd="w"]{left:calc(var(--hd) / -2); top:50%; margin-top:calc(var(--hd) / -2); cursor:ew-resize;}
+  /* 吸附参考线 */
+  #ttPreviewBlock .ttPvGuide{position:absolute; background:#ff2f6d; z-index:9; pointer-events:none;}
+  #ttPreviewBlock .ttPvGuide.v{width:1px; top:0; bottom:0;}
+  #ttPreviewBlock .ttPvGuide.h{height:1px; left:0; right:0;}
   /* 拖动的一瞬间：合成底图让位给真图，位置一模一样，松手再合回来 */
   #ttPreviewBlock.tt-live{background-image:none!important;}
   #ttPvText{cursor:move; touch-action:none; outline:1px dashed rgba(79,110,242,.42); outline-offset:3px;}
@@ -124,6 +136,7 @@
   #ttLayerBar{display:none; gap:6px; align-items:center; margin-top:8px; flex-wrap:wrap;}
   #ttLayerBar2{display:none; gap:6px; align-items:center; margin-top:8px; flex-wrap:wrap;}
   #ttLayerBar input[type=range]{min-width:60px;}
+  #ttLayerBar input[type=number]{width:78px; flex:none; text-align:center; padding:4px 5px; font-size:12.5px;}
   #ttLayerList{display:flex; flex-direction:column; gap:5px; margin-top:8px; max-height:132px; overflow:auto;}
   .lyrRow{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--sub); border:1px solid var(--line); border-radius:7px; padding:4px 8px; cursor:pointer;}
   .lyrRow.on{border-color:var(--accent); color:var(--accent); background:var(--accent-light);}
@@ -170,6 +183,10 @@
     input[type=text],input[type=number],select,textarea{font-size:15px; padding:9px 10px;}
   }
   /* ===================== 手机端：全屏预览 + 悬浮板块按钮 + 抽屉 ===================== */
+  @media (max-width: 760px){
+    /* 手指点的把手要够大 */
+    #ttPreviewBlock{--hd:19px;}
+  }
   #mstage,#mnav,#msheet,#mscrim,#mnav-restore{display:none;}
   @media (max-width: 760px){
     body.arc-mobile{height:100dvh; overflow:hidden;}
@@ -528,9 +545,11 @@
       <div id="ttLayerList"></div>
       <div id="ttLayerBar">
         <span class="hint" style="margin:0">宽</span>
-        <input type="range" id="ttLayerW" min="20" step="1" style="flex:1; min-width:80px">
+        <input type="range" id="ttLayerW" min="12" step="1" style="flex:1; min-width:56px">
+        <input type="number" id="ttLayerWn" min="12" step="1" inputmode="numeric" style="width:78px" title="也可以直接填数字（设计像素）">
         <span class="hint" style="margin:0">高</span>
-        <input type="range" id="ttLayerH" min="20" step="1" style="flex:1; min-width:80px">
+        <input type="range" id="ttLayerH" min="12" step="1" style="flex:1; min-width:56px">
+        <input type="number" id="ttLayerHn" min="12" step="1" inputmode="numeric" style="width:78px" title="也可以直接填数字（设计像素）">
       </div>
       <div id="ttLayerBar2">
         <button class="btn sm" id="ttLayerUp">⬆</button>
@@ -540,7 +559,7 @@
           <input type="checkbox" id="ttLockRatio" checked> 等比
         </label>
       </div>
-      <p class="hint">在下面的预览里点一下图就选中，按住拖动移位，右下角小方块拉大小。取消「等比」后宽高各改各的，想拉长就拉长、想压扁就压扁。</p>
+      <p class="hint">在下面的预览里点一下图就选中，按住拖动移位；选中后<b>四角 + 四边中点</b>一共八个把手都能拉，拖哪边就动哪边。也可以在上面「宽 / 高」里直接填数字。取消「等比」后宽高各改各的，想拉长就拉长、想压扁就压扁。</p>
     </div>
 
     <div class="card">
@@ -558,7 +577,7 @@
           <input type="checkbox" id="ttSnap" checked> 拖动时自动吸附（画布左右边、水平居中、与图片对齐）
         </label>
       </div>
-      <p class="hint">吸附会把标题停在最近的对齐位置：画布左右边、水平居中、图片和文字框的边 / 中心。</p>
+      <p class="hint">吸附会把标题停在最近的对齐位置：画布左右边、水平居中、图片和文字框的边 / 中心；对上时会亮一条<b>红色参考线</b>，松手就停在线上。只左右拖不会改动上下位置（反过来也一样）。</p>
       <p class="hint">画布高填 0 就按图片自动撑到图片底边；标题拖到图片底边以外时，画布才会往上长。</p>
       <p class="hint" id="ttFitWarn" style="display:none; color:#e06c75">标题比画布还高：下内边距被压成 0，装饰图会被压扁。把画布高调大，或者把字号调小。</p>
     </div>
@@ -2796,26 +2815,51 @@ function ttRenderLayerBar(){
   if (bar2) bar2.style.display = l ? 'flex' : 'none';
   if (l){
     const max = Math.round(TT.designW * 1.6);
-    $('ttLayerW').max = max; $('ttLayerW').value = Math.round(l.w);
-    $('ttLayerH').max = max; $('ttLayerH').value = Math.round(ttLayerH(l));
+    const w = Math.round(l.w), h = Math.round(ttLayerH(l));
+    $('ttLayerW').max = max; $('ttLayerW').value = w;
+    $('ttLayerH').max = max; $('ttLayerH').value = h;
+    /* 数字框：拖滑条时跟着变，也可以自己填 */
+    if ($('ttLayerWn')){ $('ttLayerWn').max = max; $('ttLayerWn').value = w; }
+    if ($('ttLayerHn')){ $('ttLayerHn').max = max; $('ttLayerHn').value = h; }
   }
 }
-$('ttLayerW').addEventListener('input', () => {
+/* 改宽 / 改高都走这里：滑条和数字框共用，等比就带上另一条边 */
+function ttSetLayerW(v){
   const l = TT.layers[TT.sel];
-  if (!l) return;
+  if (!l || !isFinite(v)) return;
+  const max = TT.designW * 1.6;
+  v = Math.round(Math.max(12, Math.min(max, v)));
   const r = ttLayerH(l) / l.w;
-  l.w = +$('ttLayerW').value;
-  if ($('ttLockRatio').checked) l.h = Math.round(l.w * r);
-  else l.h = Math.round(ttLayerH(l));
-  ttRender(); ttRenderLayerList(); ttRenderLayerBar();
-});
-$('ttLayerH').addEventListener('input', () => {
+  const lock = $('ttLockRatio') && $('ttLockRatio').checked;
+  const keepH = ttLayerH(l);
+  l.w = v;
+  l.h = lock ? Math.max(1, Math.round(l.w * r)) : Math.round(keepH);
+  ttRender(); ttRenderLayerList();
+}
+function ttSetLayerH(v){
   const l = TT.layers[TT.sel];
-  if (!l) return;
+  if (!l || !isFinite(v)) return;
+  const max = TT.designW * 1.6;
+  v = Math.round(Math.max(12, Math.min(max, v)));
   const r = l.w / ttLayerH(l);
-  l.h = +$('ttLayerH').value;
-  if ($('ttLockRatio').checked) l.w = Math.max(12, Math.round(l.h * r));
-  ttRender(); ttRenderLayerList(); ttRenderLayerBar();
+  const lock = $('ttLockRatio') && $('ttLockRatio').checked;
+  const keepW = l.w;
+  l.h = v;
+  l.w = lock ? Math.max(1, Math.round(l.h * r)) : Math.round(keepW);
+  ttRender(); ttRenderLayerList();
+}
+$('ttLayerW').addEventListener('input', () => ttSetLayerW(+$('ttLayerW').value));
+$('ttLayerH').addEventListener('input', () => ttSetLayerH(+$('ttLayerH').value));
+/* 数字框：回车 / 失焦才应用，边打字边缩会跳到 1 像素 */
+['ttLayerWn', 'ttLayerHn'].forEach(id => {
+  const el = $(id);
+  if (!el) return;
+  el.addEventListener('change', () => {
+    if (id === 'ttLayerWn') ttSetLayerW(+el.value);
+    else ttSetLayerH(+el.value);
+    ttRenderLayerBar();
+  });
+  el.addEventListener('keydown', ev => { if (ev.key === 'Enter'){ ev.preventDefault(); el.blur(); } });
 });
 $('ttLockRatio').addEventListener('change', () => {
   const l = TT.layers[TT.sel];
@@ -2955,6 +2999,11 @@ function ttRenderPreview(){
   thd.dataset.hd = 'w';
   thd.title = '拖这里改标题宽度';
   txt.appendChild(thd);
+  const thd2 = document.createElement('span');
+  thd2.className = 'ttPvHd';
+  thd2.dataset.hd = 'e';
+  thd2.title = '拖这里改标题宽度';
+  txt.appendChild(thd2);
   block.appendChild(txt);
 
   /* 图片图层也画成真元素：预览里能直接点、直接拖。
@@ -2971,11 +3020,17 @@ function ttRenderPreview(){
     im.style.backgroundImage = 'url("' + l.img.src + '")';
     d.appendChild(im);
     if (i === TT.sel){
-      const hd = document.createElement('span');
-      hd.className = 'ttPvHd';
-      hd.dataset.hd = 'se';
-      hd.title = '拖这里改图片大小';
-      d.appendChild(hd);
+      /* 八个把手都挂上：只留右下角一个太难拉。图特别小的时候挤成一团没法点，
+         就只留四角，再小只留右下角 */
+      const pw = l.w * k, ph = ttLayerH(l) * k;
+      const dirs = (pw < 40 || ph < 40) ? ['se'] : ((pw < 58 || ph < 58) ? ['nw', 'ne', 'se', 'sw'] : TT_PV_DIRS);
+      dirs.forEach(dd => {
+        const hd = document.createElement('span');
+        hd.className = 'ttPvHd';
+        hd.dataset.hd = dd;
+        hd.title = '拖这里改图片大小';
+        d.appendChild(hd);
+      });
     }
     block.appendChild(d);
   });
@@ -2983,6 +3038,8 @@ function ttRenderPreview(){
 
 /* 设计像素 → 预览像素 */
 const ttK = () => ttColW() / TT.designW;
+/* 图片的八个把手方向（文字只有左右两个：它高矮由字号决定） */
+const TT_PV_DIRS = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
 function ttLayerH(l){ return l.h || (l.w * l.img.naturalHeight / l.img.naturalWidth); }
 /* 纸张被 zoom 过时，client px 要除一下才是元素自己的 px */
 function ttPvScale(){
@@ -3012,40 +3069,118 @@ function ttPvDown(e){
     qsa('.ttPvHit', block).forEach(el => el.classList.toggle('on', +el.dataset.idx === idx));
   }
   e.preventDefault();
-  const zz = ttPvScale(), k = ttK(), unit = k * zz;
+  const zz = ttPvScale(), k = ttK();
+  const unit = k * zz;                       /* 1 设计 px = 多少 client px */
   const L = idx >= 0 ? TT.layers[idx] : null;
   const s0 = {
-    kind, idx, hit, hd: hd ? hd.dataset.hd : '', unit, zz,
+    kind, idx, hit, k, hd: hd ? hd.dataset.hd : '', unit, zz,
     cx: e.clientX, cy: e.clientY,
     x: kind === 'text' ? TT.text.x : L.x,
     y: kind === 'text' ? TT.text.y : L.y,
     w: kind === 'text' ? TT.text.w : L.w,
-    h: kind === 'text' ? 0 : ttLayerH(L)
+    h: kind === 'text' ? 0 : ttLayerH(L),
+    live: kind === 'text' ? (ttLines().h || 1) : 0,
+    snap: $('ttSnap') ? $('ttSnap').checked : true,
+    /* 吸附阈值按「屏幕手感」给：固定 11 个屏幕像素，再换算成设计像素。
+       以前写死 12 设计像素——预览缩到 0.36 倍时只剩 4 个屏幕像素，
+       得对准得死死的才吸得上，看着就跟没吸附一样。 */
+    th: 11 / Math.max(0.01, unit)
   };
   if (kind === 'layer') ttLiveOn(true);
+
+  /* 吸附参考线：拖动中实时出现，松手撤掉 */
+  let gv = null, gh = null;
+  function mkGuide(axis){
+    const d = document.createElement('div');
+    d.className = 'ttPvGuide ' + axis;
+    d.style.display = 'none';
+    block.appendChild(d);
+    return d;
+  }
+  function putGuide(el, on, line){
+    if (!el) return;
+    if (!on){ el.style.display = 'none'; return; }
+    el.style.display = '';
+    if (el.classList.contains('v')) el.style.left = Math.round(line * k) + 'px';
+    else el.style.top = Math.round(line * k) + 'px';
+  }
+
   const move = ev => {
-    const dx = (ev.clientX - s0.cx) / s0.zz;
-    const dy = (ev.clientY - s0.cy) / s0.zz;
-    if (s0.hd){                                   /* 拖把手 = 改尺寸 */
+    const ddx = (ev.clientX - s0.cx) / unit;   /* 位移，设计像素 */
+    const ddy = (ev.clientY - s0.cy) / unit;
+    if (s0.hd){                                /* 拖把手 = 改尺寸 */
+      const dir = s0.hd;
+      const west = dir === 'w' || dir === 'nw' || dir === 'sw';
+      const east = dir === 'e' || dir === 'ne' || dir === 'se';
+      const north = dir === 'n' || dir === 'ne' || dir === 'nw';
+      const south = dir === 's' || dir === 'se' || dir === 'sw';
+      let nx = s0.x, ny = s0.y, nw = s0.w, nh = s0.h;
+      if (east) nw = s0.w + ddx;
+      if (west){ nw = s0.w - ddx; nx = s0.x + ddx; }
       if (kind === 'text'){
-        const nw = Math.max(30, s0.w * k + dx);
-        s0.hit.style.width = nw + 'px';
-        s0.nw = nw / k;
-      } else {
-        const lock = $('ttLockRatio').checked;
-        /* 等比时取「拖得更狠」的那个方向定比例：只往下拖也能放大，不用非往右拖 */
-        const d = lock ? (Math.abs(dx) >= Math.abs(dy) ? dx : dy * s0.w / s0.h) : dx;
-        const nw = Math.max(12, s0.w * k + d);
-        const nh = lock ? nw * s0.h / s0.w : Math.max(12, s0.h * k + dy);
-        s0.hit.style.width = nw + 'px';
-        s0.hit.style.height = nh + 'px';
-        s0.nw = nw / k; s0.nh = nh / k;
+        /* 文字只改宽度（高矮跟着字号/折行走），左边把手连位置一起挪 */
+        nw = Math.max(30, nw);
+        s0.hit.style.width = Math.round(nw * k) + 'px';
+        s0.hit.style.marginLeft = Math.round((nx - s0.x) * k) + 'px';
+        s0.nx = nx; s0.nw = nw;
+        return;
       }
-    } else {
-      s0.hit.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
-      s0.nx = s0.x + dx / s0.unit;
-      s0.ny = s0.y + dy / s0.unit;
+      if (south) nh = s0.h + ddy;
+      if (north){ nh = s0.h - ddy; ny = s0.y + ddy; }
+      if ($('ttLockRatio').checked){
+        /* 等比：按「拖得更狠」的那个方向定缩放比，另一条边跟着走，锚点留在对侧 */
+        let sc;
+        if ((east || west) && (north || south)) sc = Math.abs(nw / s0.w - 1) >= Math.abs(nh / s0.h - 1) ? nw / s0.w : nh / s0.h;
+        else if (east || west) sc = nw / s0.w;
+        else sc = nh / s0.h;
+        sc = Math.max(sc, 12 / s0.w, 12 / s0.h);
+        nw = s0.w * sc; nh = s0.h * sc;
+        nx = west ? s0.x + s0.w - nw : s0.x;
+        ny = north ? s0.y + s0.h - nh : s0.y;
+      } else {
+        nw = Math.max(12, nw); nh = Math.max(12, nh);
+      }
+      s0.hit.style.left = Math.round(nx * k) + 'px';
+      s0.hit.style.top = Math.round(ny * k) + 'px';
+      s0.hit.style.width = Math.round(nw * k) + 'px';
+      s0.hit.style.height = Math.round(nh * k) + 'px';
+      s0.nx = nx; s0.ny = ny; s0.nw = nw; s0.nh = nh;
+      /* 上面「宽 / 高」的数字跟着拖，不用等松手 */
+      if ($('ttLayerWn')) $('ttLayerWn').value = Math.round(nw);
+      if ($('ttLayerHn')) $('ttLayerHn').value = Math.round(nh);
+      return;
     }
+    /* 拖位置：吸附在拖动过程中实时算（不是松手才「啪」一下），对上了就画参考线。
+       没动过的那条轴不吸附也不夹紧——只想左右挪的时候，上下位置别自己跳 */
+    const movedX = Math.abs(ev.clientX - s0.cx) >= 2;
+    const movedY = Math.abs(ev.clientY - s0.cy) >= 2;
+    let nx = s0.x + ddx, ny = s0.y + ddy;
+    let gV = null, gH = null;
+    if (s0.snap){
+      if (kind === 'text'){
+        if (movedX){ const sx = snapPick(nx, snapTextX(), s0.th); if (sx){ nx = sx.v; gV = sx.line; } }
+        if (movedY){ const sy = snapPick(ny, snapTextY(), s0.th); if (sy){ ny = sy.v; gH = sy.line; } }
+        const maxY = Math.max(0, ttCanvasH() - ttLines().h - 2);
+        const cx2 = Math.max(-s0.w * 0.5, Math.min(TT.designW - 20, nx));
+        const cy2 = Math.max(0, Math.min(maxY, ny));
+        if (cx2 !== nx){ nx = cx2; gV = null; }
+        if (cy2 !== ny){ ny = cy2; gH = null; }
+      } else {
+        const c = snapBox(s0.w, s0.h);
+        if (movedX){ const sx = snapPick(nx, c.xs, s0.th); if (sx){ nx = sx.v; gV = sx.line; } }
+        if (movedY){ const sy = snapPick(ny, c.ys, s0.th); if (sy){ ny = sy.v; gH = sy.line; } }
+        const cx2 = Math.max(-s0.w * 0.8, Math.min(TT.designW * 0.95, nx));
+        const cy2 = Math.max(-s0.w * 0.8, ny);
+        if (cx2 !== nx){ nx = cx2; gV = null; }
+        if (cy2 !== ny){ ny = cy2; gH = null; }
+      }
+    }
+    s0.hit.style.transform = 'translate(' + ((nx - s0.x) * k) + 'px,' + ((ny - s0.y) * k) + 'px)';
+    s0.nx = nx; s0.ny = ny;
+    if (gV != null && !gv) gv = mkGuide('v');
+    if (gH != null && !gh) gh = mkGuide('h');
+    putGuide(gv, gV != null, gV || 0);
+    putGuide(gh, gH != null, gH || 0);
   };
   const up = () => {
     window.removeEventListener('pointermove', move);
@@ -3053,31 +3188,22 @@ function ttPvDown(e){
     window.removeEventListener('pointercancel', up);
     if (kind === 'layer') ttLiveOn(false);
     s0.hit.style.transform = '';
+    s0.hit.style.marginLeft = '';
+    if (gv && gv.parentNode) gv.parentNode.removeChild(gv);
+    if (gh && gh.parentNode) gh.parentNode.removeChild(gh);
     if (s0.hd){
-      if (kind === 'text') TT.text.w = Math.round(s0.nw || s0.w);
-      else {
+      if (kind === 'text'){
+        TT.text.w = Math.round(Math.max(30, s0.nw || s0.w));
+        if (s0.nx != null) TT.text.x = Math.round(Math.max(-TT.text.w * 0.5, Math.min(TT.designW - 20, s0.nx)));
+      } else {
         L.w = Math.round(s0.nw || s0.w);
         L.h = Math.round(s0.nh || s0.h);
+        if (s0.nx != null) L.x = Math.round(s0.nx);
+        if (s0.ny != null) L.y = Math.round(s0.ny);
       }
     } else if (s0.nx != null){
-      const snapOn = $('ttSnap') ? $('ttSnap').checked : true;
-      let nx = s0.nx, ny = s0.ny;
-      if (kind === 'text'){
-        if (snapOn){
-          const sx = snapPick(nx, snapTextX(), 12); if (sx) nx = sx.v;
-          const sy = snapPick(ny, snapTextY(), 12); if (sy) ny = sy.v;
-        }
-        const maxY = Math.max(0, ttCanvasH() - ttLines().h - 2);
-        TT.text.x = Math.round(Math.max(-TT.text.w * 0.5, Math.min(TT.designW - 20, nx)));
-        TT.text.y = Math.round(Math.max(0, Math.min(maxY, ny)));
-      } else {
-        if (snapOn){
-          const c = snapBox(L.w, ttLayerH(L));
-          const sx = snapPick(nx, c.xs, 12); if (sx) nx = sx.v;
-          const sy = snapPick(ny, c.ys, 12); if (sy) ny = sy.v;
-        }
-        L.x = Math.round(nx); L.y = Math.round(ny);
-      }
+      if (kind === 'text'){ TT.text.x = Math.round(s0.nx); TT.text.y = Math.round(s0.ny); }
+      else { L.x = Math.round(s0.nx); L.y = Math.round(s0.ny); }
     }
     ttRender(); ttRenderLayerList(); ttRenderLayerBar();
   };
