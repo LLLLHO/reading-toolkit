@@ -47,8 +47,13 @@
         background: linear-gradient(90deg, rgba(79,110,242,.45), rgba(79,110,242,0)); }
 
     /* ---------- 卡片网格 ---------- */
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+    /* 两行 1fr：不管哪张卡说明多一行，两行都会拉成同一高度；
+       第三行是通栏那张，按内容高度走 */
+    .grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr auto; gap: 16px; }
+    @media (max-width: 720px) {
+        /* 单列时一行一张卡，等高等得没意义，恢复逐卡自适应 */
+        .grid { grid-template-columns: 1fr; grid-template-rows: none; grid-auto-rows: auto; }
+    }
     a.card {
         --c: 79,110,242;
         --tint: .085;
@@ -193,7 +198,7 @@
                     </svg>
                 </span>
                 <h2>高亮制作工具</h2>
-                <p>对话气泡与标题装饰，引号、九宫格或整图拉伸、贴图挂在文字一侧。</p>
+                <p>引号、九宫格、整图拉伸，气泡和标题装饰一次调好。</p>
                 <div class="tags"><span>对话气泡</span><span>标题装饰</span><span>.red 规则包</span></div>
                 <span class="go">进入工具
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
