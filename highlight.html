@@ -107,8 +107,23 @@
   .paperInner p.gap{height:.7em;}
   #ttPreviewBlock{display:block; box-sizing:border-box;}
   #ttCanvasWrap{border:1px solid var(--line); border-radius:10px; overflow:hidden; touch-action:none;}
+  /* 预览里直接拖：图片命中框 + 四角把手 */
+  #ttPreviewBlock{touch-action:manipulation;}
+  #ttPreviewBlock .ttPvHit{position:absolute; touch-action:none;}
+  #ttPreviewBlock .ttPvImg{position:absolute; inset:0; background-size:100% 100%;
+    background-repeat:no-repeat; opacity:0; pointer-events:none;}
+  #ttPreviewBlock .ttPvHit.on{outline:2px solid var(--accent); outline-offset:-1px;}
+  #ttPreviewBlock .ttPvHd{position:absolute; width:13px; height:13px; background:var(--accent);
+    border:2px solid #fff; border-radius:3px; box-shadow:0 1px 4px rgba(0,0,0,.35); touch-action:none;}
+  #ttPreviewBlock .ttPvHd[data-hd="se"]{right:-7px; bottom:-7px; cursor:nwse-resize;}
+  #ttPreviewBlock .ttPvHd[data-hd="w"]{right:-7px; top:50%; margin-top:-7px; cursor:ew-resize;}
+  /* 拖动的一瞬间：合成底图让位给真图，位置一模一样，松手再合回来 */
+  #ttPreviewBlock.tt-live{background-image:none!important;}
+  #ttPvText{cursor:move; touch-action:none; outline:1px dashed rgba(79,110,242,.42); outline-offset:3px;}
   #ttCanvas{position:relative; margin:0 auto;}
-  #ttLayerBar{display:none; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap;}
+  #ttLayerBar{display:none; gap:6px; align-items:center; margin-top:8px; flex-wrap:wrap;}
+  #ttLayerBar2{display:none; gap:6px; align-items:center; margin-top:8px; flex-wrap:wrap;}
+  #ttLayerBar input[type=range]{min-width:60px;}
   #ttLayerList{display:flex; flex-direction:column; gap:5px; margin-top:8px; max-height:132px; overflow:auto;}
   .lyrRow{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--sub); border:1px solid var(--line); border-radius:7px; padding:4px 8px; cursor:pointer;}
   .lyrRow.on{border-color:var(--accent); color:var(--accent); background:var(--accent-light);}
@@ -155,7 +170,7 @@
     input[type=text],input[type=number],select,textarea{font-size:15px; padding:9px 10px;}
   }
   /* ===================== 手机端：全屏预览 + 悬浮板块按钮 + 抽屉 ===================== */
-  #mstage,#mnav,#msheet,#mscrim{display:none;}
+  #mstage,#mnav,#msheet,#mscrim,#mnav-restore{display:none;}
   @media (max-width: 760px){
     body.arc-mobile{height:100dvh; overflow:hidden;}
     body.arc-mobile header{display:none;}
@@ -173,10 +188,15 @@
       padding:calc(58px + env(safe-area-inset-top)) 6px calc(26px + env(safe-area-inset-bottom));
       background:#0d1015;}
     body.arc-mobile #mstage > *{flex:none;}
-    body.arc-mobile #mstage .paper{border:0; border-radius:0; max-width:100%;}
-    .m-empty{margin:34px 18px 0; text-align:center; color:#9aa4b2; font-size:13px; line-height:1.7;}
+    /* 别用 max-width:100% 卡纸宽：纸内容的列宽是写死的，卡窄了列会从纸里溢出去，
+       表现就是左右两边被裁掉。改成按原始宽排，再由 mFitPaper() 用 zoom 整体缩进屏幕。 */
+    body.arc-mobile #mstage .paper{border:0; border-radius:0;
+      /* 内容短的时候也把这张「纸」拉到整屏高，看着就是一页纸，而不是半截白条 */
+      flex:1 0 auto;}
+    .m-empty{margin:34px 18px 0; max-width:100%; text-align:center; color:#9aa4b2; font-size:13px; line-height:1.7;}
+    .m-empty button{display:block; margin:14px auto 0;}
     .m-empty b{display:block; color:#fff; font-size:15px; font-weight:500; margin-bottom:6px;}
-    .m-empty button{margin-top:14px; border:none; border-radius:999px; padding:9px 20px; font-size:13px;
+    .m-empty button{border:none; border-radius:999px; padding:9px 20px; font-size:13px;
       font-family:inherit; background:var(--accent); color:#fff; cursor:pointer;}
     body.arc-mobile #mstage #ttCanvasWrap{border:0; border-radius:0; max-width:100%;}
 
@@ -186,6 +206,15 @@
       background:rgba(18,20,26,.62); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
       border-radius:18px; padding:5px; box-shadow:0 8px 26px rgba(0,0,0,.38);}
     body.arc-mobile.m-nav-off #mnav{opacity:0; pointer-events:none; transform:translateX(14px);}
+    /* 收起后右边留一个小把手，点一下把菜单叫回来（否则收起来就再也点不到了） */
+    body.arc-mobile #mnav-restore{display:none; position:fixed; right:0; top:50%; z-index:77;
+      transform:translateY(-50%); width:28px; height:66px; padding:0; border:0;
+      border-radius:12px 0 0 12px; background:rgba(18,20,26,.74); color:#fff;
+      font-family:inherit; font-size:15px; line-height:1; cursor:pointer;
+      backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+      box-shadow:-2px 4px 16px rgba(0,0,0,.4);}
+    body.arc-mobile.m-nav-off #mnav-restore{display:block;}
+    body.arc-mobile.m-sheet-open #mnav-restore{display:none;}
     body.arc-mobile.m-sheet-open #mnav{opacity:0; pointer-events:none;}
     #mnav button{display:flex; flex-direction:column; align-items:center; gap:1px; width:52px; padding:6px 2px;
       border:none; background:transparent; color:#fff; font-family:inherit; font-size:10.5px;
@@ -218,8 +247,8 @@
       flex:1; min-height:0; overscroll-behavior:contain;}
     #mbody .card{border:0; background:transparent; padding:2px 0 8px;}
     #mbody .card h2{display:none;}
-    /* 注释默认收起，点抽屉右上「说明」才展开 */
-    body.arc-mobile:not(.m-hints) #mbody .hint{display:none!important;}
+    /* 只藏「大段」说明（JS 按字数打 .m-long），像「手机正文列宽」这种标签一直显示 */
+    body.arc-mobile:not(.m-hints) #mbody .hint.m-long{display:none!important;}
     body.arc-mobile #toast{top:calc(54px + env(safe-area-inset-top)); bottom:auto;}
   }
 
@@ -498,13 +527,20 @@
       </div>
       <div id="ttLayerList"></div>
       <div id="ttLayerBar">
-        <span class="hint" style="margin:0">宽度</span>
-        <input type="range" id="ttLayerW" min="20" step="1" style="flex:1; min-width:100px">
+        <span class="hint" style="margin:0">宽</span>
+        <input type="range" id="ttLayerW" min="20" step="1" style="flex:1; min-width:80px">
+        <span class="hint" style="margin:0">高</span>
+        <input type="range" id="ttLayerH" min="20" step="1" style="flex:1; min-width:80px">
+      </div>
+      <div id="ttLayerBar2">
         <button class="btn sm" id="ttLayerUp">⬆</button>
         <button class="btn sm" id="ttLayerDown">⬇</button>
         <button class="btn sm" id="ttLayerDel">🗑</button>
+        <label style="display:flex;gap:6px;align-items:center;font-size:12.5px;color:var(--sub);margin-left:auto">
+          <input type="checkbox" id="ttLockRatio" checked> 等比
+        </label>
       </div>
-      <p class="hint">点画布上的图选中它，拖动移位，右下角小方块拉大小。图可以放在标题文字的上、下、左、右，或者四周围起来——位置完全由你摆，导出时合成一张透明 PNG 当标题背景。</p>
+      <p class="hint">在下面的预览里点一下图就选中，按住拖动移位，右下角小方块拉大小。取消「等比」后宽高各改各的，想拉长就拉长、想压扁就压扁。</p>
     </div>
 
     <div class="card">
@@ -515,15 +551,15 @@
         <span class="hint" style="margin:0">画布高</span>
         <input type="number" id="ttCanvasH" value="0" min="0" step="10" style="width:78px" placeholder="自动">
       </div>
-      <label class="fld">标题示例文字（画布上拖虚线框可换位置）</label>
+      <label class="fld">标题示例文字（在预览里按住标题直接拖）</label>
       <input type="text" id="ttText" value="第一章 新的故事">
       <div class="row" style="margin-top:8px">
         <label style="display:flex;gap:6px;align-items:center;font-size:12.5px;color:var(--sub)">
           <input type="checkbox" id="ttSnap" checked> 拖动时自动吸附（画布左右边、水平居中、与图片对齐）
         </label>
       </div>
-      <p class="hint">吸附时会出现一条蓝色参考线，停在最近的对齐位置。图片也能吸附到画布和文字框的边缘 / 中心。</p>
-      <p class="hint">画布高填 0 就按图片自动撑到图片底边。在图片范围内上下拖标题，画布高度不变、图也不会变形；只有把标题拖到图片底边以外，画布才会往上长。</p>
+      <p class="hint">吸附会把标题停在最近的对齐位置：画布左右边、水平居中、图片和文字框的边 / 中心。</p>
+      <p class="hint">画布高填 0 就按图片自动撑到图片底边；标题拖到图片底边以外时，画布才会往上长。</p>
       <p class="hint" id="ttFitWarn" style="display:none; color:#e06c75">标题比画布还高：下内边距被压成 0，装饰图会被压扁。把画布高调大，或者把字号调小。</p>
     </div>
 
@@ -601,13 +637,13 @@
   </div>
 
   <div class="col">
-    <div class="card">
+    <div class="card" id="ttCanvasCard" hidden>
       <h2>画布 <span class="tag">虚线框是标题文字的位置</span></h2>
       <div id="ttCanvasWrap"><div id="ttCanvas"></div></div>
     </div>
 
     <div class="card">
-      <h2>预览 <span class="tag">ARC 里的实际尺寸</span></h2>
+      <h2>预览 <span class="tag">和 ARC 里一样大 · 直接拖</span></h2>
       <div class="row" style="margin-top:0">
         <span class="hint" style="margin:0">手机正文列宽</span>
         <input type="number" id="ttColW" value="390" min="220" max="900" style="width:76px"> px
@@ -635,7 +671,7 @@
           <p id="ttPreviewBody" style="margin:0 auto; text-indent:2em; opacity:.5;">他望向窗外，说：“今天风很轻。”</p>
         </div>
       </div>
-      <p class="hint">预览里的背景就是导出那张合成图（按列宽等比缩过），CSS 与导出完全同一份——所以标题折行后图会不会被拉长，在这里就能直接看出来。画布上的 1080 宽等于手机上的列宽，内边距写成 em（跟着标题字号走），换字号、换屏宽时整块等比缩放。</p>
+      <p class="hint">预览里的背景就是导出那张合成图（按列宽等比缩过），CSS 与导出完全同一份——标题折行后图会不会被拉长，在这里就能看出来。设计宽 1080 等于手机上的列宽，内边距写成 em，换字号、换屏宽整块等比缩放。</p>
     </div>
 
     <div class="card">
@@ -2539,19 +2575,22 @@ function ttCanvasH(){
   const manual = parseFloat($('ttCanvasH').value) || 0;
   if (manual > 0) return manual;
   let bottom = TT.text.y + ttLines().h + 10;
-  TT.layers.forEach(l => { bottom = Math.max(bottom, l.y + l.w * l.img.naturalHeight / l.img.naturalWidth); });
+  TT.layers.forEach(l => { bottom = Math.max(bottom, l.y + ttLayerH(l)); });
   return Math.ceil(bottom + 10);
 }
 
 function ttRenderCanvas(){
   const cv = $('ttCanvas');
+  const box = $('ttCanvasWrap');
+  /* 画布已经退场（预览里直接拖）：别白算，但「画布高」的自动值还要更新 */
+  if (!box || !box.offsetParent){ $('ttCanvasH').placeholder = '自动 ' + ttCanvasH(); return; }
   const s = ttScale(), H = ttCanvasH();
   cv.style.width = Math.round(TT.designW * s) + 'px';
   cv.style.height = Math.round(H * s) + 'px';
   cv.style.background = 'repeating-conic-gradient(var(--chk-a) 0% 25%, var(--chk-b) 0% 50%) 50% / 16px 16px';
   cv.innerHTML = '';
   TT.layers.forEach((l, i) => {
-    const h = l.w * l.img.naturalHeight / l.img.naturalWidth;
+    const h = ttLayerH(l);
     const d = document.createElement('div');
     d.dataset.idx = i;
     d.style.cssText = 'position:absolute;left:' + (l.x * s) + 'px;top:' + (l.y * s) + 'px;width:' + (l.w * s) + 'px;height:' + (h * s) + 'px;'
@@ -2731,7 +2770,8 @@ $('ttFiles').addEventListener('change', async () => {
     img.src = url;
     try { await img.decode(); } catch (_){ URL.revokeObjectURL(url); continue; }
     const w = Math.min(TT.designW, img.naturalWidth);
-    TT.layers.push({ img: img, url: url, x: Math.round((TT.designW - w) / 2), y: 10, w: w });
+    TT.layers.push({ img: img, url: url, x: Math.round((TT.designW - w) / 2), y: 10, w: w,
+      h: Math.round(w * img.naturalHeight / img.naturalWidth) });
     TT.sel = TT.layers.length - 1;
   }
   ttRender(); ttRenderLayerList(); ttRenderLayerBar();
@@ -2744,20 +2784,43 @@ function ttRenderLayerList(){
     const row = document.createElement('div');
     row.className = 'lyrRow' + (i === TT.sel ? ' on' : '');
     row.innerHTML = '<img src="' + l.img.src + '" alt=""><span style="flex:1">图片 ' + (i + 1) + ' · '
-      + Math.round(l.w) + ' × ' + Math.round(l.w * l.img.naturalHeight / l.img.naturalWidth) + '</span>';
+      + Math.round(l.w) + ' × ' + Math.round(ttLayerH(l)) + '</span>';
     row.addEventListener('click', () => { TT.sel = i; ttRender(); ttRenderLayerList(); ttRenderLayerBar(); });
     box.appendChild(row);
   });
 }
 function ttRenderLayerBar(){
-  const bar = $('ttLayerBar');
+  const bar = $('ttLayerBar'), bar2 = $('ttLayerBar2');
   const l = TT.layers[TT.sel];
-  bar.style.display = l ? 'flex' : 'none';
-  if (l){ $('ttLayerW').max = Math.round(TT.designW * 1.6); $('ttLayerW').value = Math.round(l.w); }
+  if (bar) bar.style.display = l ? 'flex' : 'none';
+  if (bar2) bar2.style.display = l ? 'flex' : 'none';
+  if (l){
+    const max = Math.round(TT.designW * 1.6);
+    $('ttLayerW').max = max; $('ttLayerW').value = Math.round(l.w);
+    $('ttLayerH').max = max; $('ttLayerH').value = Math.round(ttLayerH(l));
+  }
 }
 $('ttLayerW').addEventListener('input', () => {
   const l = TT.layers[TT.sel];
-  if (l){ l.w = +$('ttLayerW').value; ttRender(); ttRenderLayerList(); }
+  if (!l) return;
+  const r = ttLayerH(l) / l.w;
+  l.w = +$('ttLayerW').value;
+  if ($('ttLockRatio').checked) l.h = Math.round(l.w * r);
+  else l.h = Math.round(ttLayerH(l));
+  ttRender(); ttRenderLayerList(); ttRenderLayerBar();
+});
+$('ttLayerH').addEventListener('input', () => {
+  const l = TT.layers[TT.sel];
+  if (!l) return;
+  const r = l.w / ttLayerH(l);
+  l.h = +$('ttLayerH').value;
+  if ($('ttLockRatio').checked) l.w = Math.max(12, Math.round(l.h * r));
+  ttRender(); ttRenderLayerList(); ttRenderLayerBar();
+});
+$('ttLockRatio').addEventListener('change', () => {
+  const l = TT.layers[TT.sel];
+  if (l && $('ttLockRatio').checked) l.h = Math.round(l.w * l.img.naturalHeight / l.img.naturalWidth);
+  ttRender();
 });
 $('ttLayerUp').addEventListener('click', () => {
   const i = TT.sel;
@@ -2846,7 +2909,7 @@ function ttCss(resId, pad){
 let ttPrevKey = '', ttPrevSrc = '', ttPrevUid = 0;
 function ttPreviewImage(){
   const key = [TT.designW, ttColW(), ttCanvasH(),
-    TT.layers.map(l => (l.img.__uid || (l.img.__uid = ++ttPrevUid)) + ':' + l.x + ',' + l.y + ',' + l.w).join('|')].join('#');
+    TT.layers.map(l => (l.img.__uid || (l.img.__uid = ++ttPrevUid)) + ':' + l.x + ',' + l.y + ',' + l.w + ',' + Math.round(ttLayerH(l))).join('|')].join('#');
   if (key === ttPrevKey && ttPrevSrc) return ttPrevSrc;
   const H = ttCanvasH();
   const s = ttColW() / TT.designW;
@@ -2855,8 +2918,7 @@ function ttPreviewImage(){
   cv.height = Math.max(1, Math.round(H * s));
   const ctx = cv.getContext('2d');
   TT.layers.forEach(l => {
-    const h = l.w * l.img.naturalHeight / l.img.naturalWidth;
-    ctx.drawImage(l.img, l.x * s, l.y * s, l.w * s, h * s);
+    ctx.drawImage(l.img, l.x * s, l.y * s, l.w * s, ttLayerH(l) * s);
   });
   ttPrevKey = key;
   ttPrevSrc = cv.toDataURL('image/png');
@@ -2883,11 +2945,147 @@ function ttRenderPreview(){
   block.innerHTML = '';
 
   const txt = document.createElement('div');
+  txt.id = 'ttPvText';
+  txt.dataset.ac = 'text';
   txt.style.position = 'relative';
-  txt.style.zIndex = '1';
+  txt.style.zIndex = '3';
   txt.textContent = $('ttText').value || '标题';
+  const thd = document.createElement('span');
+  thd.className = 'ttPvHd';
+  thd.dataset.hd = 'w';
+  thd.title = '拖这里改标题宽度';
+  txt.appendChild(thd);
   block.appendChild(txt);
+
+  /* 图片图层也画成真元素：预览里能直接点、直接拖。
+     平时是透明的（底图由上面那张合成图负责），拖动的一瞬间才显形（.tt-live） */
+  const k = ttK();
+  TT.layers.forEach((l, i) => {
+    const d = document.createElement('div');
+    d.className = 'ttPvHit' + (i === TT.sel ? ' on' : '');
+    d.dataset.ac = 'layer';
+    d.dataset.idx = i;
+    d.style.cssText = 'left:' + (l.x * k) + 'px;top:' + (l.y * k) + 'px;width:' + (l.w * k) + 'px;height:' + (ttLayerH(l) * k) + 'px;';
+    const im = document.createElement('div');
+    im.className = 'ttPvImg';
+    im.style.backgroundImage = 'url("' + l.img.src + '")';
+    d.appendChild(im);
+    if (i === TT.sel){
+      const hd = document.createElement('span');
+      hd.className = 'ttPvHd';
+      hd.dataset.hd = 'se';
+      hd.title = '拖这里改图片大小';
+      d.appendChild(hd);
+    }
+    block.appendChild(d);
+  });
 }
+
+/* 设计像素 → 预览像素 */
+const ttK = () => ttColW() / TT.designW;
+function ttLayerH(l){ return l.h || (l.w * l.img.naturalHeight / l.img.naturalWidth); }
+/* 纸张被 zoom 过时，client px 要除一下才是元素自己的 px */
+function ttPvScale(){
+  const b = $('ttPreviewBlock');
+  if (!b) return 1;
+  const w = b.offsetWidth || 1;
+  return (b.getBoundingClientRect().width || w) / w;
+}
+/* 拖图层时把合成底图关掉、真图显形，松手再合回来（合回来的位置和拖的时候一模一样） */
+function ttLiveOn(on){
+  const b = $('ttPreviewBlock');
+  if (!b) return;
+  b.classList.toggle('tt-live', on);
+  qsa('.ttPvImg', b).forEach(el => { el.style.opacity = on ? '1' : '0'; });
+}
+function ttPvDown(e){
+  const block = $('ttPreviewBlock');
+  if (!block) return;
+  const hit = e.target.closest ? e.target.closest('[data-ac]') : null;
+  if (!hit) return;
+  const hd = e.target.closest('[data-hd]');
+  const kind = hit.dataset.ac;
+  const idx = kind === 'layer' ? +hit.dataset.idx : -1;
+  if (kind === 'layer' && TT.sel !== idx){
+    TT.sel = idx;
+    ttRenderLayerList(); ttRenderLayerBar();
+    qsa('.ttPvHit', block).forEach(el => el.classList.toggle('on', +el.dataset.idx === idx));
+  }
+  e.preventDefault();
+  const zz = ttPvScale(), k = ttK(), unit = k * zz;
+  const L = idx >= 0 ? TT.layers[idx] : null;
+  const s0 = {
+    kind, idx, hit, hd: hd ? hd.dataset.hd : '', unit, zz,
+    cx: e.clientX, cy: e.clientY,
+    x: kind === 'text' ? TT.text.x : L.x,
+    y: kind === 'text' ? TT.text.y : L.y,
+    w: kind === 'text' ? TT.text.w : L.w,
+    h: kind === 'text' ? 0 : ttLayerH(L)
+  };
+  if (kind === 'layer') ttLiveOn(true);
+  const move = ev => {
+    const dx = (ev.clientX - s0.cx) / s0.zz;
+    const dy = (ev.clientY - s0.cy) / s0.zz;
+    if (s0.hd){                                   /* 拖把手 = 改尺寸 */
+      if (kind === 'text'){
+        const nw = Math.max(30, s0.w * k + dx);
+        s0.hit.style.width = nw + 'px';
+        s0.nw = nw / k;
+      } else {
+        const lock = $('ttLockRatio').checked;
+        /* 等比时取「拖得更狠」的那个方向定比例：只往下拖也能放大，不用非往右拖 */
+        const d = lock ? (Math.abs(dx) >= Math.abs(dy) ? dx : dy * s0.w / s0.h) : dx;
+        const nw = Math.max(12, s0.w * k + d);
+        const nh = lock ? nw * s0.h / s0.w : Math.max(12, s0.h * k + dy);
+        s0.hit.style.width = nw + 'px';
+        s0.hit.style.height = nh + 'px';
+        s0.nw = nw / k; s0.nh = nh / k;
+      }
+    } else {
+      s0.hit.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+      s0.nx = s0.x + dx / s0.unit;
+      s0.ny = s0.y + dy / s0.unit;
+    }
+  };
+  const up = () => {
+    window.removeEventListener('pointermove', move);
+    window.removeEventListener('pointerup', up);
+    window.removeEventListener('pointercancel', up);
+    if (kind === 'layer') ttLiveOn(false);
+    s0.hit.style.transform = '';
+    if (s0.hd){
+      if (kind === 'text') TT.text.w = Math.round(s0.nw || s0.w);
+      else {
+        L.w = Math.round(s0.nw || s0.w);
+        L.h = Math.round(s0.nh || s0.h);
+      }
+    } else if (s0.nx != null){
+      const snapOn = $('ttSnap') ? $('ttSnap').checked : true;
+      let nx = s0.nx, ny = s0.ny;
+      if (kind === 'text'){
+        if (snapOn){
+          const sx = snapPick(nx, snapTextX(), 12); if (sx) nx = sx.v;
+          const sy = snapPick(ny, snapTextY(), 12); if (sy) ny = sy.v;
+        }
+        const maxY = Math.max(0, ttCanvasH() - ttLines().h - 2);
+        TT.text.x = Math.round(Math.max(-TT.text.w * 0.5, Math.min(TT.designW - 20, nx)));
+        TT.text.y = Math.round(Math.max(0, Math.min(maxY, ny)));
+      } else {
+        if (snapOn){
+          const c = snapBox(L.w, ttLayerH(L));
+          const sx = snapPick(nx, c.xs, 12); if (sx) nx = sx.v;
+          const sy = snapPick(ny, c.ys, 12); if (sy) ny = sy.v;
+        }
+        L.x = Math.round(nx); L.y = Math.round(ny);
+      }
+    }
+    ttRender(); ttRenderLayerList(); ttRenderLayerBar();
+  };
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', up);
+  window.addEventListener('pointercancel', up);
+}
+$('ttPreviewBlock').addEventListener('pointerdown', ttPvDown);
 
 function ttRender(){
   ttRenderCanvas();
@@ -3191,8 +3389,16 @@ function mBuildDom(){
   sheet.innerHTML = '<div id="mh"><b id="m-title"></b>'
     + '<button type="button" class="mh-btn" id="mh-help">说明</button>'
     + '<button type="button" class="mh-btn" id="m-x">✕</button></div><div id="mbody"></div>';
-  document.body.append(st, nav, scrim, sheet);
+  const rst = document.createElement('button');
+  rst.type = 'button'; rst.id = 'mnav-restore';
+  rst.innerHTML = '☰';
+  rst.setAttribute('aria-label', '打开菜单');
+  document.body.append(st, nav, rst, scrim, sheet);
   M.built = true;
+  rst.addEventListener('click', () => {
+    document.body.classList.remove('m-nav-off');
+    toast('菜单回来了');
+  });
   scrim.addEventListener('click', mClose);
   $('m-x').addEventListener('click', mClose);
   $('mh-help').addEventListener('click', () => {
@@ -3219,7 +3425,10 @@ function mBuildNav(){
   const f = document.createElement('button');
   f.type = 'button'; f.className = 'm-fold';
   f.innerHTML = '<b>✕</b><span>收起</span>';
-  f.addEventListener('click', () => document.body.classList.add('m-nav-off'));
+  f.addEventListener('click', () => {
+    document.body.classList.add('m-nav-off');
+    toast('菜单收起了，点右边的小把手再打开');
+  });
   nav.appendChild(f);
 }
 function mStageFill(){
@@ -3232,19 +3441,18 @@ function mStageFill(){
      用 innerHTML='' 会把它们连根删掉，$('dlgPaper') 从此返回 null */
   [...st.childNodes].forEach(n => { if (keep.indexOf(n) < 0) st.removeChild(n); });
   if (main.id === 'tabTitle'){
-    st.appendChild(M_EL.ttCanvas);
-    st.appendChild(M_EL.ttPaper);
+    /* 画布不摆了：标题直接在预览里拖，预览独占整屏 */
     if (M_EL.dlgPaper) M_EL.dlgPaper.style.display = 'none';
-    if (M_EL.ttCanvas) M_EL.ttCanvas.style.display = '';
+    if (M_EL.ttCanvas) M_EL.ttCanvas.style.display = 'none';
     if (M_EL.ttPaper) M_EL.ttPaper.style.display = '';
-    try{ ttRenderCanvas(); }catch(_){}
+    st.appendChild(M_EL.ttPaper);
+    try{ ttRender(); }catch(_){}
     mFitPaper();
   } else {
     if (M_EL.dlgPaper) M_EL.dlgPaper.style.display = '';
     if (M_EL.ttCanvas) M_EL.ttCanvas.style.display = 'none';
     if (M_EL.ttPaper) M_EL.ttPaper.style.display = 'none';
     st.appendChild(M_EL.dlgPaper);
-    mFitPaper();
     let em = $('m-empty');
     if (!em){
       em = document.createElement('div');
@@ -3261,8 +3469,9 @@ function mStageFill(){
       em.appendChild(eb);
     }
     st.appendChild(em);
-    mEmptySync();
+    mEmptySync();                 /* 先把 display 定下来，不然下面量不到宽 */
     try{ renderStage(); }catch(_){}
+    mFitPaper();
   }
 }
 function mEmptySync(){
@@ -3277,17 +3486,15 @@ function mEmptySync(){
 function mFitPaper(){
   const st = $('mstage');
   if (!st) return;
-  const avail = st.clientWidth - 14;
+  const avail = st.clientWidth - 12;
   if (avail <= 0) return;
   [M_EL.dlgPaper, M_EL.ttPaper].forEach(el => {
-    if (!el) return;
+    if (!el || el.style.display === 'none' || !el.offsetParent) return;   /* 藏着的量不到宽，别把 zoom 清掉 */
     el.style.zoom = '';
-    void el.offsetWidth;                       /* 先按原尺寸解一次布局，量的才是没缩放过的宽 */
-    const w = el.getBoundingClientRect().width;
-    if (w > avail){
-      const z = Math.max(0.55, avail / w);
-      el.style.zoom = z.toFixed(3);            /* zoom 会真正重排（不是拉伸），文字还是清楚的 */
-    }
+    const w = el.offsetWidth;                  /* offsetWidth 不受 zoom 影响，直接拿原始宽 */
+    if (!w) return;
+    const z = w > avail ? Math.max(0.5, avail / w) : 1;
+    el.style.zoom = z >= 0.999 ? '' : z.toFixed(3);   /* zoom 会真正重排（不是拉伸），文字还是清楚的 */
   });
 }
 function mRestoreCard(){
@@ -3295,6 +3502,16 @@ function mRestoreCard(){
   const c = M.card;
   if (M.parent) M.parent.insertBefore(c, M.next || null);
   M.card = null; M.parent = null; M.next = null;
+}
+/* 一屏里哪些注释能留：短标签（「手机正文列宽」这种）直接显示，大段解释丢进「说明」 */
+function mHints(){
+  const body = $('mbody');
+  if (!body) return;
+  qsa('.hint', body).forEach(el => {
+    if (el.id === 'ttFitWarn'){ el.classList.remove('m-long'); return; }   /* 警告必须看得见 */
+    const t = (el.textContent || '').trim();
+    el.classList.toggle('m-long', t.length > 34);
+  });
 }
 function mOpen(card){
   const body = $('mbody');
@@ -3307,6 +3524,7 @@ function mOpen(card){
   $('msheet').classList.add('on');
   document.body.classList.add('m-sheet-open');
   body.scrollTop = 0;
+  mHints();
   if (card.contains($('ttCanvasWrap'))){ try{ ttRenderCanvas(); }catch(_){} }
   if (card.contains($('dlgStage'))){ try{ renderStage(); }catch(_){} }
 }
@@ -3349,7 +3567,7 @@ mApply();
 const _dlgRender = dlgRender;
 dlgRender = function(){
   const r = _dlgRender.apply(this, arguments);
-  if (M.on){ try{ mFitPaper(); mEmptySync(); }catch(_){} }
+  if (M.on){ try{ mEmptySync(); mFitPaper(); }catch(_){} }
   return r;
 };
 const _ttRender = ttRender;
