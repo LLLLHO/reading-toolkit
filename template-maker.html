@@ -4072,6 +4072,14 @@ function initFieldPicker(){
     cur = inp;
     box.classList.add('on');
     place();
+    /* 手机上候选条是钉在键盘上方的，可能正好盖住输入框：把它滚到上面去 */
+    if (state.mobile){
+      const b = box.getBoundingClientRect(), r = inp.getBoundingClientRect();
+      if (r.bottom > b.top - 8){
+        try { inp.scrollIntoView({ block: 'center' }); } catch (e) {}
+        place();
+      }
+    }
   }
   function insertPh(inp, name){
     const code = '{' + name + '}';
