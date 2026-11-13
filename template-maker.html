@@ -343,6 +343,96 @@
     #cpmask #cpbox{gap:8px;}
     .helpBox{font-size:12px;}
   }
+
+  /* ===================== 手机端：全屏预览 + 侧边菜单 + 抽屉 ===================== */
+  #mbar,#mnav,#mflip,#msheet,#mscrim{display:none;}
+  @media (max-width: 760px){
+    body.arc-mobile{height:100dvh; overflow:hidden;}
+    body.arc-mobile header, body.arc-mobile main > aside.col{display:none!important;}
+    body.arc-mobile main{display:block; padding:0; height:100dvh; overflow:hidden;}
+    body.arc-mobile section.pvcol{display:flex!important; position:fixed; inset:0; z-index:60;
+      background:#0b0d11; padding:0; gap:0; flex-direction:column; overflow:hidden;}
+    body.arc-mobile section.pvcol .pvhead,
+    body.arc-mobile section.pvcol .pvbar,
+    body.arc-mobile section.pvcol .console{display:none!important;}
+    body.arc-mobile .stageWrap{flex:1 1 auto; min-height:0; padding:0; border:0; border-radius:0;
+      background:#0b0d11; overflow:hidden; display:block;}
+    body.arc-mobile .scaler{margin:0;}
+    body.arc-mobile .phone{border:0; border-radius:0; padding:0; background:transparent;}
+    body.arc-mobile .phone .taglab{display:none;}
+    body.arc-mobile .phone .screen{margin-top:0; border-radius:0; background:#fff;}
+    body.arc-mobile .fab{display:none!important;}
+    body.arc-mobile #toast{top:calc(14px + env(safe-area-inset-top)); bottom:auto;}
+
+    /* 左上角：更多 / 导出 / 完成拖动 */
+    body.arc-mobile #mbar{display:none; position:fixed; left:10px; top:calc(10px + env(safe-area-inset-top)); z-index:80; gap:7px;}
+    body.m-drag #mbar{display:flex;}
+    #mbar button{border:none; border-radius:999px; padding:8px 13px; font-size:12.5px; font-family:inherit; cursor:pointer;
+      background:rgba(18,20,26,.62); color:#fff; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+      box-shadow:0 2px 10px rgba(0,0,0,.28);}
+    #mbar button:active{transform:scale(.97);}
+    #mbar button.pri{background:rgba(37,99,235,.92);}
+    #m-dragdone{background:rgba(26,158,92,.95);}
+
+    /* 底部：翻页 */
+    body.arc-mobile #mflip{display:none; align-items:center; gap:2px; position:fixed; left:50%; transform:translateX(-50%);
+      opacity:0; transition:opacity .16s ease;
+      bottom:calc(12px + env(safe-area-inset-bottom)); z-index:70;
+      background:rgba(18,20,26,.6); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+      border-radius:999px; padding:3px; box-shadow:0 3px 14px rgba(0,0,0,.32);}
+    body.arc-mobile.nav-on #mflip{display:flex; opacity:1;}
+    #mflip button{border:none; background:transparent; color:#fff; font-size:13px; padding:8px 13px; border-radius:999px;
+      font-family:inherit; cursor:pointer;}
+    #mflip button:active{background:rgba(255,255,255,.18);}
+    #mflip #m-ind{color:#fff; font-size:12px; padding:0 4px; min-width:64px; text-align:center; letter-spacing:1px;}
+
+    /* 右侧：竖向菜单（点正文中间才出来） */
+    body.arc-mobile #mnav{display:flex; flex-direction:column; gap:3px; position:fixed; right:8px; top:0; bottom:0; z-index:76;
+      margin:auto 0; height:fit-content; width:fit-content;
+      transform:translateX(16px); opacity:0; pointer-events:none;
+      transition:opacity .16s ease, transform .16s ease;
+      background:rgba(18,20,26,.6); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+      border-radius:20px; padding:6px; box-shadow:0 8px 26px rgba(0,0,0,.38);}
+    body.arc-mobile #mnav.on{opacity:1; pointer-events:auto; transform:translateX(0);}
+    #mnav button{display:flex; flex-direction:column; align-items:center; gap:2px; width:56px; padding:8px 2px;
+      border:none; background:transparent; color:#fff; font-family:inherit; font-size:11px;
+      letter-spacing:.5px; border-radius:14px; cursor:pointer;}
+    #mnav button b{display:block; font-size:15px; font-weight:400; line-height:1.2; margin-bottom:1px;}
+    /* 小字号中文在部分内核里会被行盒裁掉下半截，行高给足 */
+    #mnav button span{display:block; line-height:1.8;}
+    #mnav button:active{background:rgba(255,255,255,.2);}
+
+    /* 抽屉 */
+    body.arc-mobile #mscrim{display:block; position:fixed; inset:0; z-index:84; background:rgba(6,8,12,.18);
+      opacity:0; pointer-events:none; transition:opacity .18s;}
+    body.m-sheet-open #mscrim{opacity:1; pointer-events:auto;}
+    body.arc-mobile #msheet{display:flex; flex-direction:column; position:fixed; left:0; right:0; bottom:0; z-index:90;
+      max-height:70vh; border-radius:18px 18px 0 0; transform:translateY(104%);
+      transition:transform .26s cubic-bezier(.2,.8,.2,1);
+      background:rgba(252,252,253,.9); backdrop-filter:blur(20px) saturate(1.2); -webkit-backdrop-filter:blur(20px) saturate(1.2);
+      box-shadow:0 -8px 34px rgba(0,0,0,.26);}
+    html.dark body.arc-mobile #msheet{background:rgba(30,33,40,.92);}
+    body.arc-mobile #msheet.top{bottom:auto; top:0; border-radius:0 0 18px 18px; transform:translateY(-104%);
+      box-shadow:0 8px 34px rgba(0,0,0,.26);}
+    body.arc-mobile #msheet.on{transform:translateY(0);}
+    #msheet::before{content:""; position:absolute; left:50%; top:6px; width:38px; height:4px; border-radius:2px;
+      background:rgba(0,0,0,.18); transform:translateX(-50%);}
+    html.dark #msheet::before{background:rgba(255,255,255,.22);}
+    #msheet.top::before{top:auto; bottom:6px;}
+    #mh{display:flex; align-items:center; gap:8px; padding:14px 14px 6px; flex:none;}
+    #mh b{font-size:13.5px; font-weight:500; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+    .mh-ind{font-size:11.5px; color:var(--sub); min-width:50px; text-align:center;}
+    .mh-btn{border:none; background:rgba(0,0,0,.07); color:var(--txt); border-radius:999px; padding:6px 12px;
+      font-size:12px; font-family:inherit; cursor:pointer;}
+    html.dark .mh-btn{background:rgba(255,255,255,.12);}
+    #mbody{overflow-y:auto; -webkit-overflow-scrolling:touch; padding:2px 10px calc(18px + env(safe-area-inset-bottom));
+      flex:1; min-height:0; overscroll-behavior:contain;}
+    #mbody .panel{display:none; flex-direction:column; gap:10px;}
+    #mbody .panel.m-show{display:flex!important;}
+    #mbody .card{background:rgba(255,255,255,.66);}
+    html.dark #mbody .card{background:rgba(255,255,255,.05);}
+  }
+
   @media (max-width: 420px){
     header h1{display:none;}
     .grid4{grid-template-columns:1fr 1fr;}
@@ -1150,6 +1240,82 @@
 </main>
 
 <div id="toast"></div>
+<div id="mbar">
+  <button id="m-dragdone" title="结束拖动，回到菜单">✓ 完成拖动</button>
+</div>
+<div id="mflip">
+  <button id="m-prev" aria-label="上一页">◀</button>
+  <span id="m-ind">首页</span>
+  <button id="m-next" aria-label="下一页">▶</button>
+</div>
+<div id="mnav">
+  <button data-open="top"><b>▤</b><span>页眉</span></button>
+  <button data-open="title"><b>T</b><span>标题</span></button>
+  <button data-open="cap"><b>字</b><span>首字</span></button>
+  <button data-open="flow"><b>¶</b><span>正文</span></button>
+  <button data-open="deco"><b>✿</b><span>装饰</span></button>
+  <button data-open="ai"><b>✨</b><span>AI</span></button>
+  <button data-open="foot"><b>▥</b><span>页脚</span></button>
+  <button data-open="more"><b>⋯</b><span>更多</span></button>
+</div>
+<div id="mscrim"></div>
+<div id="msheet">
+  <div id="mh"><b id="m-title">装饰</b>
+    <button class="mh-btn" id="mh-prev" aria-label="上一页">◀</button>
+    <span class="mh-ind" id="mh-ind">首页</span>
+    <button class="mh-btn" id="mh-next" aria-label="下一页">▶</button>
+    <button class="mh-btn" id="m-peek">看预览</button>
+    <button class="mh-btn" id="m-x">✕</button>
+  </div>
+  <div id="mbody"></div>
+</div>
+
+<div class="panel" data-panel="more" id="pan-more">
+  <div class="card">
+    <h2>打开面板 <span class="tag">手机端</span></h2>
+    <div class="row tight">
+      <button class="btn sm" data-mtab="base">模板信息</button>
+      <button class="btn sm" data-mtab="bg">背景</button>
+      <button class="btn sm" data-mtab="code">代码</button>
+      <button class="btn sm" data-mtab="io">导入 / 导出</button>
+    </div>
+    <div class="row tight" style="margin-top:8px">
+      <button class="btn sm pri" id="m-do-export">⬇ 导出模板</button>
+      <button class="btn sm" id="m-do-import">📥 导入模板</button>
+      <button class="btn sm" id="m-do-theme">🌙 工具深浅色</button>
+    </div>
+    <div class="hint" style="margin-top:8px">页眉、标题、首字、正文、装饰、页脚在右侧竖排菜单里；这里放的是不常用但导出前要用的几项。</div>
+  </div>
+  <div class="card">
+    <h2>预览</h2>
+    <div class="row tight">
+      <span class="seg" id="m-night">
+        <button data-n="auto" class="on">跟随系统</button>
+        <button data-n="day">日间</button>
+        <button data-n="night">夜间</button>
+      </span>
+    </div>
+    <div class="row tight" style="margin-top:8px">
+      <button class="btn sm" id="m-fit">按屏幕重新适配</button>
+      <span class="pill" id="m-size">—</span>
+    </div>
+    <div class="hint" style="margin-top:8px">预览按本机屏幕的逻辑像素 1:1 排版：这里看到多大，手机上就是多大。</div>
+  </div>
+  <div class="card">
+    <h2>首页 / 续页</h2>
+    <div class="row tight">
+      <span class="seg" id="m-scope">
+        <button data-s="both" class="on">两页同时改</button>
+        <button data-s="page">只改本页</button>
+      </span>
+    </div>
+    <div class="hint" style="margin-top:6px">「只改本页」：新加的装饰只放在当前这一页（现在停在首页就只放首页），换页再加就是续页单独一份。背景本来就分首页/续页两格，去「背景」里换。</div>
+  </div>
+  <div class="card">
+    <a class="btn sm" href="index.html">← 返回工具箱</a>
+  </div>
+</div>
+
 <button class="fab" id="pvFab" title="打开全屏预览">👁 预览</button>
 
 <script type="text/plain" id="shim-src">
@@ -1165,10 +1331,12 @@
   window.addEventListener('error', function(e){ send({t:'console', level:'error', text:'未捕获错误: ' + e.message + ' (行 ' + e.lineno + ')'}); });
 
   var boot = window.__HOST_BOOT__ || {};
+  /* 手机端沙盒：只摆一页、占满整个 iframe；「翻页」＝把 pages[cur] 换进这一页 */
+  var singleMode = !!boot.single;
   /* 标记：这是制作器的预览沙盒（不是真机）。模板 JS 据此做只有这里才需要的兜底 */
   window.__ARC_SHIM__ = 1;
   var FIELDS = Object.assign({ bookName:'示例之书', chapterTitle:'第一章 · 启程', time:'12:00', battery:'87%', batteryPercentage:'0.87' }, boot.fields || {});
-  var handlers = {}, pages = [], cur = 0, sourceBackup = '';
+  var handlers = {}, pages = [], cur = 0, sourceBackup = '', firstLayout = true;
 
   var api = {
     viewport: {width: VW, height: VH},
@@ -1253,7 +1421,11 @@
   function mount(i){
     cur = Math.max(0, Math.min(i, pages.length - 1));
     var s0 = document.getElementById('stage0'), s1 = document.getElementById('stage1');
-    if(s0){ s0.innerHTML = ''; if(pages[0]) s0.appendChild(pages[0]); }
+    if(s0){
+      s0.innerHTML = '';
+      var p0 = singleMode ? pages[cur] : pages[0];
+      if(p0) s0.appendChild(p0);
+    }
     if(s1){
       s1.innerHTML = '';
       var i1 = pages.length > 1 ? Math.max(cur, 1) : 0;
@@ -1307,6 +1479,11 @@
       emit('afterPage', {page: p, pageIndex: i, pageCount: n});
     });
     emit('afterLayout', {pages: pages});
+    /* 重排时停在原来那一页：改设置不该把正在看的续页打回首页 */
+    if (firstLayout){
+      firstLayout = false;
+      if (boot.startPage) cur = Math.max(0, Math.min(boot.startPage, n - 1));
+    }
     if(cur >= n) cur = 0;
     mount(cur);
     emit('pageChange', {page: pages[cur], pageIndex: cur, pageCount: n, previousPage: null});
@@ -1682,14 +1859,42 @@
       w.appendChild(c); w.appendChild(s);
       return w;
     }
-    document.body.appendChild(slotWrap('stage0', '首页'));
-    document.body.appendChild(slotWrap('stage1', '续页 · 第 1 / 1 页'));
+    if (singleMode){
+      var one = document.createElement('div');
+      one.className = 'stagebox single';
+      one.id = 'stage0';
+      document.body.appendChild(one);
+    } else {
+      document.body.appendChild(slotWrap('stage0', '首页'));
+      document.body.appendChild(slotWrap('stage1', '续页 · 第 1 / 1 页'));
+    }
     document.body.appendChild(off);
     setNight(boot.night || 'auto');
     layout();
     dragSync = boot.sync !== false;
     if(boot.drag) setDrag(true);
   }
+  /* ---- 手势：轻点一下 → 让宿主弹菜单；左右滑 → 翻页 ----
+     用 pointerdown/up 自己判距离：拖装饰时位移必然超过阈值，不会被当成「点」；
+     点装饰也不当「点空白」，免得想选中装饰却弹出菜单 */
+  var gStart = null;
+  document.addEventListener('pointerdown', function(e){
+    gStart = {
+      x: e.clientX, y: e.clientY, t: Date.now(),
+      deco: !!(e.target && e.target.closest && e.target.closest('.s-deco'))
+    };
+  }, true);
+  document.addEventListener('pointerup', function(e){
+    var g = gStart; gStart = null;
+    if(!g) return;
+    var dx = e.clientX - g.x, dy = e.clientY - g.y;
+    var ax = Math.abs(dx), ay = Math.abs(dy);
+    if(ax > 56 && ax > ay * 1.6 && !g.deco){ send({t:'swipe', dir: dx < 0 ? 1 : -1}); return; }
+    if(ax <= 8 && ay <= 8 && Date.now() - g.t < 700){
+      send({t:'tap', x: Math.round(e.clientX), y: Math.round(e.clientY), deco: g.deco});
+    }
+  }, true);
+
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootNow);
   else bootNow();
 })();
@@ -2072,6 +2277,8 @@ let cfg = clone(DEFAULT_CFG);
 let mode = 'maker';                 /* maker | generic */
 let raw = { firstPageHtml: '', otherPageHtml: '', css: '', javascript: '' };
 const state = { device: 'auto', VW: 340, VH: 756, zoom: 1, page: 0, night: 'auto', drag: false, ready: false, simBg: '',
+  /* 手机端：整屏单页预览；scope = 新加的装饰只放本页 / 两页共用 */
+  mobile: false, scope: 'both', pageCount: 1,
   /* 背景图原图（只在内存里）：改压缩设置时从它重采样，不会越压越糊 */
   bgRaw: {},
   /* 两页同步移动：开=首页/续页共用一份位置，拖动时一起走；关=两页各记各的（存 p2） */
@@ -3151,9 +3358,14 @@ function currentSlots(opt){
 const SHIM = document.getElementById('shim-src').textContent;
 
 function hostCss(){
-  const W = state.VW * 2 + 24, H = state.VH + 22;
+  /* 手机端只画一页（翻页＝换 pages[cur]），桌面端仍是「首页 + 续页」并排对照 */
+  const single = !!state.mobile;
+  const W = single ? state.VW : state.VW * 2 + 24, H = single ? state.VH : state.VH + 22;
   return 'html,body{margin:0;padding:0;width:' + W + 'px;height:' + H + 'px;overflow:hidden}'
-    + 'body{display:flex;justify-content:center;align-items:flex-start;gap:14px;padding:2px 5px;box-sizing:border-box;background:#e9ebef}'
+    + (single
+        ? 'body{display:block;background:#0b0d11}'
+        : 'body{display:flex;justify-content:center;align-items:flex-start;gap:14px;padding:2px 5px;box-sizing:border-box;background:#e9ebef}')
+    + (single ? '.stagebox.single{width:' + state.VW + 'px;height:' + state.VH + 'px;box-shadow:none}' : '')
     + '.slotwrap{display:flex;flex-direction:column;align-items:center}'
     + '.slotcap{height:18px;font:10px/18px system-ui,sans-serif;color:#8b95a1;letter-spacing:2px;white-space:nowrap}'
     + '.stagebox{position:relative;width:' + state.VW + 'px;height:' + state.VH + 'px;box-shadow:0 0 0 1px rgba(130,142,156,.35);overflow:hidden}'
@@ -3187,7 +3399,9 @@ function buildSrcdoc(){
     fields: currentFields(),
     night: state.night,
     drag: state.drag,
-    sync: state.syncMove
+    sync: state.syncMove,
+    single: !!state.mobile,
+    startPage: state.page || 0
   };
   const shim = SHIM.replace(/__VW__/g, String(state.VW)).replace(/__VH__/g, String(state.VH));
   const themeJs = String(s.javascript || '').replace(/<\/scr[i]pt/gi, '<\\/scr' + 'ipt');
@@ -3239,11 +3453,28 @@ window.addEventListener('message', e => {
   else if (d.t === 'ready'){
     $('#pv-state').textContent = '共 ' + d.pageCount + ' 页';
     state.ready = true;
+    state.pageCount = d.pageCount || 1;
   }
   else if (d.t === 'page'){
     $('#pv-ind').textContent = (d.pageIndex + 1) + ' / ' + d.pageCount;
     state.page = d.pageIndex;
+    state.pageCount = d.pageCount || state.pageCount;
+    const txt = d.pageIndex === 0 ? '首页' : ('续页 ' + (d.pageIndex + 1) + '/' + d.pageCount);
+    const mi = $('#m-ind'), mh = $('#mh-ind');
+    if (mi) mi.textContent = txt;
+    if (mh) mh.textContent = txt;
     $$('#pv-page button').forEach(b => b.classList.toggle('on', Number(b.dataset.go) === Math.min(1, d.pageIndex)));
+  }
+  else if (d.t === 'tap'){
+    if (!state.mobile) return;
+    /* 抽屉开着时，点正文＝收起抽屉（scrim 挡住了大部分情况，这是兜底） */
+    if (MS.panel){ mSheetClose(); return; }
+    if (d.deco && state.drag) return;
+    mNavToggle();
+  }
+  else if (d.t === 'swipe'){
+    if (!state.mobile) return;
+    mGo(state.page + (d.dir > 0 ? 1 : -1));
   }
   else if (d.t === 'decoMoved'){
     const it = cfg.deco.find(x => x.id === d.id);
@@ -3807,7 +4038,7 @@ function addDecoFromFile(file){
   }
   compressImage(file, 1200, true).then(dt => {
     if (!dt){ toast('这张图读不出来'); return; }
-    cfg.deco.push({ id: uid(), kind: 'img', src: dt, page: 'both', left: 6, top: 8, width: 24, opacity: 1, rot: 0, night: false, text: '', size: 14, color: '#9a9a9a' });
+    cfg.deco.push({ id: uid(), kind: 'img', src: dt, page: mScopePage(), left: 38, top: 40, width: 24, opacity: 1, rot: 0, night: false, text: '', size: 14, color: '#9a9a9a' });
     renderDecoList(); render();
     toast('已添加装饰图，可在右侧预览里拖位置');
   });
@@ -4027,12 +4258,12 @@ function arcSaveFallback(blob, name){
   if (bar) bar.remove();
   bar = document.createElement('div');
   bar.id = 'arcSaveBar';
-  bar.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:12px;z-index:99999;'
+  bar.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:' + (window.innerWidth <= 760 ? 76 : 12) + 'px;z-index:99999;'
     + 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;max-width:calc(100% - 20px);'
     + 'background:#242830;color:#fff;border-radius:10px;padding:9px 12px;font-size:12.5px;'
     + 'box-shadow:0 8px 24px rgba(0,0,0,.35);line-height:1.5';
   const msg = document.createElement('span');
-  msg.textContent = '没存下来？';
+  msg.textContent = '没存下来？点「系统分享 → 保存到文件」最稳';
   bar.appendChild(msg);
 
   const btn = (label, css) => {
@@ -4078,6 +4309,21 @@ function arcSaveFallback(blob, name){
   setTimeout(() => { if (bar.isConnected) bar.remove(); }, 60000);
 }
 function arcSaveBlob(blob, name){
+  /* 手机上先试「系统分享」：Via / 夸克这类 WebView 浏览器的下载器读不到 blob 地址，
+     但 Web Share 能把文件交给系统「保存到文件」或别的 App，这是最稳的一条路。
+     分享失败或用户取消，再退回普通下载 + 底部兜底条。 */
+  const touch = (navigator.maxTouchPoints || 0) > 0;
+  if (touch && navigator.canShare && window.File){
+    try{
+      const f = new File([blob], name, { type: blob.type || 'application/octet-stream' });
+      if (navigator.canShare({ files: [f] })){
+        navigator.share({ files: [f], title: name })
+          .then(() => { toast('用系统分享存到「文件」里最稳'); })
+          .catch(() => { arcSaveFallback(blob, name); });
+        return;
+      }
+    }catch (_){}
+  }
   try{
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -4093,7 +4339,7 @@ function arcSaveBlob(blob, name){
 }
 function download(name, blob){
   arcSaveBlob(blob, name);
-  toast('已生成：' + name + '（没反应就点底部的「换个方式保存」）');
+  toast('已生成：' + name + (window.innerWidth <= 760 ? '（手机会弹分享面板）' : '（没反应就点底部的「换个方式保存」）'));
 }
 function safeName(){
   return ((cfg.name || 'arc-template').replace(/[\\/:*?"<>|\s]+/g, '_')).slice(0, 40);
@@ -4965,7 +5211,7 @@ function bindAll(){
     Array.from(e.dataTransfer.files || []).filter(f => /^image\//.test(f.type)).forEach(addDecoFromFile);
   });
   $('#deco-add-text').addEventListener('click', () => {
-    cfg.deco.push({ id: uid(), kind: 'text', src: '', page: 'both', left: 6, top: 92, opacity: 1, rot: 0, when: 'all', align: 'left', text: '— 第 {pageIndex} 页 —', size: 11, color: '' });
+    cfg.deco.push({ id: uid(), kind: 'text', src: '', page: mScopePage(), left: 40, top: 46, opacity: 1, rot: 0, when: 'all', align: 'left', text: '— 第 {pageIndex} 页 —', size: 11, color: '' });
     renderDecoList(); render();
   });
   /* 进度条 SVG：点选或拖入（.svg / .txt 都行） */
@@ -5984,6 +6230,165 @@ function restore(manual){
   return true;
 }
 
+/* ===================== 手机端：整屏预览 · 侧边菜单 · 抽屉 ===================== */
+const M_TABS = {
+  top:   { label: '页眉',      side: 'bottom' },
+  title: { label: '标题',      side: 'bottom' },
+  cap:   { label: '首字',      side: 'bottom' },
+  flow:  { label: '正文',      side: 'bottom' },
+  deco:  { label: '装饰',      side: 'bottom' },
+  ai:    { label: 'AI 搭版',   side: 'bottom' },
+  foot:  { label: '页脚',      side: 'top' },
+  base:  { label: '模板信息',  side: 'bottom' },
+  bg:    { label: '背景',      side: 'bottom' },
+  code:  { label: '代码',      side: 'bottom' },
+  io:    { label: '导入 / 导出', side: 'bottom' },
+  more:  { label: '更多',      side: 'bottom' }
+};
+const MS = { panel: null, parent: null, next: null, key: '' };
+
+function isMobileLayout(){
+  try{ return window.matchMedia('(max-width: 760px)').matches; }catch (e) { return window.innerWidth <= 760; }
+}
+/* 预览按「本机屏幕逻辑像素」1:1 铺满：量的是预览容器本身，所以见到多大＝真机多大 */
+function fitMobileStage(force){
+  if (!state.mobile) return;
+  const wrap = $('#stageWrap');
+  if (!wrap) return;
+  const w = Math.round(wrap.clientWidth || window.innerWidth);
+  const h = Math.round(wrap.clientHeight || window.innerHeight);
+  if (w < 120 || h < 160) return;
+  const changed = (w !== state.VW || h !== state.VH);
+  state.VW = w; state.VH = h; state.zoom = 1;
+  const phone = $('#phone'), sc = phone.querySelector('.screen'), fr = $('#preview');
+  phone.style.width = w + 'px';
+  phone.style.border = '0'; phone.style.padding = '0'; phone.style.borderRadius = '0';
+  sc.style.width = w + 'px'; sc.style.height = h + 'px';
+  sc.style.marginTop = '0'; sc.style.borderRadius = '0';
+  fr.style.width = w + 'px'; fr.style.height = h + 'px';
+  applyZoom();
+  if (changed || force) render();
+  const sz = $('#m-size');
+  if (sz) sz.textContent = w + ' × ' + h;
+  if (!changed) { $('#pv-state').textContent = '就绪 · ' + w + '×' + h; }
+
+}
+function mGo(i){
+  const last = Math.max(0, (state.pageCount || 1) - 1);
+  sendToFrame({ t: 'navigate', pageIndex: Math.max(0, Math.min(i, last)) });
+}
+function mNavToggle(force){
+  const nav = $('#mnav');
+  if (!nav) return;
+  const on = force === undefined ? !nav.classList.contains('on') : !!force;
+  nav.classList.toggle('on', on);
+  document.body.classList.toggle('nav-on', on);
+}
+function mSheetOpen(key){
+  const p = document.querySelector('.panel[data-panel="' + key + '"]');
+  if (!p) return;
+  const meta = M_TABS[key] || {};
+  if (MS.panel && MS.panel !== p) mSheetClose(true);
+  if (!MS.panel){
+    MS.panel = p; MS.parent = p.parentNode; MS.next = p.nextSibling;
+    p.classList.add('m-show');
+    $('#mbody').appendChild(p);
+  }
+  MS.key = key;
+  $('#m-title').textContent = meta.label || key;
+  const sh = $('#msheet');
+  sh.classList.toggle('top', meta.side === 'top');
+  sh.classList.add('on');
+  document.body.classList.add('m-sheet-open');
+  $('#mbody').scrollTop = 0;
+  mNavToggle(false);
+}
+function mSheetClose(){
+  if (MS.panel){
+    const p = MS.panel;
+    p.classList.remove('m-show');
+    if (MS.parent) MS.parent.insertBefore(p, MS.next || null);
+    MS.panel = null; MS.parent = null; MS.next = null; MS.key = '';
+  }
+  $('#msheet').classList.remove('on');
+  document.body.classList.remove('m-sheet-open');
+}
+function mScopePage(){
+  return (state.scope === 'page') ? (state.page === 0 ? 'first' : 'other') : 'both';
+}
+function initMobile(){
+  const on = isMobileLayout();
+  state.mobile = on;
+  document.body.classList.toggle('arc-mobile', on);
+  if (!on) return;
+  fitMobileStage(true);
+  window.addEventListener('resize', () => {
+    if (isMobileLayout()){
+      document.body.classList.add('arc-mobile');
+      state.mobile = true;
+      setTimeout(() => fitMobileStage(false), 60);
+    } else {
+      document.body.classList.remove('arc-mobile');
+      state.mobile = false;
+      mSheetClose();
+    }
+  });
+  window.addEventListener('orientationchange', () => setTimeout(() => fitMobileStage(false), 280));
+  setTimeout(() => toast('点正文中间调出菜单 · 左右滑动翻页'), 900);
+}
+function bindMobile(){
+  const on = (el, ev, fn) => { if (el) el.addEventListener(ev, fn); };
+  on($('#m-more'), 'click', () => mSheetOpen('more'));
+  on($('#m-export'), 'click', () => $('#btn-export').click());
+  on($('#m-prev'), 'click', () => mGo(state.page - 1));
+  on($('#m-next'), 'click', () => mGo(state.page + 1));
+  on($('#mh-prev'), 'click', () => mGo(state.page - 1));
+  on($('#mh-next'), 'click', () => mGo(state.page + 1));
+  on($('#mscrim'), 'click', () => mSheetClose());
+  on($('#m-x'), 'click', () => mSheetClose());
+  on($('#m-peek'), 'click', () => { mSheetClose(); mNavToggle(true); });
+  on($('#mnav'), 'click', e => {
+    const b = e.target.closest('button[data-open]');
+    if (b) mSheetOpen(b.dataset.open);
+  });
+  on($('#pan-more'), 'click', e => {
+    const t = e.target.closest('[data-mtab]');
+    if (t){ mSheetOpen(t.dataset.mtab); return; }
+    if (e.target.closest('#m-do-export')){ $('#btn-export').click(); return; }
+    if (e.target.closest('#m-do-import')){ $('#btn-import').click(); return; }
+    if (e.target.closest('#m-do-theme')){ $('#btn-theme').click(); return; }
+    if (e.target.closest('#m-fit')){ fitMobileStage(true); toast('已按屏幕重新适配'); }
+  });
+  on($('#m-night'), 'click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    state.night = b.dataset.n;
+    $$('#m-night button').forEach(x => x.classList.toggle('on', x === b));
+    $('#pv-night').value = state.night;
+    sendToFrame({ t: 'theme', mode: state.night });
+  });
+  on($('#m-scope'), 'click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    state.scope = b.dataset.s;
+    $$('#m-scope button').forEach(x => x.classList.toggle('on', x === b));
+    toast(state.scope === 'page'
+      ? '新加的装饰只放在' + (state.page === 0 ? '首页' : '续页')
+      : '新加的装饰两页都放');
+  });
+  /* 打开「在预览里拖动」时把抽屉收起来 —— 不然整个屏幕被面板盖住，没法拖 */
+  document.addEventListener('click', e => {
+    if (!state.mobile || !e.target.closest) return;
+    if (!e.target.closest('#deco-drag')) return;
+    setTimeout(() => {
+      document.body.classList.toggle('m-drag', !!state.drag);
+      if (state.drag){ mSheetClose(); mNavToggle(false); toast('直接在预览里拖；拖完点左上「✓ 完成」'); }
+    }, 40);
+  }, true);
+  on($('#m-dragdone'), 'click', () => {
+    if (state.drag && $('#deco-drag')) $('#deco-drag').click();
+    document.body.classList.remove('m-drag');
+  });
+}
+
 /* ===================== 启动 ===================== */
 (function init(){
   if (!cfg.id) cfg.id = genId();
@@ -5995,6 +6400,8 @@ function restore(manual){
   applyDevice();
   applyZoom();
   restore(false);
+  bindMobile();
+  initMobile();
   render();
   try {
     const tp = new URLSearchParams(location.search).get('tab');
