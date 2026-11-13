@@ -447,6 +447,8 @@
     #mtabs button.on{background:var(--accent); color:#fff;}
     /* 分段后只留当前这一组；被 JS 隐藏的卡片（如图片模式下的渐变）在这一组里要放出来 */
     #mbody .m-sec-off{display:none!important;}
+    /* 一张卡里的子块全都不属于当前这一组时，整张卡也一起藏起来，别留个空框 */
+    #mbody .card.m-card-off{display:none!important;}
     body.arc-mobile #mbody .card.m-force{display:block!important;}
     /* 注释默认收起，点右上「说明」才展开 */
     body.arc-mobile:not(.m-hints) #mbody .hint{display:none!important;}
@@ -6490,6 +6492,13 @@ function mSecSet(label){
     const c = b.node.classList.contains('card') ? b.node : b.node.closest('.card');
     if (!c || c.hasAttribute('data-noforce')) return;
     if (c.style.display === 'none') c.classList.add('m-force');
+  });
+  /* 卡片里的子块一个都不属于当前组 → 整张卡也藏掉（不然只剩个空框） */
+  $$('#mbody .panel.m-show > .card').forEach(c => {
+    if (c.hasAttribute('data-sec')){ c.classList.remove('m-card-off'); return; }
+    const kids = Array.prototype.filter.call(c.children, ch => ch.hasAttribute && ch.hasAttribute('data-sec'));
+    if (!kids.length){ c.classList.remove('m-card-off'); return; }
+    c.classList.toggle('m-card-off', kids.every(ch => ch.classList.contains('m-sec-off')));
   });
   mDecoNote();
   const mb = $('#mbody'); if (mb) mb.scrollTop = 0;
