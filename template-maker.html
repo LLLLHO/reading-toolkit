@@ -2,7 +2,9 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- interactive-widget=resizes-content：键盘弹出时让版面跟着变矮（而不是把整页往上推），
+     这样抽屉贴着键盘、预览不会被顶出屏幕；不认这个参数的内核会忽略它，走 --m-kb 那套兜底 -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>ARC页面模板简易制作器</title>
 <style>
@@ -452,8 +454,25 @@
     body.m-back #mh-back{display:inline-flex; align-items:center;}
     #mh-help{flex:none;}
     body.m-hints #mh-help{background:var(--accent); color:#fff;}
-    /* 键盘弹出时把底部抽屉顶到键盘上方，不然整个人被键盘挡住 */
-    body.arc-mobile.m-kb #msheet:not(.top){bottom:var(--m-kb,0px);}
+    /* 键盘弹出时把底部抽屉顶到键盘上方，不然整个人被键盘挡住；
+       高度也要跟着收，不然 70vh 叠上键盘高度会把抽屉顶出屏幕（顶栏被切掉半截） */
+    body.arc-mobile.m-kb #msheet:not(.top){bottom:var(--m-kb,0px);
+      max-height:calc(100vh - var(--m-kb,0px) - 10px);
+      max-height:calc(100dvh - var(--m-kb,0px) - 10px);}
+
+    /* 字段候选：手机上不再浮在键盘上方，而是直接插到输入框下面（跟着抽屉一起滚） */
+    body.arc-mobile .fpick.inline{position:static; left:auto!important; top:auto!important; right:auto!important;
+      width:auto!important; max-width:none; margin:6px 0 2px; padding:8px 8px 9px;
+      background:rgba(37,99,235,.055); border:1px dashed rgba(37,99,235,.35); box-shadow:none; border-radius:10px;}
+    html.dark body.arc-mobile .fpick.inline{background:rgba(120,160,255,.09); border-color:rgba(120,160,255,.35);}
+    body.arc-mobile .fpick.inline .fpick-t{font-size:11px;}
+
+    /* 装饰列表：按当前这一组（图片 / 文字 / SVG）只留对应的条目 */
+    body.arc-mobile .panel[data-panel="deco"][data-msec="图片"] .decoRow:not([data-kind="img"]),
+    body.arc-mobile .panel[data-panel="deco"][data-msec="文字"] .decoRow:not([data-kind="text"]),
+    body.arc-mobile .panel[data-panel="deco"][data-msec="SVG"] .decoRow:not([data-kind="pbar"]){display:none!important;}
+    .m-none{font-size:11.5px; color:var(--sub); text-align:center; padding:14px 6px; line-height:1.7;
+      border:1px dashed var(--line); border-radius:10px;}
   }
 
   @media (max-width: 420px){
@@ -572,7 +591,7 @@
 
     <!-- ============ 背景 ============ -->
     <div class="panel" data-panel="bg">
-      <div class="card keep" id="ext-card" data-sec="模板图" style="display:none">
+      <div class="card keep" id="ext-card" data-sec="图片" data-noforce style="display:none">
         <h2>模板自带的图片 <span class="tag" id="ext-badge">图不在文件里</span></h2>
         <div class="hint" id="ext-note" style="margin-top:6px"></div>
         <div id="ext-list" style="margin-top:10px"></div>
@@ -602,7 +621,7 @@
         </div>
       </div>
 
-      <div class="card keep" id="sim-card" data-sec="App 背景">
+      <div class="card keep" id="sim-card" data-sec="图片" data-noforce>
         <h2>预览模拟 App 背景图 <span class="tag">只影响预览</span></h2>
         <div class="hint" style="margin-top:6px">有些模板用 <code>var(--reader-page-background)</code> 取 App「选择背景图片」的那张图，还自带一套占位图。这里放一张，预览就按「App 已选背景图」的样子渲染（模板会自动藏掉自己的占位层）。<b>这张图不会写进模板。</b></div>
         <div class="row tight" style="margin-top:10px">
@@ -612,8 +631,8 @@
         </div>
       </div>
 
-      <div class="card" data-sec="来源">
-        <h2>背景来源</h2>
+      <div class="card" data-sec="渐变,图片">
+        <h2>背景用哪种</h2>
         <div class="seg" id="bg-mode">
           <button data-v="gradient">纯色渐变</button>
           <button data-v="image">图片</button>
@@ -642,7 +661,7 @@
       </div>
 
       <div class="card" id="bg-img-box">
-        <h2>背景图片 <span class="tag">内嵌进模板</span></h2>
+        <h2 data-sec="图片,压缩">背景图片 <span class="tag">内嵌进模板</span></h2>
         <div class="grid2" data-sec="图片">
           <div class="imgCard">
             <img class="thumb" id="th-day" alt="日间背景">
@@ -1043,26 +1062,26 @@
       <div class="card">
         <h2>装饰 <span class="tag">按页面百分比定位</span></h2>
 
-        <div class="drop" id="deco-drop" data-sec="图片">点击或拖入图片（PNG 透明底最佳）</div>
-        <div class="hint" data-sec="图片" style="margin-top:6px">加好的图在「列表」里改宽/高、勾「可拉伸」；默认等比，不会变形。</div>
+        <div class="drop" id="deco-drop" data-sec="图片">点击导入图片（可多选 · PNG 透明底最佳）</div>
+        <div class="hint" data-sec="图片" style="margin-top:6px">加好的图在下面的列表里改宽/高、勾「可拉伸」；默认等比，不会变形。</div>
 
         <div class="row tight" data-sec="文字" style="margin-top:2px">
-          <button class="btn sm" id="deco-add-text" title="加一个纯文字装饰（如角落的编号）">＋ 文字装饰</button>
+          <button class="btn sm" id="deco-add-text" title="加一条文字装饰（如角落的页码）">＋ 文字装饰</button>
         </div>
-        <div class="hint" data-sec="文字" style="margin-top:6px">文字装饰能插 {bookName}、{pageIndex} 这类字段，太长会自己折行。</div>
+        <div class="hint" data-sec="文字" style="margin-top:6px">点一下加一条，插在下面列表里；文字里能写 {bookName}、{pageIndex} 这类字段，太长会自己折行。</div>
 
-        <div id="deco-drop2" class="drop" data-sec="SVG" style="margin-top:2px">点击或拖入 <b>进度条 SVG</b>（.svg / .txt）—— 会随页数走动</div>
+        <div id="deco-drop2" class="drop" data-sec="SVG" style="margin-top:2px">点击导入 <b>进度条 SVG</b>（.svg / .txt）—— 会随页数走动</div>
         <div class="hint" data-sec="SVG" style="margin-top:6px">导入后摆在页面正中、垫在正文后面；开「拖动」就能在预览里挪位置、拖四角缩放。</div>
 
-        <div id="deco-list" data-sec="列表" style="display:flex; flex-direction:column; gap:8px"></div>
-        <div class="hint" data-sec="列表" style="margin-top:8px">每条右边的 <b>首页 / 续页 / 两页</b> 决定放在哪一页；位置是相对整页的百分比，换机型不会错位。</div>
+        <div id="deco-list" style="display:flex; flex-direction:column; gap:8px"></div>
+        <div class="hint" style="margin-top:8px" data-sec="图片,文字,SVG">每条右边的 <b>首页 / 续页 / 两页</b> 决定放在哪一页；位置是相对整页的百分比，换机型不会错位。</div>
 
-        <div class="row tight" data-sec="拖动" style="margin-top:2px">
+        <div class="row tight" data-sec="图片,文字,SVG" style="margin-top:2px">
           <button class="btn sm" id="deco-drag">🖐 在预览里拖动</button>
           <button class="btn sm pri" id="deco-sync" title="打开：首页和续页共用一份位置，拖动时两页实时一起走；关掉：两页各记各的位置">🔗 两页同步：开</button>
         </div>
-        <div class="hint" data-sec="拖动" style="margin-top:6px">勾上「文字下层」＝垫在正文后面当暗纹（不挡字），取消就浮到字上面。打开「🖐 在预览里拖动」后，每条装饰四角会出现小圆点，拖它就能随意改大小（图片默认等比、不会变形，勾「可拉伸」就宽高各走各的）；文字装饰更细：<b>拖左右边只改宽度</b>（每行放几个字）、<b>拖上下边只改字号</b>、拖四角两个一起改。拖动装饰本身是挪位置。拖动时会<b>自动吸附</b>：靠近别的装饰的边或中线、或页面边和十字中线，就会贴上去并闪一条蓝虚线。</div>
-        <div class="hint" data-sec="拖动" style="margin-top:6px"><b>同步移动</b>：开着时拖其中一页，另一页实时跟着走（两页共用一个位置）；关掉后拖哪页只改哪页，另一页停原处、会记成「两页位置不同」，想合回一处点「对齐两页」。想让两页各摆不同位置又可以随便拖，就点每条的「<b>拆</b>」把它拆成首页/续页两份。</div>
+        <div class="hint" data-sec="说明" style="margin-top:6px">勾上「文字下层」＝垫在正文后面当暗纹（不挡字），取消就浮到字上面。打开「🖐 在预览里拖动」后，每条装饰四角会出现小圆点，拖它就能随意改大小（图片默认等比、不会变形，勾「可拉伸」就宽高各走各的）；文字装饰更细：<b>拖左右边只改宽度</b>（每行放几个字）、<b>拖上下边只改字号</b>、拖四角两个一起改。拖动装饰本身是挪位置。拖动时会<b>自动吸附</b>：靠近别的装饰的边或中线、或页面边和十字中线，就会贴上去并闪一条蓝虚线。</div>
+        <div class="hint" data-sec="说明" style="margin-top:6px"><b>同步移动</b>：开着时拖其中一页，另一页实时跟着走（两页共用一个位置）；关掉后拖哪页只改哪页，另一页停原处、会记成「两页位置不同」，想合回一处点「对齐两页」。想让两页各摆不同位置又可以随便拖，就点每条的「<b>拆</b>」把它拆成首页/续页两份。</div>
 
         <details data-sec="说明">
           <summary>文字装饰怎么写？点开看说明</summary>
@@ -3695,6 +3714,7 @@ function itemCard(it){
     + '</div></div>';
 }
 function renderSlots(which){
+  if (window.__fpDetach) window.__fpDetach();
   const box = $('#slots-' + which);
   if (!box) return;
   box.innerHTML = ['l', 'c', 'r'].map(k => {
@@ -3884,6 +3904,7 @@ function fitTaAll(){
   Array.prototype.forEach.call(document.querySelectorAll('#deco-list textarea.deco-ta'), fitTa);
 }
 function renderDecoList(){
+  if (window.__fpDetach) window.__fpDetach();
   const box = $('#deco-list');
   if (!cfg.deco.length){ box.innerHTML = '<div class="empty">还没有装饰图。点上面的虚线框加图，或加一个文字装饰 / 进度条 SVG。</div>'; return; }
   const cls = 'width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:6px;color:var(--sub);font-size:15px;flex:none';
@@ -3945,10 +3966,11 @@ function renderDecoList(){
         ? '<label class="sw" style="font-size:11.5px" title="勾上后拖四角是自由变形：宽高各走各的，图片会被拉扁/拉长；不勾就等比缩放"><input type="checkbox" data-df="stretch"' + (d.stretch ? ' checked' : '') + '>可拉伸</label>'
         : '')
       + '</div>';
-    return '<div class="decoRow" data-did="' + d.id + '">' + thumb
+    return '<div class="decoRow" data-did="' + d.id + '" data-kind="' + (isText ? 'text' : isPbar ? 'pbar' : 'img') + '">' + thumb
       + '<div class="decMain">' + body + '</div></div>';
   }).join('');
   fitTaAll();
+  if (typeof mDecoNote === 'function') mDecoNote();
 }
 function bindDeco(){
   const box = $('#deco-list');
@@ -4039,27 +4061,26 @@ function initFieldPicker(){
     + '<div class="fpick-b">' + FPICK_ROWS.map(([v, l]) =>
       '<button type="button" data-ph="' + v + '">' + l + '</button>').join('') + '</div>';
   document.body.appendChild(box);
-  let cur = null;
+  let cur = null, inlineOn = false;
 
-  function hide(){ box.classList.remove('on'); cur = null; }
+  function toBody(){ if (box.parentNode !== document.body) document.body.appendChild(box); }
+  function hide(){ box.classList.remove('on', 'inline'); toBody(); cur = null; inlineOn = false; }
   function vvBox(){
     const v = window.visualViewport;
     return v ? { top: v.offsetTop || 0, h: v.height } : { top: 0, h: window.innerHeight };
   }
-  /* 摆位置：桌面上贴着输入框；手机上固定钉在「键盘上方」那一层。
-     手机上以前是贴输入框 + resize 就 hide —— 键盘一弹起来（触发 resize）候选就被藏掉了，
-     非得再点一次输入框才出来。现在改成跟着 visualViewport 重算位置，不再隐藏。 */
+  /* 手机上候选条是「插进」抽屉里的，跟着内容一起滚；只要保证它没滚出可视区 */
+  function revealIn(body){
+    const sc = body.closest ? body.closest('#mbody') : null;
+    if (!sc) return;
+    const scR = sc.getBoundingClientRect(), bR = body.getBoundingClientRect();
+    if (bR.bottom > scR.bottom - 6) sc.scrollTop += Math.ceil(bR.bottom - scR.bottom + 14);
+    else if (bR.top < scR.top + 6) sc.scrollTop -= Math.ceil(scR.top - bR.top + 14);
+  }
+  /* 摆位置：桌面上贴着输入框（手机端是流内插入，不用算坐标） */
   function place(){
-    if (!cur) return;
+    if (!cur || inlineOn) return;
     const bw = box.offsetWidth || 220, bh = box.offsetHeight || 60;
-    if (state.mobile){
-      const vb = vvBox();
-      box.style.left = '8px';
-      box.style.right = 'auto';
-      box.style.width = Math.max(200, Math.min(window.innerWidth, 560) - 16) + 'px';
-      box.style.top = Math.max(8, vb.top + vb.h - bh - 10) + 'px';
-      return;
-    }
     box.style.width = '';
     const r = cur.getBoundingClientRect();
     const left = Math.max(8, Math.min(window.innerWidth - bw - 8, r.left));
@@ -4070,16 +4091,18 @@ function initFieldPicker(){
   }
   function show(inp){
     cur = inp;
-    box.classList.add('on');
-    place();
-    /* 手机上候选条是钉在键盘上方的，可能正好盖住输入框：把它滚到上面去 */
-    if (state.mobile){
-      const b = box.getBoundingClientRect(), r = inp.getBoundingClientRect();
-      if (r.bottom > b.top - 8){
-        try { inp.scrollIntoView({ block: 'center' }); } catch (e) {}
-        place();
-      }
+    inlineOn = !!state.mobile;
+    box.classList.toggle('inline', inlineOn);
+    if (inlineOn){
+      /* 直接插到输入框那一行下面：键盘弹起来也不会跑到别处去，更不会把整页顶上去 */
+      const host = inp.closest('.miniRow') || inp.closest('.fld') || inp.parentNode;
+      if (host && host.parentNode) host.parentNode.insertBefore(box, host.nextSibling);
+      else toBody();
+    } else {
+      toBody();
     }
+    box.classList.add('on');
+    if (inlineOn) revealIn(box); else place();
   }
   function insertPh(inp, name){
     const code = '{' + name + '}';
@@ -4106,17 +4129,22 @@ function initFieldPicker(){
   /* 弹层里按下鼠标时别抢焦点，否则输入框一失焦弹层就没了 */
   box.addEventListener('pointerdown', e => { e.preventDefault(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') hide(); });
-  /* 滚动：桌面上滚走了就收起；手机上重算位置（候选是钉住的，不能因为滚动就没了） */
+  /* 滚动：桌面上滚走了就收起；手机上候选在流内，只要跟着抽屉把它带进来（不再重算坐标） */
   window.addEventListener('scroll', () => {
     if (!cur) return;
-    if (state.mobile) place(); else hide();
+    if (state.mobile){ if (inlineOn) revealIn(box); } else hide();
   }, true);
-  const reflow = () => { if (cur) place(); };
+  const reflow = () => {
+    if (!cur) return;
+    if (inlineOn) revealIn(box); else place();
+  };
   window.addEventListener('resize', reflow);
   if (window.visualViewport){
     window.visualViewport.addEventListener('resize', reflow);
     window.visualViewport.addEventListener('scroll', reflow);
   }
+  /* 列表要整块重建时先把它从子树里摘出来（不然 innerHTML= 会把它一起删掉，之后就再也弹不出来了） */
+  window.__fpDetach = () => { if (inlineOn) hide(); };
 }
 function addDecoFromFile(file){
   /* SVG 走进度条那条路：当图片塞进 <img> 的话，里面的表达式永远不会被算出来 */
@@ -6409,30 +6437,61 @@ function mDetachPanel(){
   if (MS.parent) MS.parent.insertBefore(p, MS.next || null);
   MS.panel = null; MS.parent = null; MS.next = null;
 }
-/* ---- 分段：卡片本身带 data-sec 就整张算一组；不带就看它里面的 data-sec ---- */
+/* ---- 分段：卡片本身带 data-sec 就整张算一组；不带就看它里面的 data-sec ----
+   data-sec 可以写成「图片,文字」—— 一个板块出现在多组里（比如「背景用哪种」渐变、图片都要）。 */
+function mSecLabelsOf(el){
+  return String(el.getAttribute('data-sec') || '').split(',').map(s => s.trim()).filter(Boolean);
+}
 function mSecBlocks(panel){
   const out = [];
+  const add = node => {
+    const labels = mSecLabelsOf(node);
+    if (labels.length) out.push({ labels: labels, node: node });
+  };
   Array.prototype.forEach.call(panel.children, card => {
     if (!card.classList || !card.classList.contains('card')) return;
-    if (card.hasAttribute('data-sec')){ out.push({ label: card.getAttribute('data-sec'), node: card }); return; }
+    if (card.hasAttribute('data-sec')){ add(card); return; }
     Array.prototype.forEach.call(card.children, ch => {
-      if (ch.hasAttribute && ch.hasAttribute('data-sec')) out.push({ label: ch.getAttribute('data-sec'), node: ch });
+      if (ch.hasAttribute && ch.hasAttribute('data-sec')) add(ch);
     });
   });
   return out;
 }
+function mDecoNote(){
+  /* 装饰列表按组过滤后可能空着：给句话，别让人以为卡住了 */
+  const box = $('#deco-list'); if (!box) return;
+  const old = $('#deco-none'); if (old && old.parentNode) old.parentNode.removeChild(old);
+  if (!state.mobile || MSEC.key !== 'deco') return;
+  const map = { '图片': 'img', '文字': 'text', 'SVG': 'pbar' };
+  const kind = map[MSEC.cur]; if (!kind) return;
+  const all = cfg.deco || [];
+  if (!all.length) return;                                  /* 一条都没有时 #deco-list 自己会提示 */
+  if (all.some(d => (d.kind || 'img') === kind)) return;
+  const d = document.createElement('div');
+  d.id = 'deco-none'; d.className = 'm-none';
+  d.textContent = kind === 'img' ? '这一页还没有图片装饰 —— 点上面的虚线框导入'
+    : kind === 'text' ? '这一页还没有文字装饰 —— 点上面的「＋ 文字装饰」加一条'
+    : '这一页还没有进度条 SVG —— 点上面的虚线框导入';
+  box.appendChild(d);
+}
 function mSecSet(label){
   if (!MSEC.blocks.length) return;
   MSEC.cur = label;
-  MSEC.blocks.forEach(b => b.node.classList.toggle('m-sec-off', b.label !== label));
+  MSEC.blocks.forEach(b => b.node.classList.toggle('m-sec-off', b.labels.indexOf(label) < 0));
   $$('#mtabs button').forEach(x => x.classList.toggle('on', x.dataset.msec === label));
-  /* 被「背景模式」这类逻辑用 display:none 藏起来的卡片，在当前这一组里要放出来，否则整页空白 */
+  /* 给装饰列表用：只显示当前这一组对应的条目 */
+  const pin = document.querySelector('.panel[data-panel="' + MSEC.key + '"]');
+  if (pin) pin.setAttribute('data-msec', label);
+  /* 被「背景模式」这类逻辑用 display:none 藏起来的卡片，在当前这一组里要放出来，否则整页空白。
+     带 data-noforce 的是「本来就不该显示」（比如模板没有外部图），别硬拉出来。 */
   $$('#mbody .card.m-force').forEach(c => c.classList.remove('m-force'));
   MSEC.blocks.forEach(b => {
-    if (b.label !== label) return;
+    if (b.labels.indexOf(label) < 0) return;
     const c = b.node.classList.contains('card') ? b.node : b.node.closest('.card');
-    if (c && c.style.display === 'none') c.classList.add('m-force');
+    if (!c || c.hasAttribute('data-noforce')) return;
+    if (c.style.display === 'none') c.classList.add('m-force');
   });
+  mDecoNote();
   const mb = $('#mbody'); if (mb) mb.scrollTop = 0;
 }
 function mBuildSec(key){
@@ -6441,7 +6500,7 @@ function mBuildSec(key){
   MSEC = { key: key, labels: [], blocks: [], cur: '' };
   if (bar) bar.innerHTML = '';
   const blocks = panel ? mSecBlocks(panel) : [];
-  blocks.forEach(b => { if (MSEC.labels.indexOf(b.label) < 0) MSEC.labels.push(b.label); });
+  blocks.forEach(b => b.labels.forEach(lb => { if (MSEC.labels.indexOf(lb) < 0) MSEC.labels.push(lb); }));
   if (MSEC.labels.length < 2){ if (bar) bar.classList.add('empty'); return; }
   MSEC.blocks = blocks;
   if (bar){
@@ -6454,8 +6513,12 @@ function mBuildSec(key){
     });
   }
   /* 打开时先落在最常用的那一组 */
-  let first = key === 'deco' ? ((cfg.deco && cfg.deco.length) ? '列表' : '图片')
-    : key === 'bg' ? '来源' : MSEC.labels[0];
+  let first;
+  if (key === 'deco'){
+    const k0 = (cfg.deco && cfg.deco.length) ? (cfg.deco[0].kind || 'img') : 'img';
+    first = k0 === 'text' ? '文字' : k0 === 'pbar' ? 'SVG' : '图片';
+  } else if (key === 'bg') first = '图片';
+  else first = MSEC.labels[0];
   if (MSEC.labels.indexOf(first) < 0) first = MSEC.labels[0];
   mSecSet(first);
 }
@@ -6508,6 +6571,10 @@ function initMobile(){
     if (isMobileLayout()){
       document.body.classList.add('arc-mobile');
       state.mobile = true;
+      /* 键盘弹起只会改高度：这时候别重排预览（重排会把画面整块跳一下），宽度变了才重来 */
+      const wrap = $('#stageWrap');
+      const w = wrap ? Math.round(wrap.clientWidth) : 0;
+      if (w && w === state.VW) return;
       setTimeout(() => fitMobileStage(false), 60);
     } else {
       document.body.classList.remove('arc-mobile');
