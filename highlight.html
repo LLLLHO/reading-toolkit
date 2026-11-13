@@ -154,6 +154,75 @@
     .btn.sm{padding:6px 10px; font-size:12px;}
     input[type=text],input[type=number],select,textarea{font-size:15px; padding:9px 10px;}
   }
+  /* ===================== 手机端：全屏预览 + 悬浮板块按钮 + 抽屉 ===================== */
+  #mstage,#mnav,#msheet,#mscrim{display:none;}
+  @media (max-width: 760px){
+    body.arc-mobile{height:100dvh; overflow:hidden;}
+    body.arc-mobile header{display:none;}
+    body.arc-mobile .topStick{position:fixed; left:0; right:0; top:0; z-index:95; background:transparent; border:0; pointer-events:none;}
+    body.arc-mobile .tabBar{justify-content:center; padding:calc(8px + env(safe-area-inset-top)) 8px 0; gap:6px; pointer-events:auto;}
+    body.arc-mobile .tabBar button{background:rgba(18,20,26,.66); color:#fff; border:0; border-radius:999px; padding:7px 15px;
+      font-size:12.5px; backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); box-shadow:0 2px 10px rgba(0,0,0,.3);}
+    body.arc-mobile .tabBar button.on{background:var(--accent);}
+    body.arc-mobile main{display:block; padding:0; height:0; overflow:hidden; max-width:none;}
+    body.arc-mobile main > .col{display:none;}
+
+    /* 舞台：预览（纸 / 画布）常驻铺满，卡片都收进抽屉 */
+    body.arc-mobile #mstage{display:flex; flex-direction:column; align-items:center; gap:10px;
+      position:fixed; inset:0; z-index:60; overflow:auto; -webkit-overflow-scrolling:touch;
+      padding:calc(58px + env(safe-area-inset-top)) 6px calc(26px + env(safe-area-inset-bottom));
+      background:#0d1015;}
+    body.arc-mobile #mstage > *{flex:none;}
+    body.arc-mobile #mstage .paper{border:0; border-radius:0; max-width:100%;}
+    .m-empty{margin:34px 18px 0; text-align:center; color:#9aa4b2; font-size:13px; line-height:1.7;}
+    .m-empty b{display:block; color:#fff; font-size:15px; font-weight:500; margin-bottom:6px;}
+    .m-empty button{margin-top:14px; border:none; border-radius:999px; padding:9px 20px; font-size:13px;
+      font-family:inherit; background:var(--accent); color:#fff; cursor:pointer;}
+    body.arc-mobile #mstage #ttCanvasWrap{border:0; border-radius:0; max-width:100%;}
+
+    /* 右侧竖排：板块按钮 */
+    body.arc-mobile #mnav{display:flex; flex-direction:column; gap:2px; position:fixed; right:6px; top:0; bottom:0; z-index:76;
+      margin:auto 0; height:fit-content; width:fit-content; transition:opacity .16s, transform .16s;
+      background:rgba(18,20,26,.62); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+      border-radius:18px; padding:5px; box-shadow:0 8px 26px rgba(0,0,0,.38);}
+    body.arc-mobile.m-nav-off #mnav{opacity:0; pointer-events:none; transform:translateX(14px);}
+    body.arc-mobile.m-sheet-open #mnav{opacity:0; pointer-events:none;}
+    #mnav button{display:flex; flex-direction:column; align-items:center; gap:1px; width:52px; padding:6px 2px;
+      border:none; background:transparent; color:#fff; font-family:inherit; font-size:10.5px;
+      border-radius:13px; cursor:pointer;}
+    #mnav button b{display:block; font-size:14px; font-weight:400; line-height:1.25;}
+    /* 小字号中文在部分内核里会被行盒裁掉下半截，行高给足 */
+    #mnav button span{display:block; line-height:1.7; letter-spacing:.3px;}
+    #mnav button:active{background:rgba(255,255,255,.2);}
+    #mnav button.m-fold{opacity:.62;}
+
+    /* 抽屉 */
+    body.arc-mobile #mscrim{display:block; position:fixed; inset:0; z-index:84; background:rgba(6,8,12,.28);
+      opacity:0; pointer-events:none; transition:opacity .18s;}
+    body.m-sheet-open #mscrim{opacity:1; pointer-events:auto;}
+    body.arc-mobile #msheet{display:flex; flex-direction:column; position:fixed; left:0; right:0; bottom:0; z-index:90;
+      max-height:72vh; border-radius:18px 18px 0 0; transform:translateY(104%);
+      transition:transform .26s cubic-bezier(.2,.8,.2,1);
+      background:rgba(252,252,253,.92); backdrop-filter:blur(20px) saturate(1.2); -webkit-backdrop-filter:blur(20px) saturate(1.2);
+      box-shadow:0 -8px 34px rgba(0,0,0,.26);}
+    @media (prefers-color-scheme: dark){ body.arc-mobile #msheet{background:rgba(26,29,36,.94);} }
+    body.arc-mobile #msheet.on{transform:translateY(0);}
+    #msheet::before{content:""; position:absolute; left:50%; top:6px; width:38px; height:4px; border-radius:2px;
+      background:rgba(0,0,0,.18); transform:translateX(-50%);}
+    #mh{display:flex; align-items:center; gap:8px; padding:14px 14px 6px; flex:none;}
+    #mh b{font-size:13.5px; font-weight:500; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+    .mh-btn{border:none; background:rgba(0,0,0,.07); color:var(--txt); border-radius:999px; padding:6px 12px;
+      font-size:12px; font-family:inherit; cursor:pointer;}
+    body.m-hints #mh-help{background:var(--accent); color:#fff;}
+    #mbody{overflow-y:auto; -webkit-overflow-scrolling:touch; padding:2px 10px calc(20px + env(safe-area-inset-bottom));
+      flex:1; min-height:0; overscroll-behavior:contain;}
+    #mbody .card{border:0; background:transparent; padding:2px 0 8px;}
+    #mbody .card h2{display:none;}
+    /* 注释默认收起，点抽屉右上「说明」才展开 */
+    body.arc-mobile:not(.m-hints) #mbody .hint{display:none!important;}
+    body.arc-mobile #toast{top:calc(54px + env(safe-area-inset-top)); bottom:auto;}
+  }
+
 </style>
 </head>
 <body>
@@ -949,9 +1018,11 @@ function showSavePanel(opt){
   const msg = document.createElement('div');
   msg.style.cssText = 'flex:1;min-width:0;word-break:break-all;';
   if (ok){
-    const hint = opt.frameMode
-      ? '已尝试自动保存。如果通知栏/下载列表里没出现文件，用下面的按钮取走'
-      : (opt.mobile ? '已开始保存' : '已开始保存，没看到文件就用下面的按钮');
+    const hint = opt.dataDirect
+      ? '已用直链保存（字节写在链接里，WebView 也读得到），看一眼通知栏 / 下载列表'
+      : (opt.frameMode
+        ? '已尝试自动保存。如果通知栏/下载列表里没出现文件，用下面的按钮取走'
+        : (opt.mobile ? '已开始保存' : '已开始保存，没看到文件就用下面的按钮'));
     msg.innerHTML = '<b>已生成</b> <span style="color:var(--sub)">' + opt.filename + ' · '
       + Math.max(1, Math.round(opt.size / 1024)) + ' KB</span>'
       + '<div style="color:var(--sub);margin-top:3px">' + hint + '</div>';
@@ -994,13 +1065,13 @@ function showSavePanel(opt){
     a.href = opt.url;
     a.download = opt.filename;
     if (!opt.frameMode){ a.target = '_blank'; a.rel = 'noopener'; }
-    a.textContent = '保存文件';
+    a.textContent = opt.dataDirect ? '再存一次' : '保存文件';
     a.style.cssText = 'background:var(--accent);color:#fff;border:1px solid var(--line);border-radius:8px;'
       + 'padding:9px 16px;text-decoration:none;font-size:13px;';
 
     // ③ data: 链接保存：字节直接写在链接里，不依赖 WebView 进程 → 系统下载器也读得到
     let dataBtn = null;
-    if (opt.bytes){
+    if (opt.bytes && !opt.dataDirect){
       dataBtn = document.createElement('a');
       dataBtn.href = '#';
       dataBtn.textContent = '换个方式保存';
@@ -1036,8 +1107,8 @@ function showSavePanel(opt){
 
     const tip = document.createElement('div');
     tip.style.cssText = 'color:var(--sub);font-size:11.5px;line-height:1.6;';
-    tip.innerHTML = (shareBtn ? '<b>系统分享</b>最稳（存进「文件」或发给自己）；' : '')
-      + 'Via 这类 WebView 浏览器有时读不到下载链接，点<b>换个方式保存</b>再试一次；'
+    tip.innerHTML = (opt.dataDirect ? '走的是 <b>data: 直链</b>（不经过 WebView 的 blob），没看到就点<b>再存一次</b>；' : '')
+      + (shareBtn ? '<b>系统分享</b>也能存进「文件」或发给自己；' : '')
       + '还不行就用<b>复制 Base64</b>，到电脑上粘进本工具「从 Base64 还原」。';
     bar.append(row, tip);
   } else {
@@ -1100,9 +1171,21 @@ function startDownload(url, filename){
   return clickDownload(url, filename, !LEGACY_WEBVIEW);
 }
 
+/* 直链上限：base64 会把体积再放大约 1/3，再大就别硬塞进 href 了，退回 blob + 兜底条 */
+const DATA_URL_MAX = 24 * 1024 * 1024;
+
 function download(bytes, filename, mime, opt){
   opt = opt || {};
   try{
+    if (bytes.length <= DATA_URL_MAX){
+      /* 默认这条路：字节直接写进 href，下载器不用回 WebView 进程取数据。
+         Via / 夸克这类把下载甩给系统下载器的浏览器，只有这种链接才真的存得下来。 */
+      const url = dataUrlOf(bytes, mime || 'application/octet-stream');
+      const threw = clickDownload(url, filename, false);
+      showSavePanel({ url: url, filename: filename, size: bytes.length, bytes: bytes, mobile: IS_ANDROID,
+        frameMode: LEGACY_WEBVIEW, dataDirect: true, autoStarted: !threw, errDetail: threw ? 'click() 抛错：' + threw : '' });
+      return url;
+    }
     const blob = new Blob([bytes], { type: mime || 'application/octet-stream' });
     const url = URL.createObjectURL(blob);
     const threw = startDownload(url, filename);
@@ -2264,9 +2347,10 @@ $('btnDlgExport').addEventListener('click', () => {
   if (!buildRegexString()) return toast('请至少勾选一种引号', false);
   // 缓存命中：同步触发，手势还在
   if (dlgRed.url && dlgRed.key === dlgRedKey()){
-    const threw = startDownload(dlgRed.url, dlgRed.filename);
-    showSavePanel({ url: dlgRed.url, filename: dlgRed.filename, size: dlgRed.bytes.length, bytes: dlgRed.bytes,
-      mobile: IS_ANDROID, frameMode: LEGACY_WEBVIEW, autoStarted: !threw, errDetail: threw ? 'click() 抛错：' + threw : '' });
+    const durl = dataUrlOf(dlgRed.bytes, 'application/octet-stream');
+    const threw = clickDownload(durl, dlgRed.filename, false);
+    showSavePanel({ url: durl, filename: dlgRed.filename, size: dlgRed.bytes.length, bytes: dlgRed.bytes,
+      mobile: IS_ANDROID, frameMode: LEGACY_WEBVIEW, dataDirect: true, autoStarted: !threw, errDetail: threw ? 'click() 抛错：' + threw : '' });
     return;
   }
   // 没赶上预打包：用「不压缩块」的 gzip 同步拼一份，依旧不丢手势
@@ -2277,11 +2361,11 @@ $('btnDlgExport').addEventListener('click', () => {
     const out = new Uint8Array(4 + gz.length);
     out[0] = 0x52; out[1] = 0x45; out[2] = 0x44; out[3] = 0x01;
     out.set(gz, 4);
-    const url = URL.createObjectURL(new Blob([out], { type: 'application/octet-stream' }));
+    const url = dataUrlOf(out, 'application/octet-stream');
     const fn = dlgFileName();
-    const threw = startDownload(url, fn);
+    const threw = clickDownload(url, fn, false);
     showSavePanel({ url: url, filename: fn, size: out.length, bytes: out, mobile: IS_ANDROID,
-      frameMode: LEGACY_WEBVIEW, autoStarted: !threw, errDetail: threw ? 'click() 抛错：' + threw : '' });
+      frameMode: LEGACY_WEBVIEW, dataDirect: true, autoStarted: !threw, errDetail: threw ? 'click() 抛错：' + threw : '' });
   }catch(err){
     showSavePanel({ error: err.message, errDetail: (err && err.stack) || '' });
   }
@@ -3061,6 +3145,219 @@ formSave();   /* 把当前状态（含恢复结果）落一次盘 */
     loadDlgPng(new File([blob], 'sample.png', { type: 'image/png' }));
   }catch (_){}
 })();
+
+/* =========================================================
+   10 · 手机端：全屏预览 + 悬浮板块按钮 + 抽屉
+   （桌面端这套节点全部 display:none，不影响原来的两栏布局）
+   ========================================================= */
+const M_NAV = {
+  '气泡图': ['🫧', '气泡图'],
+  '背景图怎么用': ['🧩', '铺法'],
+  '气泡里文字怎么排': ['🔤', '文字'],
+  '匹配哪些引号': ['❝', '引号'],
+  '规则信息': ['🏷', '规则'],
+  '从现有规则包反推': ['📥', '导入'],
+  '预览': ['⚙', '设置'],
+  '导出': ['⬇', '导出'],
+  '画布里的图片': ['🖼', '图片'],
+  '画布与文字': ['📐', '尺寸'],
+  '标题文字样式': ['🅰', '样式'],
+  '画布': null            /* 标题画布直接摆在舞台上，不进菜单 */
+};
+const M = { on:false, built:false, tipped:false, card:null, parent:null, next:null, home:{} };
+/* 预览用的三个「真身」节点要一直留着引用：被摘出文档以后 $() 就再也找不回来了 */
+const M_EL = { dlgPaper:null, ttPaper:null, ttCanvas:null };
+
+function mCardName(card){
+  const h2 = card.querySelector('h2');
+  if (!h2) return '';
+  const t = [...h2.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('');
+  return t.replace(/^\s*\d+\s*·\s*/, '').trim();
+}
+function mBuildDom(){
+  if (M.built) return;
+  /* 先记住这几块原来挂在哪，退出手机模式要原样搬回去 */
+  ['dlgPaper', 'ttPaper', 'ttCanvasWrap'].forEach(id => {
+    const el = $(id);
+    if (el) M.home[id] = { p: el.parentNode, n: el.nextSibling };
+  });
+  M_EL.dlgPaper = $('dlgPaper');
+  M_EL.ttPaper = $('ttPaper');
+  M_EL.ttCanvas = $('ttCanvasWrap');
+  const st = document.createElement('div'); st.id = 'mstage';
+  const nav = document.createElement('div'); nav.id = 'mnav';
+  const scrim = document.createElement('div'); scrim.id = 'mscrim';
+  const sheet = document.createElement('div'); sheet.id = 'msheet';
+  sheet.innerHTML = '<div id="mh"><b id="m-title"></b>'
+    + '<button type="button" class="mh-btn" id="mh-help">说明</button>'
+    + '<button type="button" class="mh-btn" id="m-x">✕</button></div><div id="mbody"></div>';
+  document.body.append(st, nav, scrim, sheet);
+  M.built = true;
+  scrim.addEventListener('click', mClose);
+  $('m-x').addEventListener('click', mClose);
+  $('mh-help').addEventListener('click', () => {
+    const on = !document.body.classList.contains('m-hints');
+    document.body.classList.toggle('m-hints', on);
+    toast(on ? '说明已展开' : '说明已收起');
+  });
+}
+function mBuildNav(){
+  const nav = $('mnav');
+  if (!nav) return;
+  nav.innerHTML = '';
+  const main = document.querySelector('main:not([hidden])');
+  if (!main) return;
+  qsa('.card', main).forEach(card => {
+    const conf = M_NAV[mCardName(card)];
+    if (!conf) return;
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.innerHTML = '<b>' + conf[0] + '</b><span>' + conf[1] + '</span>';
+    b.addEventListener('click', () => mOpen(card));
+    nav.appendChild(b);
+  });
+  const f = document.createElement('button');
+  f.type = 'button'; f.className = 'm-fold';
+  f.innerHTML = '<b>✕</b><span>收起</span>';
+  f.addEventListener('click', () => document.body.classList.add('m-nav-off'));
+  nav.appendChild(f);
+}
+function mStageFill(){
+  const st = $('mstage');
+  if (!st) return;
+  const main = document.querySelector('main:not([hidden])');
+  if (!main) return;
+  const keep = [M_EL.dlgPaper, M_EL.ttPaper, M_EL.ttCanvas];
+  /* 清舞台时只摘「临时»节点（空状态之类），三块真身必须留着——
+     用 innerHTML='' 会把它们连根删掉，$('dlgPaper') 从此返回 null */
+  [...st.childNodes].forEach(n => { if (keep.indexOf(n) < 0) st.removeChild(n); });
+  if (main.id === 'tabTitle'){
+    st.appendChild(M_EL.ttCanvas);
+    st.appendChild(M_EL.ttPaper);
+    if (M_EL.dlgPaper) M_EL.dlgPaper.style.display = 'none';
+    if (M_EL.ttCanvas) M_EL.ttCanvas.style.display = '';
+    if (M_EL.ttPaper) M_EL.ttPaper.style.display = '';
+    try{ ttRenderCanvas(); }catch(_){}
+    mFitPaper();
+  } else {
+    if (M_EL.dlgPaper) M_EL.dlgPaper.style.display = '';
+    if (M_EL.ttCanvas) M_EL.ttCanvas.style.display = 'none';
+    if (M_EL.ttPaper) M_EL.ttPaper.style.display = 'none';
+    st.appendChild(M_EL.dlgPaper);
+    mFitPaper();
+    let em = $('m-empty');
+    if (!em){
+      em = document.createElement('div');
+      em.id = 'm-empty';
+      em.className = 'm-empty';
+      em.innerHTML = '<b>还没有气泡图，所以预览是空的</b>先在抽屉里选一张透明背景的 PNG';
+      const eb = document.createElement('button');
+      eb.type = 'button';
+      eb.textContent = '选气泡图';
+      eb.addEventListener('click', () => {
+        const card = $('dlgDrop') ? $('dlgDrop').closest('.card') : null;
+        if (card) mOpen(card);
+      });
+      em.appendChild(eb);
+    }
+    st.appendChild(em);
+    mEmptySync();
+    try{ renderStage(); }catch(_){}
+  }
+}
+function mEmptySync(){
+  const em = $('m-empty');
+  if (!em) return;
+  const main = document.querySelector('main:not([hidden])');
+  const isDlg = !!main && main.id === 'tabDialog';
+  em.hidden = !!DLG.bytes || !isDlg;
+  /* 还没选图时那张纸只有 36px 宽，露出来像个白方块，干脆藏掉 */
+  if (M_EL.dlgPaper && isDlg) M_EL.dlgPaper.style.display = DLG.bytes ? '' : 'none';
+}
+function mFitPaper(){
+  const st = $('mstage');
+  if (!st) return;
+  const avail = st.clientWidth - 14;
+  if (avail <= 0) return;
+  [M_EL.dlgPaper, M_EL.ttPaper].forEach(el => {
+    if (!el) return;
+    el.style.zoom = '';
+    void el.offsetWidth;                       /* 先按原尺寸解一次布局，量的才是没缩放过的宽 */
+    const w = el.getBoundingClientRect().width;
+    if (w > avail){
+      const z = Math.max(0.55, avail / w);
+      el.style.zoom = z.toFixed(3);            /* zoom 会真正重排（不是拉伸），文字还是清楚的 */
+    }
+  });
+}
+function mRestoreCard(){
+  if (!M.card) return;
+  const c = M.card;
+  if (M.parent) M.parent.insertBefore(c, M.next || null);
+  M.card = null; M.parent = null; M.next = null;
+}
+function mOpen(card){
+  const body = $('mbody');
+  if (!body) return;
+  if (M.card && M.card !== card) mRestoreCard();
+  if (!M.card){ M.parent = card.parentNode; M.next = card.nextSibling; }
+  M.card = card;
+  body.appendChild(card);
+  $('m-title').textContent = mCardName(card);
+  $('msheet').classList.add('on');
+  document.body.classList.add('m-sheet-open');
+  body.scrollTop = 0;
+  if (card.contains($('ttCanvasWrap'))){ try{ ttRenderCanvas(); }catch(_){} }
+  if (card.contains($('dlgStage'))){ try{ renderStage(); }catch(_){} }
+}
+function mClose(){
+  mRestoreCard();
+  const sh = $('msheet');
+  if (sh) sh.classList.remove('on');
+  document.body.classList.remove('m-sheet-open', 'm-nav-off');
+}
+function mApply(){
+  mBuildDom();
+  const on = window.matchMedia('(max-width: 760px)').matches;
+  if (on === M.on) return;
+  M.on = on;
+  document.body.classList.toggle('arc-mobile', on);
+  if (on){
+    mBuildNav();
+    mStageFill();
+    if (!M.tipped){ M.tipped = true; setTimeout(() => toast('点右侧按钮调设置，预览一直在这儿'), 900); }
+  } else {
+    mClose();
+    Object.keys(M.home).forEach(id => {
+      const el = M_EL[id === 'ttCanvasWrap' ? 'ttCanvas' : (id === 'ttPaper' ? 'ttPaper' : 'dlgPaper')] || $(id);
+      const h = M.home[id];
+      if (el && h && h.p){
+        el.style.display = '';
+        h.p.insertBefore(el, h.n || null);
+      }
+    });
+    M.home = {};
+    try{ ttRenderCanvas(); }catch(_){}
+    try{ renderStage(); }catch(_){}
+  }
+}
+window.addEventListener('resize', mApply);
+window.addEventListener('orientationchange', () => setTimeout(mApply, 220));
+$('tabBar').addEventListener('click', () => { if (M.on) setTimeout(() => { mBuildNav(); mStageFill(); }, 0); });
+mApply();
+/* 每次重画完都校一次：宽度适配 + 空状态显隐（渲染之前量不到真实宽度） */
+const _dlgRender = dlgRender;
+dlgRender = function(){
+  const r = _dlgRender.apply(this, arguments);
+  if (M.on){ try{ mFitPaper(); mEmptySync(); }catch(_){} }
+  return r;
+};
+const _ttRender = ttRender;
+ttRender = function(){
+  const r = _ttRender.apply(this, arguments);
+  if (M.on){ try{ mFitPaper(); }catch(_){} }
+  return r;
+};
 </script>
 </body>
 </html>
