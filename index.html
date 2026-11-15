@@ -49,7 +49,7 @@
     /* ---------- 卡片网格 ---------- */
     /* 两行 1fr：不管哪张卡说明多一行，两行都会拉成同一高度；
        第三行是通栏那张，按内容高度走 */
-    .grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr auto; gap: 16px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr auto auto; gap: 16px; }
     @media (max-width: 720px) {
         /* 单列时一行一张卡，等高等得没意义，恢复逐卡自适应 */
         .grid { grid-template-columns: 1fr; grid-template-rows: none; grid-auto-rows: auto; }
@@ -119,6 +119,7 @@
     a.card.c-sky    { --c: 14,165,233;  --ct: 3,105,161; }
     a.card.c-teal   { --c: 13,148,136;  --ct: 15,118,110; }
     a.card.c-slate  { --c: 100,116,139; --ct: 71,85,105; }
+    a.card.c-amber  { --c: 217,119,6;   --ct: 180,83,9; }
 
     @media (prefers-color-scheme: dark) {
         :root {
@@ -154,6 +155,7 @@
         a.card.c-sky    { --c: 56,189,248;  --ct: 125,211,252; }
         a.card.c-teal   { --c: 45,212,191;  --ct: 153,246,228; }
         a.card.c-slate  { --c: 148,163,184; --ct: 203,213,225; }
+        a.card.c-amber  { --c: 251,191,36;  --ct: 253,224,71; }
     }
 </style>
 </head>
@@ -169,7 +171,7 @@
                 </span>
                 <h1>阅读工具箱</h1>
             </div>
-            <p class="sub">5 个工具 · 全部本地运行，文件不上传</p>
+            <p class="sub">6 个工具 · 全部本地运行，文件不上传</p>
         </div>
         <hr class="rule">
 
@@ -231,6 +233,24 @@
                 <h2>页面模板简易制作器</h2>
                 <p>以简约模板为底稿「制作」模板，一句话就能让 AI 改一版。</p>
                 <div class="tags"><span>AI 改版</span><span>三栏页眉页脚</span><span>拖拽定位</span></div>
+                <span class="go">进入工具
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+                </span>
+            </a>
+
+            <a class="card c-amber wide" href="pbar-studio.html?v=20261115a">
+                <span class="ic">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 12h18"/>
+                        <circle cx="9" cy="12" r="2.6"/>
+                        <path d="M6 16.5v2.5"/><path d="M12 16.5v2.5"/><path d="M18 16.5v2.5"/>
+                    </svg>
+                </span>
+                <div class="wb">
+                    <h2>进度条工作室</h2>
+                    <p>六条现成的进度条随翻页变化，滑杆实时预览，调好直接导出 .txt。</p>
+                    <div class="tags"><span>本章进度</span><span>实时预览</span><span>导入校验</span></div>
+                </div>
                 <span class="go">进入工具
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
                 </span>
