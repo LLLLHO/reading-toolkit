@@ -172,6 +172,20 @@
   /* 装饰列表 */
   .decoRow{display:flex; gap:9px; align-items:flex-start; border:1px solid var(--line); border-radius:10px; background:var(--slot); padding:8px;}
   .decoRow img{width:44px; height:44px; object-fit:contain; border-radius:6px; background:repeating-conic-gradient(var(--chk-a) 0 25%, var(--chk-b) 0 50%) 0 0/8px 8px; flex:none; cursor:pointer; border:1px solid var(--line);}
+  .decoRow .decThumb{width:44px; height:44px; flex:none; display:flex; align-items:center; justify-content:center;
+    border:1px solid var(--line); border-radius:6px; overflow:hidden;}
+  .decoRow .decThumb svg{width:100%; height:100%; display:block; overflow:visible;}
+  /* 进度条不做小方块缩略图：这类图形只有几像素高，缩到 44px 里全是空的。
+     改成整行宽的一条预览带，形状一眼能认出来 */
+  .decoRow .decBar{width:100%; height:46px; flex:none; display:flex; align-items:center; justify-content:center;
+    border:1px solid var(--line); border-radius:6px; overflow:hidden;}
+  /* 预览带稍微提一点亮度和对比：这类图形多半是低透明度的细线，原样缩下去会看不见 */
+  .decoRow .decBar img{width:100%; height:100%; object-fit:contain; display:block; border:0; background:none;
+    filter:contrast(1.18) brightness(1.22);}
+  .decoRow input.decName{flex:1 1 68px; width:68px; min-width:52px; padding:3px 6px;
+    font-size:12px; font-family:inherit; border:1px solid var(--line); border-radius:6px;
+    background:var(--field); color:var(--txt);}
+  .decoRow input.decName:focus{outline:none; border-color:var(--accent);}
   .decoRow .decMain{flex:1; min-width:0; display:flex; flex-direction:column; gap:6px;}
   .decoRow .decMain .miniRow{padding-top:0;}
   /* 字段候选弹层：点静态文字输入框时贴在下面 */
@@ -319,6 +333,7 @@
     .aiInputRow{flex-direction:column; align-items:stretch;}
     .aiInputRow .btn{width:100%;}
     .decoRow img{width:38px; height:38px;}
+    .decoRow .decThumb{width:38px; height:38px;}
     .cbtn{height:38px;}
     .miniRow .cbtn{height:32px;}
     .cbtn > span{font-size:11.5px;}
@@ -2671,6 +2686,107 @@ function pbarSVG(d, page){
   });
   return s;
 }
+/* ===================== 装饰列表的缩略图 & 名字 ===================== */
+/* 列表里两条进度条长得一样（都是 ▤），分不清哪条是哪条。两件事解决：
+   1) 按固定进度画一帧缩略图，形状一眼能认出来；
+   2) 导入时自动取个名字（<title> → 文件名），之后还能在列表里改。
+   缩略图只在编辑器里画，不进导出的模板。 */
+const PBAR_FN_CACHE = new Map();
+function pbarFnOf(body){
+  if (PBAR_FN_CACHE.has(body)) return PBAR_FN_CACHE.get(body);
+  let f = null;
+  try {
+    /* 表达式已过 pbarBadExpr 白名单（只有数字、四则、括号、已知名字），拼出来跑不会有副作用 */
+    f = new Function(PBAR_SIG, 'var ' + PBAR_HELPERS.map(h => h + '=Math.' + h).join(',')
+      + '; function n(v){ return Math.round(v * 1000) / 1000; }\n' + body);
+  } catch (e){ f = null; }
+  PBAR_FN_CACHE.set(body, f);
+  return f;
+}
+/* 缩略图底色：进度条基本是「单色 + 透明度」，压在同色底上会看不见，
+   所以按它自己的颜色挑一块反差的板（深色条给浅板、浅色条给深板） */
+function thumbPlate(color){
+  const m = /^#([0-9a-fA-F]{6})$/.exec(String(color || '').trim());
+  if (!m) return { bg: '#2f2f34', fg: '#d8d8d8' };
+  const n = parseInt(m[1], 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return lum < 0.5 ? { bg: '#f4f4f5', fg: color } : { bg: '#2f2f34', fg: color };
+}
+const PBAR_THUMB_CACHE = new Map();
+/* 列表里的预览带。两条坑：
+   ① 这类图形只有几像素高，缩进 44px 方块里全是空的 —— 所以做成整行宽的一条带；
+   ② 别人的 SVG 里常带 <style>（Lovia 那批就有），直接内联进列表会把整个编辑器改样。
+      所以先按 66% 画好一帧，再转成 data URI 塞进 <img> —— <img> 里的 SVG 是独立文档，
+      内部样式不外泄，id 也不会跟其它条目打架。 */
+function pbarStripHTML(d, color){
+  const key = String(d.svg || '');
+  const pl = thumbPlate(color);
+  const cacheKey = key ? 'strip|' + d.id + '|' + pl.fg : '';
+  let inner = cacheKey ? PBAR_THUMB_CACHE.get(cacheKey) : '';
+  if (inner == null){
+    inner = '';
+    try {
+      const c = pbarCompile(key);
+      if (!c.err && c.rows.length){
+        const box = document.createElement('div');
+        box.innerHTML = pbarSVG(d, 'thumb');
+        const svg = box.querySelector('svg');
+        if (svg){
+          const els = [svg].concat(Array.prototype.slice.call(svg.querySelectorAll('*')));
+          const i = 1, count = 3, p = 66;
+          const args = PBAR_ARGS.map(a => a === 'pageIndex' ? i + 1
+            : (a === 'pageCount' || a === 'total') ? count
+              : a === 'page' ? ((i + 1) + '/' + count) : p);
+          for (let r = 0; r < c.rows.length; r++){
+            const t = els[c.rows[r][0]], f = pbarFnOf(c.fns[c.rows[r][2]]);
+            if (!t || !f) continue;
+            try { t.setAttribute(c.rows[r][1], f.apply(null, args)); } catch (e){}
+          }
+          /* 气泡里那种「让阅读器填字」的地方也给个值，不然预览带上写着占位数字 */
+          Array.prototype.forEach.call(svg.querySelectorAll('[data-reader-field]'), t2 => {
+            const k = String(t2.getAttribute('data-reader-field') || '');
+            if (/page/i.test(k)) t2.textContent = (i + 1) + '/' + count;
+            else if (/progress|percent|pct/i.test(k)) t2.textContent = p + '%';
+          });
+          /* <img> 里的 currentColor 不会继承页面颜色，得在根上写死一个 */
+          svg.setAttribute('color', pl.fg);
+          if (!svg.getAttribute('xmlns')) svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+          inner = svg.outerHTML;
+        }
+      }
+    } catch (e){ inner = ''; }
+    if (cacheKey) PBAR_THUMB_CACHE.set(cacheKey, inner);
+  }
+  if (!inner){
+    return '<div class="decBar" style="color:var(--sub);font-size:12px" title="这条进度条没解析出可画的图形">▤ 图形没解析出来</div>';
+  }
+  return '<div class="decBar" style="background:' + pl.bg + '" title="预览（固定按 66% 画一帧，只为好认形状）">'
+    + '<img src="data:image/svg+xml;charset=utf-8,' + encodeURIComponent(inner) + '" alt="">'
+    + '</div>';
+}
+/* 名字：先看 SVG 里有没有 <title> / data-name，再退回文件名（去掉 .txt/.svg 和 ARC-/Lovia- 前缀） */
+function pbarNameOf(svg, fileName){
+  let nm = '';
+  const t = svg && svg.querySelector ? svg.querySelector('title') : null;
+  if (t) nm = String(t.textContent || '').trim();
+  if (!nm && svg) nm = String(svg.getAttribute('data-name') || '').trim();
+  if (!nm && fileName){
+    nm = String(fileName).replace(/\.(svg|txt)$/i, '')
+      .replace(/^(ARC|Lovia|Reeden)[-_—\s]*/i, '')
+      .replace(/[（(][^）)]*$/, '')      /* 「弧光轨迹（可改色」这种被截断的括号尾巴 */
+      .replace(/[-_\s]+$/, '');
+  }
+  nm = nm.replace(/\s+/g, ' ').trim().slice(0, 24);
+  if (!nm) nm = '进度条 ' + ((cfg.deco || []).filter(x => x.kind === 'pbar').length + 1);
+  /* 重名加序号，列表里才分得开 */
+  const used = (cfg.deco || []).map(x => String(x.name || '').trim()).filter(Boolean);
+  if (used.indexOf(nm) >= 0){
+    let k = 2;
+    while (used.indexOf(nm + ' ' + k) >= 0) k++;
+    nm = nm + ' ' + k;
+  }
+  return nm;
+}
 /* 导出用的 JS：把每条表达式变成函数，按页调用一次 */
 function pbarJS(){
   const list = (cfg.deco || []).filter(d => d.kind === 'pbar' && d.svg);
@@ -3912,10 +4028,18 @@ function renderDecoList(){
   const cls = 'width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:6px;color:var(--sub);font-size:15px;flex:none';
   box.innerHTML = cfg.deco.map((d, i) => {
     const isText = d.kind === 'text', isPbar = d.kind === 'pbar';
+    const nm = String(d.name || '').trim();
+    /* 文字装饰拿正文开头当标题（自己已经看得出内容），图和进度条用名字 */
+    const snippet = isText ? (String(d.text || '').replace(/\s+/g, ' ').trim().slice(0, 10) || '文字') : '';
+    const title = isText ? snippet : (nm || (isPbar ? '进度条 ' + (i + 1) : '图 ' + (i + 1)));
     const thumb = isText ? '<div style="' + cls + '">Aa</div>'
-      : isPbar ? '<div style="' + cls + '" title="进度条 SVG">▤</div>'
-      : (d.src ? '<img src="' + d.src + '" alt="">' : '<div style="' + cls + 'border-style:dashed">□</div>');
-    const title = isText ? '文字' : isPbar ? '进度条' : '图 ' + (i + 1);
+      : isPbar ? ''
+        : (d.src ? '<img src="' + d.src + '" alt="">' : '<div style="' + cls + 'border-style:dashed">□</div>');
+    /* 进度条：整行宽一条预览带（塞进 decMain 里），比 44px 的小方块有用得多 */
+    const strip = isPbar ? pbarStripHTML(d, d.color || '') : '';
+    const head = (isText ? '<b style="color:var(--txt);font-weight:500">' + esc(title) + '</b>'
+      : '<input class="decName" data-df="name" type="text" value="' + esc(nm || title)
+        + '" placeholder="起个名字，好分辨" title="给这条装饰起个名字；只用来在列表里区分，不影响模板输出">');
     /* 显示范围：都显示 / 仅夜间 / 仅日间（老配置只有 night 布尔，照样读得懂） */
     const when = d.when || (d.night ? 'night' : 'all');
     const segWhen = '<span class="seg mini" title="这条装饰在什么时候出现">'
@@ -3927,7 +4051,7 @@ function renderDecoList(){
       + [['first', '首页'], ['other', '续页'], ['both', '两页']].map(([v, l]) =>
         '<button type="button" data-dact="page" data-pv="' + v + '"' + (d.page === v ? ' class="on"' : '') + '>' + l + '</button>').join('')
       + '</span>';
-    let body = '<div class="miniRow"><b style="color:var(--txt);font-weight:500">' + title + '</b>'
+    let body = strip + '<div class="miniRow">' + head
       + segPage
       + '<button class="btn sm" data-dact="split" title="拆成首页/续页两份，好让两页各自摆位置">拆</button>'
       + '<button class="btn sm" data-dact="del" title="删掉这条装饰">✕</button></div>';
@@ -3985,6 +4109,7 @@ function bindDeco(){
     else if (t.type === 'number') d[k] = n2(t.value, 0);
     else d[k] = t.value;
     if(t.tagName === 'TEXTAREA') fitTa(t);
+    if (k === 'name'){ scheduleSave(); return; }   /* 名字只影响列表，不必重建预览 */
     render();
   });
   box.addEventListener('change', e => {
@@ -3995,6 +4120,8 @@ function bindDeco(){
     const k = t.dataset.df;
     /* 复选框一律按自己的字段名存，别再写死 night（不然新加的「可拉伸」会把仅夜间顶掉） */
     if (t.type === 'checkbox'){ d[k] = t.checked; renderDecoList(); render(); }
+    /* 改完日/夜颜色顺手重画列表，预览带的底色和颜色才跟着变 */
+    else if (k === 'color' || k === 'colorNight'){ renderDecoList(); }
   });
   box.addEventListener('click', e => {
     const btn = e.target.closest('[data-dact]'); if (!btn) return;
@@ -4029,6 +4156,10 @@ function bindDeco(){
       delete cp.p2;
       if (d.page === 'both'){
         d.page = 'first'; cp.page = 'other';
+        /* 拆出来的两份长得一模一样，名字也带上「首页 / 续页」，否则列表里又要靠猜 */
+        const bn = String(d.name || '').replace(/[·-](首页|续页)$/, '');
+        d.name = bn ? bn + '·首页' : d.name;
+        cp.name = bn ? bn + '·续页' : cp.name;
         if (p2){ cp.left = p2.left; cp.top = p2.top; }   /* 原本两页就不同位置，照抄过去 */
         delete d.p2;
         toast('已拆成两份：首页一份、续页一份，可以分别拖到不同位置');
@@ -4151,18 +4282,21 @@ function initFieldPicker(){
 function addDecoFromFile(file){
   /* SVG 走进度条那条路：当图片塞进 <img> 的话，里面的表达式永远不会被算出来 */
   if (/svg/i.test(file.name || '') || file.type === 'image/svg+xml'){
-    file.text().then(t => addPbarFromText(t)).catch(() => toast('这个 SVG 读不出来'));
+    file.text().then(t => addPbarFromText(t, file.name)).catch(() => toast('这个 SVG 读不出来'));
     return;
   }
   compressImage(file, 1200, true).then(dt => {
     if (!dt){ toast('这张图读不出来'); return; }
-    cfg.deco.push({ id: uid(), kind: 'img', src: dt, page: mScopePage(), left: 38, top: 40, width: 24, opacity: 1, rot: 0, night: false, text: '', size: 14, color: '#9a9a9a' });
+    cfg.deco.push({ id: uid(), kind: 'img', src: dt, page: mScopePage(), left: 38, top: 40, width: 24, opacity: 1, rot: 0, night: false,
+      name: String(file.name || '').replace(/\.[a-z0-9]+$/i, '').replace(/\s+/g, ' ').trim().slice(0, 24),
+      text: '', size: 14, color: '#9a9a9a' });
     renderDecoList(); render();
     toast('已添加装饰图，可在右侧预览里拖位置');
   });
 }
-/* 导入一条进度条 SVG：摊平占位符 → 校验表达式 → 归一化尺寸 → 塞进装饰列表 */
-function addPbarFromText(text){
+/* 导入一条进度条 SVG：摊平占位符 → 校验表达式 → 归一化尺寸 → 塞进装饰列表
+   fileName 只用来取个名字（列表里好分辨），没有就退回 <title> / 序号 */
+function addPbarFromText(text, fileName){
   let s = String(text == null ? '' : text).replace(/^\uFEFF/, '');
   const a = s.indexOf('<svg');
   if (a < 0){ toast('这个文件里没有 <svg>，确认选对了文件'); return false; }
@@ -4206,6 +4340,7 @@ function addPbarFromText(text){
   const hPct = width * ratio * state.VW / state.VH;
   const it = {
     id: uid(), kind: 'pbar', svg: svg.outerHTML, ratio: Math.round(ratio * 1000) / 1000,
+    name: pbarNameOf(svg, fileName),
     page: 'both', left: Math.max(0, Math.round((100 - width) / 2)),
     top: Math.max(0, Math.round((100 - hPct) / 2)),
     width: width, opacity: 1, rot: 0, night: false, back: true,
@@ -5365,7 +5500,7 @@ function bindAll(){
     inp.type = 'file'; inp.accept = '.svg,.txt,image/svg+xml,text/plain';
     inp.onchange = () => {
       const f = inp.files && inp.files[0];
-      if (f) f.text().then(t => addPbarFromText(t)).catch(() => toast('这个文件读不出来'));
+      if (f) f.text().then(t => addPbarFromText(t, f.name)).catch(() => toast('这个文件读不出来'));
     };
     inp.click();
   });
@@ -5375,7 +5510,7 @@ function bindAll(){
     e.preventDefault(); e.currentTarget.classList.remove('drag');
     const f = e.dataTransfer.files && e.dataTransfer.files[0];
     if (!f) return;
-    f.text().then(t => addPbarFromText(t)).catch(() => toast('这个文件读不出来'));
+    f.text().then(t => addPbarFromText(t, f.name)).catch(() => toast('这个文件读不出来'));
   });
   $('#deco-drag').addEventListener('click', () => {
     state.drag = !state.drag;
