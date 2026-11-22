@@ -223,6 +223,13 @@
     /* 分类借入 */
     .catBorrow { margin-top: 12px; border: 1px dashed var(--border); border-radius: 10px; padding: 10px 12px; }
     .catBorrow .cat-head { font-size: 12.5px; color: var(--text2); margin-bottom: 8px; line-height: 1.7; }
+    /* 分类模式：只补缺 / 整类替换 */
+    .catMode { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 9px; }
+    .catMode label { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border: 1px solid var(--border);
+        border-radius: 8px; font-size: 12.5px; color: var(--text2); cursor: pointer; user-select: none; transition: border-color .15s, color .15s, background .15s; }
+    .catMode label:hover { border-color: var(--accent); }
+    .catMode label:has(input:checked) { border-color: var(--accent); color: var(--accent); background: rgba(79,110,242,.06); font-weight: 600; }
+    .catMode input { accent-color: var(--accent); margin: 0; }
     #catChks { display: flex; flex-wrap: wrap; gap: 6px 10px; }
     .cat-item { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; cursor: pointer; user-select: none; }
     .cat-item:hover { border-color: var(--accent); }
@@ -374,7 +381,11 @@
             <textarea id="swapChars" placeholder="例如：你好世界123"></textarea>
             <label class="rawAlignRow"><input type="checkbox" id="swapRawAlign"> 保留来源字形的原始大小与位置（替换已有字符时不按目标字形对齐）。适合修正目标字体里位置异常的符号，比如『』被画到字身框顶/底的情况。</label>
             <div class="catBorrow">
-                <div class="cat-head">⚡ 分类借入：不用打字，按类别把来源字体里的字成批搬进来。<b>只新增待修改字体缺少的字符，已有的不会被替换</b>（手动输入框里的字才走替换逻辑）。勾选后点「执行换字」一起借入。</div>
+                <div class="cat-head">⚡ 分类借入：不用打字，按类别把来源字体里的字成批搬进来。先选模式：<b>只补缺的字</b>只新增待修改字体没有的字符（已有的不动）；<b>整类替换</b>会把这一类全部换成来源字体的字形（已有的也覆盖）。勾选类别后点「执行换字」一起处理。</div>
+                <div class="catMode" id="catMode">
+                    <label><input type="radio" name="catMode" value="missing" checked><span>只补缺的字</span></label>
+                    <label><input type="radio" name="catMode" value="replace"><span>整类替换（覆盖已有字形）</span></label>
+                </div>
                 <div id="catChks"></div>
                 <div id="catSummary">导入待修改字体和来源字体后可用</div>
             </div>
@@ -961,49 +972,81 @@ return ret;
     function cpsInRanges(cps, ranges) {
         return cps.filter(cp => ranges.some(r => cp >= r[0] && cp <= r[1]));
     }
-    // 返回 { catId: [缺失字符...] }：A 有、B 没有、且不在手动输入框里的字符
-    function catMissingChars() {
+    // 分类模式下的候选字符。两种模式都排除手动输入框里已写的字（那些字本来就会替换）。
+    // missing：只挑「来源有、目标没有」的 —— 补缺，不动已有字形（原行为）。
+    // replace：这一类全换成来源字体的，目标已有的也覆盖。
+    function catChars(mode) {
         const srcCps = cmapCps(state.src && state.src.otFont);
         const tgtCps = new Set(cmapCps(state.swapTgt && state.swapTgt.otFont));
         const explicit = new Set(charsFromInput($('swapChars').value));
         const out = {};
         for (const def of CAT_DEFS) {
-            out[def.id] = cpsInRanges(srcCps, def.ranges)
-                .filter(cp => !tgtCps.has(cp) && !explicit.has(String.fromCodePoint(cp)))
-                .sort((a, b) => a - b)
-                .map(cp => String.fromCodePoint(cp));
+            const all = cpsInRanges(srcCps, def.ranges).sort((a, b) => a - b);
+            const picked = mode === 'replace'
+                ? all.filter(cp => !explicit.has(String.fromCodePoint(cp)))
+                : all.filter(cp => !tgtCps.has(cp) && !explicit.has(String.fromCodePoint(cp)));
+            const repl = mode === 'replace' ? picked.filter(cp => tgtCps.has(cp)).length : 0;
+            out[def.id] = { chars: picked.map(cp => String.fromCodePoint(cp)), repl, add: picked.length - repl, have: all.length };
         }
         return out;
+    }
+    function catMode() {
+        const el = document.querySelector('#catMode input[name="catMode"]:checked');
+        return el ? el.value : 'missing';
     }
     function renderCatChks() {
         $('catChks').innerHTML = CAT_DEFS.map(def =>
             `<label class="cat-item"><input type="checkbox" id="cat_${def.id}"><span>${def.label}</span><span class="cat-cnt" id="catCnt_${def.id}"></span></label>`
         ).join('');
         $('catChks').addEventListener('change', refreshCatSummary);
+        const modeBox = $('catMode');
+        if (modeBox && !modeBox.dataset.bound) {
+            modeBox.dataset.bound = '1';
+            modeBox.addEventListener('change', () => { refreshCatSummary(); refreshSwapPreview(); });
+        }
     }
     function refreshCatSummary() {
         const ready = !!(state.src && state.swapTgt && state.currentTab === 'swap');
-        const counts = ready ? catMissingChars() : null;
-        let total = 0;
+        const mode = catMode();
+        const isRep = mode === 'replace';
+        const counts = ready ? catChars(mode) : null;
+        let total = 0, repl = 0, add = 0;
         for (const def of CAT_DEFS) {
             const cb = $('cat_' + def.id), cnt = $('catCnt_' + def.id);
             if (!cb) continue;
-            cb.disabled = !ready;
-            if (!ready) { cnt.textContent = ''; cnt.className = 'cat-cnt'; continue; }
-            const n = counts[def.id].length;
-            if (cb.checked) total += n;
-            cnt.textContent = n ? '+' + n.toLocaleString() : '✓';
-            cnt.className = 'cat-cnt' + (n ? '' : ' done');
+            if (!ready) { cb.disabled = true; cnt.textContent = ''; cnt.className = 'cat-cnt'; cb.title = ''; continue; }
+            const c = counts[def.id];
+            cb.disabled = !c.have;   /* 来源里没有这类字：勾了也没用，直接置灰 */
+            if (cb.checked) { total += c.chars.length; repl += c.repl; add += c.add; }
+            if (!c.have) {
+                cnt.textContent = '—'; cnt.className = 'cat-cnt done'; cb.title = '来源字体里没有这类字符';
+            } else if (!c.chars.length) {
+                cnt.textContent = '✓'; cnt.className = 'cat-cnt done';
+                cb.title = isRep ? '这类字都写在手动输入框里了' : '这一类已不缺字';
+            } else {
+                cnt.textContent = (isRep ? '↻' : '+') + c.chars.length.toLocaleString();
+                cnt.className = 'cat-cnt';
+                cb.title = isRep ? `会覆盖其中 ${c.repl.toLocaleString()} 个已有字形、新增 ${c.add.toLocaleString()} 个` : '';
+            }
         }
-        $('catSummary').textContent = !ready
-            ? '导入待修改字体和来源字体后可用'
-            : (total ? `勾选的类别共 ${total.toLocaleString()} 个字将借入（只新增，不替换已有字符）` : '勾选要借入的类别（✓ 表示该类别已不缺字）');
+        const sum = $('catSummary');
+        if (!ready) { sum.textContent = '导入待修改字体和来源字体后可用'; return; }
+        if (!total) {
+            sum.textContent = isRep
+                ? '勾选要整类替换的类别（✓ 表示这类字已经全在手动输入框里）'
+                : '勾选要借入的类别（✓ 表示该类别已不缺字）';
+            return;
+        }
+        sum.textContent = isRep
+            ? `勾选的类别共 ${total.toLocaleString()} 个字会换成来源字体的字形：覆盖已有 ${repl.toLocaleString()} 个、新增 ${add.toLocaleString()} 个`
+            : `勾选的类别共 ${total.toLocaleString()} 个字将借入（只新增，不替换已有字符）`;
+        if (isRep && total > 6000) sum.textContent += ' · 数量大，执行要十几秒，别重复点';
     }
     function catCheckedChars() {
         if (!state.src || !state.swapTgt) return [];
-        const miss = catMissingChars(), out = [];
+        const counts = catChars(catMode()), out = [];
         for (const def of CAT_DEFS) {
-            if ($('cat_' + def.id) && $('cat_' + def.id).checked) out.push(...miss[def.id]);
+            if ($('cat_' + def.id) && $('cat_' + def.id).checked) out.push(...counts[def.id].chars);
         }
         return out;
     }
@@ -1333,8 +1376,8 @@ return ret;
         box.classList.remove('hidden');
         let chars = charsFromInput($('swapChars').value);
         if (state.src && state.swapTgt) {
-            const miss = catMissingChars();
-            for (const def of CAT_DEFS) if ($('cat_' + def.id) && $('cat_' + def.id).checked) chars = chars.concat(miss[def.id]);
+            const counts = catChars(catMode());
+            for (const def of CAT_DEFS) if ($('cat_' + def.id) && $('cat_' + def.id).checked) chars = chars.concat(counts[def.id].chars);
         }
         chars = chars.slice(0, 80);   // 预览最多画 80 个字，避免几千字卡顿
         const canvas = $('swapPreview');
@@ -1768,9 +1811,10 @@ return ret;
         if (!state.swapTgt || !state.src) return;
         state.tgt = state.swapTgt;   // 换字只作用于换字页签的工作副本
         const chars = charsFromInput($('swapChars').value);
-        const catChars = catCheckedChars();
-        const all = [...new Set([...chars, ...catChars])];
-        if (!all.length) { log('⚠️ 请先输入要替换的字符，或在下方勾选要借入的类别', 'warn'); return; }
+        const mode = catMode();
+        const catPicked = catCheckedChars();
+        const all = [...new Set([...chars, ...catPicked])];
+        if (!all.length) { log('⚠️ 请先输入要替换的字符，或在下方勾选要处理的类别', 'warn'); return; }
         const btn = $('btnSwap');
         btn.disabled = true; btn.textContent = '处理中…';
         try {
@@ -1784,7 +1828,7 @@ return ret;
             state.tgt.otFont = parseOt(r.buffer);
             state.tgt.dirty = true;
             state.tgt.changed = [...new Set([...(state.tgt.changed || []), '换字'])];
-            log(`✅ 换字完成：替换 ${r.replaced} 个，新增 ${r.added} 个` + (catChars.length ? `（含分类借入 ${catChars.length} 个）` : '') + (r.skipped ? `，来源字体缺少并跳过 ${r.skipped} 个（${r.missing.slice(0, 10).join('、')}${r.missing.length > 10 ? '…' : ''}）` : '') + (rawAlign ? '；已保留来源字形原始大小与位置' : (r.inkScale !== 1 ? '；借字已按目标字体的字形大小与位置自动对齐' : '')), 'ok');
+            log(`✅ 换字完成：替换 ${r.replaced} 个，新增 ${r.added} 个` + (catPicked.length ? `（含分类${mode === 'replace' ? '整类替换' : '借入'} ${catPicked.length} 个）` : '') + (r.skipped ? `，来源字体缺少并跳过 ${r.skipped} 个（${r.missing.slice(0, 10).join('、')}${r.missing.length > 10 ? '…' : ''}）` : '') + (rawAlign ? '；已保留来源字形原始大小与位置' : (r.inkScale !== 1 ? '；借字已按目标字体的字形大小与位置自动对齐' : '')), 'ok');
         } catch (e) {
             log('❌ 换字失败：' + e.message, 'err');
         } finally {
