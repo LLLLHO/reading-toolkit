@@ -264,6 +264,10 @@
       flex:1; min-height:0; overscroll-behavior:contain;}
     #mbody .card{border:0; background:transparent; padding:2px 0 8px;}
     #mbody .card h2{display:none;}
+    /* 「导出」抽屉里并进来的「规则信息」：给个小标题，下半截（按钮区）拉条分隔线 */
+    #mbody .card.m-part1::before{content:"规则信息 · 导出时顺手填"; display:block; font-size:11.5px;
+      color:var(--sub); letter-spacing:.5px; margin:0 0 8px;}
+    #mbody .card.m-part2{border-top:1px solid var(--line); margin-top:16px; padding-top:14px;}
     /* 只藏「大段」说明（JS 按字数打 .m-long），像「手机正文列宽」这种标签一直显示 */
     body.arc-mobile:not(.m-hints) #mbody .hint.m-long{display:none!important;}
     body.arc-mobile #toast{top:calc(54px + env(safe-area-inset-top)); bottom:auto;}
@@ -3488,7 +3492,7 @@ const M_NAV = {
   '标题文字样式': ['🅰', '样式'],
   '画布': null            /* 标题画布直接摆在舞台上，不进菜单 */
 };
-const M = { on:false, built:false, tipped:false, card:null, parent:null, next:null, home:{} };
+const M = { on:false, built:false, tipped:false, card:null, parent:null, next:null, home:{}, comp:[], home2:[] };
 /* 预览用的三个「真身」节点要一直留着引用：被摘出文档以后 $() 就再也找不回来了 */
 const M_EL = { dlgPaper:null, ttPaper:null, ttCanvas:null };
 
@@ -3540,6 +3544,8 @@ function mBuildNav(){
   const main = document.querySelector('main:not([hidden])');
   if (!main) return;
   qsa('.card', main).forEach(card => {
+    /* 「规则信息」已经并进「导出」抽屉（导出时顺手填名字），不再单独占一个按钮 */
+    if (mCardName(card) === '规则信息') return;
     const conf = M_NAV[mCardName(card)];
     if (!conf) return;
     const b = document.createElement('button');
@@ -3623,11 +3629,26 @@ function mFitPaper(){
     el.style.zoom = z >= 0.999 ? '' : z.toFixed(3);   /* zoom 会真正重排（不是拉伸），文字还是清楚的 */
   });
 }
+/* 关抽屉：按原索引把搬进来的卡一一插回去（「导出」会顺带把「规则信息」一起带进来） */
 function mRestoreCard(){
-  if (!M.card) return;
-  const c = M.card;
-  if (M.parent) M.parent.insertBefore(c, M.next || null);
+  if (M.home2 && M.home2.length){
+    M.home2.forEach(h => {
+      if (!h.p) return;
+      try{ h.p.insertBefore(h.el, h.p.children[h.idx] || null); }
+      catch(_){ try{ h.p.appendChild(h.el); }catch(__){} }
+      h.el.classList.remove('m-part1', 'm-part2');
+    });
+  }
+  M.home2 = []; M.comp = [];
   M.card = null; M.parent = null; M.next = null;
+}
+/* 哪些卡要跟着一起出来：导出时顺带把「规则信息」摆上去，规则名就在导出按钮上面填 */
+function mCompanion(card){
+  if (mCardName(card) !== '导出') return [];
+  /* 规则信息在左栏、导出在右栏，得在整个 main 里找，不能只看同一个 .col */
+  const root = card.closest('main') || card.parentNode;
+  if (!root) return [];
+  return qsa('.card', root).filter(c => c !== card && mCardName(c) === '规则信息');
 }
 /* 一屏里哪些注释能留：短标签（「手机正文列宽」这种）直接显示，大段解释丢进「说明」 */
 function mHints(){
@@ -3642,15 +3663,27 @@ function mHints(){
 function mOpen(card){
   const body = $('mbody');
   if (!body) return;
-  if (M.card && M.card !== card) mRestoreCard();
-  if (!M.card){ M.parent = card.parentNode; M.next = card.nextSibling; }
-  M.card = card;
-  body.appendChild(card);
+  if (M.card === card){                 /* 已经在开这张了，别再搬一遍（搬会把顺序打乱） */
+    $('msheet').classList.add('on');
+    document.body.classList.add('m-sheet-open');
+    return;
+  }
+  const comp = mCompanion(card);
+  mRestoreCard();
+  const all = comp.concat([card]);
+  M.home2 = all.map(c => ({ el: c, p: c.parentNode, idx: [].indexOf.call(c.parentNode.children, c) }));
+  M.card = card; M.comp = comp;
+  all.forEach((c, i) => {
+    body.appendChild(c);
+    if (comp.length) c.classList.add(i < comp.length ? 'm-part1' : 'm-part2');
+  });
   $('m-title').textContent = mCardName(card);
   $('msheet').classList.add('on');
   document.body.classList.add('m-sheet-open');
   body.scrollTop = 0;
   mHints();
+  /* 「将写入的高级 CSS」默认是展开的，手机上会把抽屉撑出屏，进来先收起（点一下还能看） */
+  if (mCardName(card) === '导出') qsa('details', card).forEach(d => { d.open = false; });
   if (card.contains($('ttCanvasWrap'))){ try{ ttRenderCanvas(); }catch(_){} }
   if (card.contains($('dlgStage'))){ try{ renderStage(); }catch(_){} }
 }
@@ -3687,7 +3720,7 @@ function mApply(){
 }
 window.addEventListener('resize', mApply);
 window.addEventListener('orientationchange', () => setTimeout(mApply, 220));
-$('tabBar').addEventListener('click', () => { if (M.on) setTimeout(() => { mBuildNav(); mStageFill(); }, 0); });
+$('tabBar').addEventListener('click', () => { if (M.on) setTimeout(() => { mClose(); mBuildNav(); mStageFill(); }, 0); });
 mApply();
 /* 每次重画完都校一次：宽度适配 + 空状态显隐（渲染之前量不到真实宽度） */
 const _dlgRender = dlgRender;
