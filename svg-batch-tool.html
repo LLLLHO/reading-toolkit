@@ -8,8 +8,9 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#4f6ef2">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="light">
+<meta name="color-scheme" content="light dark">
 <title>SVG 批量改色 · 导出</title>
+<script>(function(){try{var p=localStorage.getItem('rtb_theme')||'auto';var d=p==='dark'||(p==='auto'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light')}catch(e){}})();</script>
 <style>
 :root{
   --bg:#f5f5f3;
@@ -30,6 +31,14 @@ body{
   font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
   -webkit-font-smoothing:antialiased;overflow:hidden;
 }
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(620px 440px at 6% -6%,rgba(147,197,253,.42),transparent 65%),
+    radial-gradient(720px 480px at 96% -2%,rgba(186,230,253,.38),transparent 65%),
+    radial-gradient(680px 540px at -8% 82%,rgba(96,165,250,.24),transparent 65%),
+    radial-gradient(760px 580px at 102% 96%,rgba(165,180,252,.26),transparent 65%),
+    radial-gradient(520px 380px at 55% 118%,rgba(125,211,252,.20),transparent 65%),
+    linear-gradient(180deg,#f5f5f3 0%,#eef2f8 100%)}
 button,input,select{font:inherit;color:inherit}
 button{cursor:pointer}
 
@@ -243,6 +252,63 @@ button{cursor:pointer}
   .stage{min-height:240px}
   .preview .pbody{overflow:visible}
 }
+@media (max-width:560px){
+  .topbar{flex-wrap:wrap;padding:10px 12px 8px;gap:8px}
+  .brand h1{font-size:14px}
+  .brand p{font-size:10.5px}
+  .tb-actions{flex-wrap:wrap;gap:6px;margin-left:auto}
+  .tb-actions .btn{padding:8px 10px;font-size:12px}
+  .stat{display:none}
+  .layout{padding:0 10px 16px}
+  .stage{grid-template-columns:1fr;min-height:340px}
+  .cell .art{min-height:150px;padding:6px 10px 12px}
+  .presets{grid-template-columns:repeat(6,1fr)}
+  .phead{padding:9px 12px}
+  .settings .pbody{padding:12px}
+}
+/* 夜间 */
+:root[data-theme="dark"]{
+  --bg:#0b1220;--surface:#151e30;--line:#2b3a55;--line-soft:#22304a;
+  --text:#e2e8f0;--muted:#a8b6cc;--faint:#8291aa;--ink:#93c5fd;
+  --checker:repeating-conic-gradient(#242c3a 0% 25%,#1a2231 0% 50%) 50%/14px 14px;
+  color-scheme:dark;
+}
+:root[data-theme="dark"] body::before{background:
+  radial-gradient(620px 440px at 6% -6%,rgba(37,99,235,.30),transparent 65%),
+  radial-gradient(720px 480px at 96% -2%,rgba(14,116,144,.26),transparent 65%),
+  radial-gradient(680px 540px at -8% 82%,rgba(30,64,175,.28),transparent 65%),
+  radial-gradient(760px 580px at 102% 96%,rgba(79,70,229,.24),transparent 65%),
+  radial-gradient(520px 380px at 55% 118%,rgba(8,145,178,.20),transparent 65%),
+  linear-gradient(180deg,#0b1220 0%,#0e1729 100%)}
+:root[data-theme="dark"] .mark,
+:root[data-theme="dark"] .btn.solid{color:#0b1220}
+:root[data-theme="dark"] .btn:hover{background:#1e2b42;border-color:#405273}
+:root[data-theme="dark"] .btn.ghost:hover{background:#22304a;color:var(--text)}
+:root[data-theme="dark"] .btn.solid:hover{background:#60a5fa;border-color:#60a5fa}
+:root[data-theme="dark"] .fitem:hover{background:#1e2b42}
+:root[data-theme="dark"] .fitem.on{background:#1b2b47}
+:root[data-theme="dark"] .fitem .x:hover{background:#2b3a55;color:var(--text)}
+:root[data-theme="dark"] .fitem .ck,
+:root[data-theme="dark"] .chk input{accent-color:#60a5fa}
+:root[data-theme="dark"] .cell.flat .art{background:#0f1727}
+:root[data-theme="dark"] .pickbar{background:rgba(21,30,48,.95)}
+:root[data-theme="dark"] .pickbar button{background:#1a2436;color:var(--text)}
+:root[data-theme="dark"] .colors .c .n{background:#151e30}
+:root[data-theme="dark"] .seg{background:#101827}
+:root[data-theme="dark"] .seg button.on{background:#24324a;color:var(--text)}
+:root[data-theme="dark"] .hint.warn{background:#3a2418;border-color:#6b4327;color:#f0b58a}
+:root[data-theme="dark"] .hint.warn b{color:#ffd0a8}
+:root[data-theme="dark"] .hint.good{color:#86efac}
+:root[data-theme="dark"] .hint.good b{color:#bbf7d0}
+:root[data-theme="dark"] .field input[type=text],
+:root[data-theme="dark"] .field input[type=number]{background:#101827;color:var(--text)}
+:root[data-theme="dark"] .chk{color:var(--muted)}
+:root[data-theme="dark"] .scale-row button{background:#101827}
+:root[data-theme="dark"] .scale-row button.on{background:var(--ink);border-color:var(--ink);color:#0b1220}
+:root[data-theme="dark"] .pfoot{background:#151e30}
+:root[data-theme="dark"] .progress{background:#24324a}
+:root[data-theme="dark"] .drop{background:rgba(11,18,32,.86)}
+:root[data-theme="dark"] .drop .in{background:#151e30;border-color:#405273;color:var(--text)}
 </style>
 </head>
 <body>
@@ -2098,5 +2164,19 @@ window.__svgTool = {
 
 })();
 </script>
+<script>(function(){
+  var KEY='rtb_theme',SEQ=['auto','dark','light'],NM={auto:'跟随系统',light:'日间',dark:'夜间'},IC={auto:'◐',light:'☀',dark:'☾'};
+  var pref='auto';try{pref=localStorage.getItem(KEY)||'auto'}catch(e){}
+  if(SEQ.indexOf(pref)<0)pref='auto';
+  function isDark(){return pref==='dark'||(pref==='auto'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)}
+  function apply(){document.documentElement.setAttribute('data-theme',isDark()?'dark':'light');var b=document.getElementById('rtbThemeBtn');if(b){b.textContent=IC[pref];b.title='主题：'+NM[pref]+'（点击切换）';b.setAttribute('aria-label',b.title)}}
+  var st=document.createElement('style');st.textContent='button.rtbThemeBtn{flex:none!important;min-width:30px;width:30px;height:28px;padding:0!important;border:1px solid currentColor!important;border-radius:8px!important;background:rgba(127,140,170,.13)!important;color:inherit!important;opacity:.85;font-size:15px;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:opacity .15s,background .15s}button.rtbThemeBtn:hover{opacity:1;background:rgba(127,140,170,.28)!important}@media(max-width:560px){button.rtbThemeBtn{width:28px;height:28px;min-width:28px}}';document.head.appendChild(st);
+  var host=document.querySelector('.tb-actions')||document.querySelector('header')||document.body;
+  var b=document.createElement('button');b.type='button';b.className='rtbThemeBtn';b.id='rtbThemeBtn';host.appendChild(b);
+  b.addEventListener('click',function(){pref=SEQ[(SEQ.indexOf(pref)+1)%SEQ.length];try{localStorage.setItem(KEY,pref)}catch(e){}apply()});
+  var mq=window.matchMedia?matchMedia('(prefers-color-scheme: dark)'):null;
+  if(mq&&mq.addEventListener)mq.addEventListener('change',function(){if(pref==='auto')apply()});
+  apply();
+})();</script>
 </body>
 </html>

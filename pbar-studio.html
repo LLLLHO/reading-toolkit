@@ -9,6 +9,7 @@
 <meta name="theme-color" content="#4f6ef2">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>进度条工作室</title>
+<script>(function(){try{var p=localStorage.getItem('rtb_theme')||'auto';var d=p==='dark'||(p==='auto'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light')}catch(e){}})();</script>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   :root{
@@ -27,9 +28,12 @@
   }
   body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
     background:
-      radial-gradient(560px 400px at 4% -8%, rgba(147,197,253,.38), transparent 65%),
-      radial-gradient(620px 420px at 98% -4%, rgba(186,230,253,.32), transparent 65%),
-      linear-gradient(180deg,#f4f7fb 0%,#eef3fa 100%);}
+      radial-gradient(620px 440px at 6% -6%, rgba(147,197,253,.42), transparent 65%),
+      radial-gradient(720px 480px at 96% -2%, rgba(186,230,253,.38), transparent 65%),
+      radial-gradient(680px 540px at -8% 82%, rgba(96,165,250,.24), transparent 65%),
+      radial-gradient(760px 580px at 102% 96%, rgba(165,180,252,.26), transparent 65%),
+      radial-gradient(520px 380px at 55% 118%, rgba(125,211,252,.20), transparent 65%),
+      linear-gradient(180deg,#f1f5f9 0%,#eaf2fb 100%);}
   button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   input,textarea{font:inherit;color:inherit}
 
@@ -266,6 +270,64 @@
     font-size:17px;font-weight:600;color:var(--accent);backdrop-filter:blur(2px)}
   .drop.on{display:flex}
 
+  /* ---------------- 夜间 ---------------- */
+  :root[data-theme="dark"]{
+    --bg:#0b1220;--panel:#151e30;--text:#e2e8f0;--text2:#a8b6cc;--text3:#8090aa;
+    --border:#2b3a55;--accent:#60a5fa;--accent-soft:#1c2c4a;
+    --shadow:0 1px 2px rgba(0,0,0,.25),0 1px 3px rgba(0,0,0,.2);
+    --shadow-h:0 12px 26px -14px rgba(0,0,0,.7);
+    color-scheme:dark;
+  }
+  :root[data-theme="dark"] body::before{background:
+      radial-gradient(620px 440px at 6% -6%, rgba(37,99,235,.30), transparent 65%),
+      radial-gradient(720px 480px at 96% -2%, rgba(14,116,144,.26), transparent 65%),
+      radial-gradient(680px 540px at -8% 82%, rgba(30,64,175,.28), transparent 65%),
+      radial-gradient(760px 580px at 102% 96%, rgba(79,70,229,.24), transparent 65%),
+      radial-gradient(520px 380px at 55% 118%, rgba(8,145,178,.20), transparent 65%),
+      linear-gradient(180deg,#0b1220 0%,#0e1729 100%)}
+  :root[data-theme="dark"] header,
+  :root[data-theme="dark"] .list,
+  :root[data-theme="dark"] .insp,
+  :root[data-theme="dark"] .ctrl,
+  :root[data-theme="dark"] .cfg{background:rgba(21,30,48,.9)}
+  :root[data-theme="dark"] .btn,
+  :root[data-theme="dark"] .srch input,
+  :root[data-theme="dark"] .row,
+  :root[data-theme="dark"] .row .nm:hover,
+  :root[data-theme="dark"] .row .nm:focus,
+  :root[data-theme="dark"] .seg,
+  :root[data-theme="dark"] .insIn,
+  :root[data-theme="dark"] .insRow .sw,
+  :root[data-theme="dark"] .insRow .hx,
+  :root[data-theme="dark"] .inkrow input[type=text],
+  :root[data-theme="dark"] .inkrow input[type=color],
+  :root[data-theme="dark"] .navb,
+  :root[data-theme="dark"] .zoomCtl,
+  :root[data-theme="dark"] .zoomBadge,
+  :root[data-theme="dark"] .pick,
+  :root[data-theme="dark"] .dlg,
+  :root[data-theme="dark"] .dlgF,
+  :root[data-theme="dark"] .dlgB textarea,
+  :root[data-theme="dark"] .res{background:#151e30;color:var(--text)}
+  :root[data-theme="dark"] .btn{color:var(--text2)}
+  :root[data-theme="dark"] .btn.pri{background:var(--accent);border-color:var(--accent);color:#0b1220}
+  :root[data-theme="dark"] .btn.pri:hover{background:#3b82f6;border-color:#3b82f6;color:#0b1220}
+  :root[data-theme="dark"] .btn:hover,
+  :root[data-theme="dark"] .seg:hover,
+  :root[data-theme="dark"] .navb:hover{border-color:#405273;color:var(--text);background:#1b2740}
+  :root[data-theme="dark"] .row.on{background:var(--accent-soft);border-color:rgba(96,165,250,.65)}
+  :root[data-theme="dark"] .row .tag{background:#23314a;color:var(--text3)}
+  :root[data-theme="dark"] .dirty{background:#5a3d14;color:#fbbf24}
+  :root[data-theme="dark"] .pick{border-color:#405273}
+  :root[data-theme="dark"] .res.ok{background:#123522;border-color:#245c39;color:#86efac}
+  :root[data-theme="dark"] .res.bad{background:#3b1d20;border-color:#71313a;color:#fca5a5}
+  :root[data-theme="dark"] .res code,
+  :root[data-theme="dark"] .hint code{background:#23314a}
+  :root[data-theme="dark"] .zoomCtl button:hover{background:#23314a;color:var(--text)}
+  :root[data-theme="dark"] input[type=range]{background:linear-gradient(90deg,var(--accent) 0%,var(--accent) var(--pp,45%),#33445f var(--pp,45%),#33445f 100%)}
+  :root[data-theme="dark"] .lstBody::-webkit-scrollbar-thumb,
+  :root[data-theme="dark"] .inspBody::-webkit-scrollbar-thumb{background:#3b4c69}
+
   /* ---------------- 窄屏 ---------------- */
   @media (max-width:880px){
     header{padding:0 10px;gap:6px;height:52px}
@@ -303,6 +365,17 @@
     .zoomBadge{top:6px;right:8px;font-size:10px;padding:1px 7px}
     .zoomCtl{top:6px;left:8px}
     .stageNote{display:none}
+  }
+  @media (max-width:520px){
+    header{height:auto;min-height:50px;flex-wrap:wrap;gap:6px;padding:6px 10px}
+    .brand{flex:1 1 auto}
+    .grow{flex-basis:100%;height:0}
+    .btn{height:30px}
+    .stagewrap{height:220px}
+    .paper{height:150px}
+    .prow{gap:8px}
+    .cfg{gap:12px}
+    .dlg{max-height:92vh}
   }
 </style>
 </head>
@@ -1649,5 +1722,19 @@ function toast(msg){
   applyPaper();
 })();
 </script>
+<script>(function(){
+  var KEY='rtb_theme',SEQ=['auto','dark','light'],NM={auto:'跟随系统',light:'日间',dark:'夜间'},IC={auto:'◐',light:'☀',dark:'☾'};
+  var pref='auto';try{pref=localStorage.getItem(KEY)||'auto'}catch(e){}
+  if(SEQ.indexOf(pref)<0)pref='auto';
+  function isDark(){return pref==='dark'||(pref==='auto'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)}
+  function apply(){document.documentElement.setAttribute('data-theme',isDark()?'dark':'light');var b=document.getElementById('rtbThemeBtn');if(b){b.textContent=IC[pref];b.title='主题：'+NM[pref]+'（点击切换）';b.setAttribute('aria-label',b.title)}}
+  var st=document.createElement('style');st.textContent='button.rtbThemeBtn{flex:none!important;min-width:30px;width:30px;height:28px;padding:0!important;border:1px solid currentColor!important;border-radius:8px!important;background:rgba(127,140,170,.13)!important;color:inherit!important;opacity:.85;font-size:15px;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:opacity .15s,background .15s}button.rtbThemeBtn:hover{opacity:1;background:rgba(127,140,170,.28)!important}@media(max-width:560px){button.rtbThemeBtn{width:28px;height:28px;min-width:28px}}';document.head.appendChild(st);
+  var host=document.querySelector('header')||document.body;
+  var b=document.createElement('button');b.type='button';b.className='rtbThemeBtn';b.id='rtbThemeBtn';host.appendChild(b);
+  b.addEventListener('click',function(){pref=SEQ[(SEQ.indexOf(pref)+1)%SEQ.length];try{localStorage.setItem(KEY,pref)}catch(e){}apply()});
+  var mq=window.matchMedia?matchMedia('(prefers-color-scheme: dark)'):null;
+  if(mq&&mq.addEventListener)mq.addEventListener('change',function(){if(pref==='auto')apply()});
+  apply();
+})();</script>
 </body>
 </html>
