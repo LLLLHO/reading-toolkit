@@ -1,0 +1,2207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#4f6ef2">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>段评气泡工坊</title>
+<style>
+*{box-sizing:border-box}
+:root{
+  --bg:#f4f2ed;--card:#fff;--line:#e5e1d8;--line2:#d5cfc2;
+  --ink:#23211d;--ink2:#6d685e;--ink3:#9b958a;
+  --accent:#3d6b9e;--accent2:#2f557f;--soft:#eaf0f7;--soft2:#f7f4ee;
+  --r:12px;
+}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;-webkit-text-size-adjust:100%}
+header{max-width:1460px;margin:0 auto;padding:18px 18px 6px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+header h1{margin:0;font-size:17px;font-weight:600;letter-spacing:.02em}
+header .sub{font-size:12.5px;color:var(--ink2)}
+header .grow{flex:1}
+main{max-width:1460px;margin:0 auto;padding:10px 18px 40px;display:grid;grid-template-columns:392px minmax(0,1fr);gap:16px;align-items:start}
+.panel{display:flex;flex-direction:column;gap:12px;min-width:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:13px 14px}
+.card-h{display:flex;align-items:baseline;gap:8px;font-size:13px;font-weight:600;margin-bottom:10px}
+.card-h .hint{font-weight:400;font-size:11.5px;color:var(--ink3)}
+.tiny{font-size:11.5px;color:var(--ink3);line-height:1.5}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:9px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--ink2)}
+input[type=number],input[type=text],select,textarea{width:100%;font:inherit;font-size:13px;color:var(--ink);background:var(--soft2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;outline:none}
+input[type=number]:focus,select:focus,textarea:focus{border-color:var(--accent);background:#fff}
+input[type=color]{width:100%;height:30px;padding:2px;border:1px solid var(--line);border-radius:8px;background:var(--soft2);cursor:pointer}
+textarea{resize:vertical;min-height:64px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11.5px;line-height:1.5}
+button{font:inherit;font-size:12.5px;padding:6px 11px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;white-space:nowrap}
+button:hover{background:var(--accent2);border-color:var(--accent2)}
+button.ghost{background:#fff;color:var(--ink2);border-color:var(--line2)}
+button.ghost:hover{background:var(--soft2);color:var(--ink);border-color:var(--ink3)}
+button.link{background:none;border:none;color:var(--accent);padding:0;font-size:inherit;text-decoration:underline;text-underline-offset:2px}
+button.link:hover{background:none;color:var(--accent2)}
+.drop{border:1.5px dashed var(--line2);border-radius:10px;padding:14px 10px;text-align:center;background:var(--soft2);transition:.15s;cursor:pointer}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--soft)}
+.drop .big{font-size:20px;line-height:1;color:var(--ink3);margin-bottom:6px}
+.sw{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px dashed var(--line)}
+.sw:last-child{border-bottom:0}
+.sw .dot{width:22px;height:22px;border-radius:6px;border:1px solid rgba(0,0,0,.12);flex:none;box-shadow:inset 0 0 0 2px rgba(255,255,255,.5)}
+.sw .hex{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;color:var(--ink2);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.sw .cnt{font-size:10.5px;color:var(--ink3);flex:none}
+.plist{display:flex;flex-direction:column;gap:6px;margin-top:9px}
+.prow{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--soft2);cursor:pointer;font-size:12.5px}
+.prow:hover{border-color:var(--line2);background:#fff}
+.prow.on{border-color:var(--accent);background:var(--soft)}
+.prow .pn{font-weight:600;flex:none}
+.prow .pd{flex:1;min-width:0;color:var(--ink3);font-size:11px;font-family:ui-monospace,Consolas,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prow .del{border:0;background:none;color:var(--ink3);padding:0 3px;font-size:13px;line-height:1}
+.prow .del:hover{color:#b4453f;background:none}
+.pedit{margin-top:10px;border-top:1px dashed var(--line);padding-top:10px;display:none}
+.pedit.show{display:block}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden;background:#fff}
+.seg button{border:0;border-radius:0;background:#fff;color:var(--ink2);padding:4px 9px;font-size:11.5px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.on{background:var(--accent);color:#fff}
+.seg button:hover{background:var(--soft);color:var(--ink)}
+.seg button.on:hover{background:var(--accent2);color:#fff}
+.switch{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink);cursor:pointer;user-select:none}
+.switch input{width:15px;height:15px;accent-color:var(--accent)}
+.stage{display:flex;flex-direction:column;gap:14px;min-width:0}
+@media(min-width:961px){.stage{position:sticky;top:12px}}
+.prevcard{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.prevhead{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.prevhead .t{font-size:13px;font-weight:600;flex:1}
+.prevhead .segs{display:flex;gap:7px;flex-wrap:wrap}
+.boardwrap{background:#efece4;border-bottom:1px solid var(--line)}
+.board{height:330px;display:flex;align-items:center;justify-content:center;padding:26px;
+  background:repeating-conic-gradient(#f4f1ea 0 25%,#ebe7de 0 50%) 0 0/18px 18px;transition:background .2s}
+.board.night{background:repeating-conic-gradient(#1c1c1c 0 25%,#242424 0 50%) 0 0/18px 18px}
+.canvasbox{position:relative;outline:1.5px dashed #c9a24a;outline-offset:7px;border-radius:2px;touch-action:none}
+.canvasbox svg{display:block;width:100%;height:100%;overflow:visible}
+.boardfoot{display:flex;gap:16px;flex-wrap:wrap;padding:8px 14px;border-top:1px solid var(--line);font-size:11.5px;color:var(--ink3)}
+.boardfoot b{font-weight:600;color:var(--ink2)}
+.readerwrap{padding:0;background:var(--soft2)}
+.reader{padding:22px 28px 26px;min-height:180px;transition:background .2s,color .2s;background:#f7f3e8;color:#3a3630}
+.reader.night{background:#181818;color:#a9a5a0}
+.reader .ct{font-family:Georgia,"Songti SC","Noto Serif SC",serif;font-size:17px;line-height:1.95;letter-spacing:.01em;max-width:640px;margin:0 auto}
+.reader .ct h3{font-size:15px;font-weight:600;opacity:.65;margin:0 0 14px;letter-spacing:.08em}
+.reader .ct p{margin:0 0 1.05em;text-indent:2em;text-align:justify}
+.reader .ct p:last-child{margin-bottom:0}
+.bub{display:inline-block;vertical-align:-.18em;margin:0 .18em;line-height:0;user-select:none}
+.bub svg{display:block;overflow:visible}
+.bub svg text{pointer-events:all}
+.prevfoot{padding:9px 14px;border-top:1px solid var(--line);font-size:11.5px;color:var(--ink3);display:flex;gap:14px;flex-wrap:wrap}
+.outcard{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:13px 14px}
+.msg{font-size:12px;color:var(--ink2);background:var(--soft);border:1px solid #cddcec;border-radius:8px;padding:7px 10px;margin-top:9px;display:none}
+.msg.err{background:#fdeeee;border-color:#f3cdcd;color:#8d3b3b}
+.msg.ok{background:#eef5ec;border-color:#cddfc8;color:#3f5f38}
+.msg.show{display:block}
+#lab{position:fixed;left:-12000px;top:0;width:900px;height:900px;opacity:0;pointer-events:none;overflow:hidden}
+#drop-err{color:#8d3b3b}
+@media(max-width:960px){
+  main{grid-template-columns:1fr}
+  .stage{order:-1}
+  .reader{padding:18px 16px 20px}
+  .board{height:240px;padding:18px}
+  .grid2{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>段评气泡工坊</h1>
+  <span class="sub">把任意 SVG 变成能跟着主题变色的段评气泡</span>
+</header>
+
+<main>
+<aside class="panel">
+
+  <div class="card">
+    <div class="card-h">① 形状来源 <span class="hint">SVG / .svg 文件 / 成品气泡包</span></div>
+    <div class="drop" id="drop">
+      <div class="big">&#8595;</div>
+      <div>拖入 <b>.zip</b> / <b>.svg</b> / <b>.json</b><br><span class="tiny">或点击此处选择文件</span></div>
+    </div>
+    <input type="file" id="file" accept=".zip,.svg,.json,image/svg+xml" hidden>
+    <div class="row"><span class="tiny" id="srcInfo">还没有载入形状</span></div>
+    <textarea id="paste" placeholder="也可以直接粘贴 SVG 源码，或 bubble.json 内容…"></textarea>
+    <div class="row">
+      <button id="usePaste">使用这段代码</button>
+      <button class="ghost" id="useSample">载入示例</button>
+    </div>
+    <div class="msg" id="msg1"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-h">② 自己拼形状 <span class="hint">积木参数化，不用会画画</span></div>
+    <div class="row" style="margin-top:0">
+      <button id="newBubble">新建气泡</button>
+      <button class="ghost" id="presetTag">吊牌样式</button>
+      <button class="ghost" id="newBlank">清空</button>
+    </div>
+    <div class="plist" id="partList"><span class="tiny">点「新建气泡」开始，或从下面的列表加零件。</span></div>
+    <div class="row">
+      <select id="addKind" style="flex:1"></select>
+      <button class="ghost" id="addPart">＋ 加一块</button>
+    </div>
+    <div class="pedit" id="partEdit"></div>
+    <div class="tiny" style="margin-top:8px">切到画布上的「✏ 积木」模式，点住任意一块就能拖动改位置。</div>
+    <div class="msg" id="msg3"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-h">③ 节点微调 <span class="hint">拖锚点改 AI 画的形状</span></div>
+    <div class="row" style="margin-top:0">
+      <button class="ghost" id="nodeOn">进入节点编辑</button>
+      <button class="ghost" id="nodeReset">还原形状</button>
+    </div>
+    <div class="tiny" style="margin-top:7px">只对 <code>&lt;path&gt;</code> 生效（圆、矩形请用②的积木调参数）。白点＝锚点，橙点＝贝塞尔控制柄；拖动锚点会带着相邻控制柄一起走。</div>
+  </div>
+
+  <div class="card">
+    <div class="card-h">④ 颜色 <span class="hint">哪个颜色该跟着主题走</span></div>
+    <div id="swatches"><span class="tiny">载入形状后在这里点选</span></div>
+    <div class="row">
+      <button class="ghost" id="allTheme">全部主题色</button>
+      <button class="ghost" id="allKeep">全部保留</button>
+    </div>
+    <div class="tiny" style="margin-top:7px">「主题色」会输出 <code>${color}</code>，白天/夜间、强调/普通四种状态下自动换色；「保留」固定用原色。</div>
+  </div>
+
+  <div class="card">
+    <div class="card-h">⑤ 数字 <span class="hint">可以不显示</span></div>
+    <label class="switch"><input type="checkbox" id="numOn" checked> 显示数字</label>
+    <div id="numCtl" style="margin-top:10px">
+      <div class="grid2">
+        <label class="f">字号<input type="number" id="numSize" step="1" min="1"></label>
+        <label class="f">字重
+          <select id="numWeight">
+            <option value="400">常规 400</option>
+            <option value="500">中黑 500</option>
+            <option value="600">半粗 600</option>
+            <option value="700">粗 700</option>
+            <option value="800">特粗 800</option>
+            <option value="900">黑体 900</option>
+          </select>
+        </label>
+        <label class="f">颜色
+          <select id="numColor">
+            <option value="theme">跟随主题色</option>
+            <option value="custom">自定义</option>
+          </select>
+        </label>
+        <label class="f">自定义色<input type="color" id="numCustom" value="#ffffff"></label>
+        <label class="f">X<input type="number" id="numX" step="1"></label>
+        <label class="f">Y<input type="number" id="numY" step="1"></label>
+      </div>
+      <div class="row"><button class="ghost" id="numCenter">放回正中</button></div>
+      <div class="row" style="margin-top:6px">
+        <span class="tiny" style="flex:none">位数测试</span>
+        <div class="seg" id="segDigits">
+          <button data-v="8" class="on">8</button><button data-v="12">12</button><button data-v="120">120</button><button data-v="999">999</button>
+        </div>
+      </div>
+      <div class="tiny" style="margin-top:6px">按住上方画布里的数字直接拖就能改位置。</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-h">⑥ 画布 <span class="hint">想往哪边放数字就把哪边留白</span></div>
+    <div class="grid2">
+      <label class="f">画布宽度<input type="number" id="viewW" step="10" min="20"></label>
+      <label class="f">显示比例<input type="number" id="scale" step="0.05" min="0.2"></label>
+      <label class="f">留白·左 %<input type="number" id="padL" step="1" min="0" max="45"></label>
+      <label class="f">留白·右 %<input type="number" id="padR" step="1" min="0" max="45"></label>
+      <label class="f">留白·上 %<input type="number" id="padT" step="1" min="0" max="45"></label>
+      <label class="f">留白·下 %<input type="number" id="padB" step="1" min="0" max="45"></label>
+      <label class="f">描边倍数<input type="number" id="strokeScale" step="0.1" min="0.2"></label>
+    </div>
+    <div class="row">
+      <button class="ghost" id="padEven">四边对称</button>
+      <button class="ghost" id="padWide">左右各留 25%</button>
+    </div>
+    <label class="switch" style="margin-top:10px"><input type="checkbox" id="fitCanvas" checked> 画布贴合图形（关掉＝沿用原 viewBox 的留白）</label>
+    <div class="tiny" style="margin-top:7px">留白按画布宽度的百分比算：想在哪边放数字就把那边加大，图形会自动缩到剩下的空间里。画布宽度只是内部分辨率，改它不会影响外观。</div>
+  </div>
+
+  <div class="card">
+    <div class="card-h">⑦ 主题色 <span class="hint">导入包里带过来</span></div>
+    <div class="grid2">
+      <label class="f">白天·强调<input type="color" id="cDayEmp"></label>
+      <label class="f">白天·普通<input type="color" id="cDayNor"></label>
+      <label class="f">夜间·强调<input type="color" id="cNightEmp"></label>
+      <label class="f">夜间·普通<input type="color" id="cNightNor"></label>
+    </div>
+    <label class="f" style="margin-top:9px">气泡名称<input type="text" id="bname" placeholder="标签"></label>
+  </div>
+
+</aside>
+
+<section class="stage">
+
+  <div class="prevcard">
+    <div class="prevhead">
+      <span class="t">画布</span>
+      <span class="tiny" id="boardHint">直接拖数字</span>
+      <div class="segs">
+        <div class="seg" id="segMode">
+          <button data-v="num" class="on">数字</button><button data-v="part">积木</button><button data-v="node">节点</button>
+        </div>
+        <div class="seg" id="segDay">
+          <button data-v="day" class="on">白天</button><button data-v="night">夜间</button>
+        </div>
+        <div class="seg" id="segEmp">
+          <button data-v="emp" class="on">强调</button><button data-v="nor">普通</button>
+        </div>
+      </div>
+    </div>
+    <div class="boardwrap">
+      <div class="board" id="board">
+        <div class="canvasbox" id="canvasbox"></div>
+      </div>
+    </div>
+    <div class="boardfoot">
+      <span id="geoInfo">—</span>
+      <span id="numInfo2"></span>
+      <span>虚线框＝画布边界，框内的空白都会算进气泡</span>
+    </div>
+  </div>
+
+  <div class="prevcard">
+    <div class="prevhead">
+      <span class="t">正文预览</span>
+      <span class="tiny">放进真实排版里的样子</span>
+    </div>
+    <div class="readerwrap">
+      <div class="reader" id="reader">
+        <div class="ct">
+          <h3>第一章 · 夜行</h3>
+          <p>他推开门的时候，风从走廊尽头涌进来，带着雨水的腥气 <span class="bub" data-n="8" data-k="emp"></span>和某种说不清的铁锈味。</p>
+          <p>她没有回头，只是把伞收起来，靠在墙边 <span class="bub" data-n="120" data-k="nor"></span></p>
+          <p>窗外的灯一盏接一盏地灭下去，像有人在很远的地方，慢慢收起一整座城 <span class="bub" data-n="999" data-k="nor"></span></p>
+        </div>
+      </div>
+    </div>
+    <div class="prevfoot">
+      <span id="pf1">—</span><span id="pf2"></span><span id="pf3"></span>
+    </div>
+  </div>
+
+  <div class="outcard">
+    <div class="card-h">输出 <span class="hint" id="outHint"></span></div>
+    <div class="row" style="margin-top:0">
+      <button id="copyTpl">复制 svgTemplate</button>
+      <button id="dlZip">下载气泡包 .zip</button>
+      <button class="ghost" id="dlJson">只要 bubble.json</button>
+    </div>
+    <textarea id="outTpl" readonly style="margin-top:10px;min-height:96px"></textarea>
+    <div class="msg" id="msg2"></div>
+  </div>
+
+</section>
+</main>
+
+<div id="lab"></div>
+
+<script>
+(function(){
+'use strict';
+
+var NS = 'http://www.w3.org/2000/svg';
+var SENTINEL = '#fa00fa';
+
+var SAMPLE = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">'
+  + '<path d="M44 48 Q48 48 48 44 L48 20 Q48 16 44 16 L20 16 Q16 16 16 20 L16 24 S16 28 10 30 Q6 32 10 34 Q16 36 16 38 L16 44 Q16 48 20 48 Z" fill="none" stroke="#3d6b9e" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>'
+  + '<text x="34" y="32" dy=".35em" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="600" fill="#3d6b9e">8</text>'
+  + '</svg>';
+
+var state = {
+  srcText: '',
+  base: null,
+  colors: [],
+  colorRole: {},
+  num: { on:true, auto:true, x:60, y:34, size:36, weight:900, colorMode:'theme', custom:'#ffffff' },
+  demoNum: '8',
+  mode: 'num',
+  parts: [],
+  selPart: null,
+  viewW: 120,
+  padL: 2, padR: 2, padT: 2, padB: 2,
+  fitVb: true,
+  strokeScale: 1,
+  scale: 1.1,
+  name: '标签',
+  theme: { dayEmp:'#E5484D', dayNor:'#8C8C8C', nightEmp:'#FF6B6B', nightNor:'#7F7F7F' },
+  preview: { night:false, emp:true }
+};
+
+var $ = function(s, r){ return (r||document).querySelector(s); };
+var $$ = function(s, r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); };
+var ser = new XMLSerializer();
+
+function fx(n){ var v = Math.round(n*100)/100; return String(v); }
+function f(n){ return fx(n); }
+
+function toast(el, text, kind){
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'msg show' + (kind ? ' ' + kind : '');
+  clearTimeout(el._t);
+  el._t = setTimeout(function(){ el.className = 'msg'; }, 4200);
+}
+
+function toHex(v){
+  if (!v) return v;
+  v = String(v).trim();
+  if (v === 'none' || v === 'transparent') return 'none';
+  if (v.indexOf('url(') === 0) return v;
+  if (v.charAt(0) === '#') return v.toLowerCase();
+  var m = v.match(/^rgba?\(([^)]+)\)$/i);
+  if (!m) return v;
+  var p = m[1].split(/[,\s\/]+/).filter(function(x){ return x !== ''; }).map(Number);
+  if (p.length < 3 || isNaN(p[0])) return v;
+  if (p.length > 3 && p[3] === 0) return 'none';
+  return '#' + [p[0],p[1],p[2]].map(function(n){
+    n = Math.max(0, Math.min(255, Math.round(n)));
+    var h = n.toString(16);
+    return h.length < 2 ? '0' + h : h;
+  }).join('');
+}
+
+function luminance(hex){
+  var m = /^#([0-9a-f]{6})$/.exec(hex || '');
+  if (!m) return 0.5;
+  var n = parseInt(m[1], 16);
+  var r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255;
+  return 0.2126*r + 0.7152*g + 0.0722*b;
+}
+
+function normVal(prop, v){
+  if (v == null) return v;
+  v = String(v).trim();
+  if (v === '') return v;
+  if (prop === 'fill' || prop === 'stroke') return toHex(v);
+  if (/px$/.test(v)) return String(parseFloat(v));
+  return v;
+}
+
+/* ---------- 解析与清洗 ---------- */
+
+function parseSvg(text){
+  var doc = new DOMParser().parseFromString(text, 'image/svg+xml');
+  if (doc.getElementsByTagName('parsererror').length) throw new Error('这段内容不是合法的 SVG（解析失败）');
+  var root = doc.documentElement;
+  if (!root || root.localName.toLowerCase() !== 'svg') throw new Error('没找到 <svg> 根节点');
+  return document.importNode(root, true);
+}
+
+function cleanSvg(svg){
+  var killed = 0;
+  ['script','foreignObject','iframe','object','embed','metadata','title','desc','animateMotion'].forEach(function(tag){
+    $$(tag, svg).forEach(function(el){ el.parentNode && el.parentNode.removeChild(el); killed++; });
+  });
+  var all = [svg].concat($$('*', svg));
+  all.forEach(function(el){
+    if (!el.attributes) return;
+    for (var i = el.attributes.length - 1; i >= 0; i--){
+      var a = el.attributes[i];
+      if (/^on/i.test(a.name)) el.removeAttribute(a.name);
+      if (a.name === 'href' || a.name === 'xlink:href'){
+        var val = String(a.value || '').trim();
+        if (val && val.charAt(0) !== '#' && !/^data:/i.test(val)) el.removeAttribute(a.name);
+      }
+    }
+  });
+  $$('image', svg).forEach(function(img){
+    var h = img.getAttribute('href') || img.getAttribute('xlink:href') || '';
+    if (!h) img.parentNode && img.parentNode.removeChild(img);
+  });
+  return killed;
+}
+
+var INLINE_SEL = 'path,rect,circle,ellipse,line,polygon,polyline,text,tspan,image,g,use';
+var PROPS = ['fill','stroke','stroke-width','stroke-linejoin','stroke-linecap','fill-opacity','stroke-opacity','opacity','font-size','font-weight','font-family','text-anchor'];
+
+function inlineStyles(svg){
+  var els = $$(INLINE_SEL, svg);
+  if (!els.length) return;
+  var before = els.map(function(el){
+    var cs = getComputedStyle(el), o = {};
+    PROPS.forEach(function(p){ o[p] = cs.getPropertyValue(p); });
+    return o;
+  });
+  $$('style', svg).forEach(function(s){ s.parentNode && s.parentNode.removeChild(s); });
+  els.forEach(function(el, i){
+    var cs = getComputedStyle(el);
+    PROPS.forEach(function(p){
+      var now = cs.getPropertyValue(p);
+      if (now == null || now === '') return;
+      var was = before[i][p];
+      if (now === was) return;
+      var v = normVal(p, now);
+      if (p === 'fill' && v === 'rgb(0, 0, 0)') return;
+      el.setAttribute(p, v);
+    });
+  });
+}
+
+/* 根节点上的 fill="none" / stroke / stroke-width 是靠继承往下传的。
+   一旦只保留子元素，这些属性就全丢了（空心图形会变成实心黑块），
+   所以这里把继承链显式写到每个绘制元素上。 */
+var INHERIT_PROPS = ['fill','stroke','stroke-width','stroke-linejoin','stroke-linecap',
+  'fill-opacity','stroke-opacity','fill-rule','clip-rule','paint-order',
+  'font-family','font-size','font-weight','text-anchor'];
+var DRAWN_TAGS = { path:1, rect:1, circle:1, ellipse:1, line:1, polygon:1, polyline:1, text:1, tspan:1, use:1 };
+
+function propsOf(el){
+  var o = {};
+  var st = el.getAttribute && el.getAttribute('style');
+  if (st){
+    st.split(';').forEach(function(d){
+      var i = d.indexOf(':');
+      if (i < 0) return;
+      var k = d.slice(0, i).trim().toLowerCase();
+      var v = d.slice(i + 1).replace(/!important/i, '').trim();
+      if (k && v) o[k] = v;
+    });
+  }
+  INHERIT_PROPS.forEach(function(p){
+    var v = el.getAttribute(p);
+    if (v != null && v !== '') o[p] = v;
+  });
+  return o;
+}
+
+function propagateInherit(svg){
+  var rootProps = propsOf(svg);
+  (function walk(node, inh){
+    var kids = node.children || [];
+    for (var i = 0; i < kids.length; i++){
+      var c = kids[i];
+      var own = propsOf(c);
+      var cur = {};
+      INHERIT_PROPS.forEach(function(p){ cur[p] = (own[p] != null) ? own[p] : inh[p]; });
+      var tag = (c.localName || '').toLowerCase();
+      if (DRAWN_TAGS[tag]){
+        INHERIT_PROPS.forEach(function(p){
+          var now = c.getAttribute(p);
+          if ((now == null || now === '') && cur[p] != null){
+            c.setAttribute(p, normVal(p, cur[p]));
+          }
+        });
+      }
+      walk(c, cur);
+    }
+  })(svg, rootProps);
+  return rootProps;
+}
+
+function takeNumberText(svg){
+  var texts = $$('text', svg);
+  for (var i = 0; i < texts.length; i++){
+    var t = texts[i];
+    var raw = (t.textContent || '').trim();
+    var isPlaceholder = raw === '${num}' || raw === '' || /^\d{1,3}$/.test(raw);
+    if (!isPlaceholder) continue;
+    var cs = getComputedStyle(t);
+    var info = {
+      x: parseFloat(t.getAttribute('x')) || 0,
+      y: parseFloat(t.getAttribute('y')) || 0,
+      size: parseFloat(t.getAttribute('font-size')) || parseFloat(cs.fontSize) || 16,
+      weight: t.getAttribute('font-weight') || cs.fontWeight || '700',
+      fill: t.getAttribute('fill') || toHex(cs.fill) || 'none'
+    };
+    t.parentNode && t.parentNode.removeChild(t);
+    return info;
+  }
+  return null;
+}
+
+function maxStroke(svg){
+  var m = 1;
+  $$('[stroke-width]', svg).forEach(function(el){
+    var v = parseFloat(el.getAttribute('stroke-width'));
+    if (!isNaN(v) && v > m) m = v;
+  });
+  return m;
+}
+
+/* ---------- 主处理 ---------- */
+
+function prepare(text, opts){
+  opts = opts || {};
+  var svg = parseSvg(text);
+  cleanSvg(svg);
+  var lab = $('#lab');
+  lab.innerHTML = '';
+  svg.removeAttribute('width');
+  svg.removeAttribute('height');
+  if (!svg.getAttribute('viewBox') && !svg.getAttribute('width')){
+    svg.setAttribute('width', '300');
+    svg.setAttribute('height', '300');
+  }
+  lab.appendChild(svg);
+
+  inlineStyles(svg);
+  var rootProps = propagateInherit(svg);
+  [svg].concat($$('*', svg)).forEach(function(el){ el.removeAttribute('class'); });
+  var numInfo = takeNumberText(svg);
+  var bb;
+  try { bb = svg.getBBox(); } catch (e) { bb = { x:0, y:0, width:64, height:64 }; }
+  if (!bb || !bb.width || !bb.height){ bb = { x:0, y:0, width:64, height:64 }; }
+  var st = maxStroke(svg);
+  var vb = null;
+  var vbAttr = svg.getAttribute('viewBox');
+  if (vbAttr){
+    var vp = vbAttr.trim().split(/[\s,]+/).map(parseFloat);
+    if (vp.length === 4 && vp[2] > 0 && vp[3] > 0) vb = { x:vp[0], y:vp[1], w:vp[2], h:vp[3] };
+  }
+
+  var inner = '';
+  for (var ci = 0; ci < svg.childNodes.length; ci++){
+    var nd = svg.childNodes[ci];
+    if (nd.nodeType === 1) inner += ser.serializeToString(nd);
+  }
+  lab.innerHTML = '';
+
+  state.base = {
+    inner: inner,
+    el: svg,
+    bbox: { x:bb.x, y:bb.y, w:bb.width, h:bb.height },
+    stroke: st, vb: vb, rootProps: rootProps
+  };
+  state.srcText = text;
+  state.baseSrc = text;
+
+  scanColors();
+
+  var g = geom();
+
+  if (opts.keepNum){
+    /* 只换了形状，数字位置与字号保持不动 */
+  } else if (numInfo){
+    state.num.x = g.padL + (numInfo.x - g.cv.x) * g.k;
+    state.num.y = g.padT + (numInfo.y - g.cv.y) * g.k;
+    state.num.size = Math.max(2, numInfo.size * g.k);
+    state.num.auto = false;
+    if (String(numInfo.weight) === 'bold' || /[1-9]00/.test(String(numInfo.weight))){
+      var wv = String(numInfo.weight) === 'bold' ? 700 : parseInt(numInfo.weight, 10);
+      if (wv) state.num.weight = wv;
+    }
+  } else {
+    state.num.auto = true;
+    state.num.x = g.W / 2;
+    state.num.y = g.H / 2;
+    state.num.size = Math.max(8, Math.round(state.viewW * 0.2));
+  }
+  return state.base;
+}
+
+function scanColors(){
+  var map = {}, order = [];
+  state.colors = [];
+  var root = parseInnerRoot();
+  if (!root) return;
+  var els = $$('[fill],[stroke]', root);
+  els.forEach(function(el){
+    var tag = el.localName.toLowerCase();
+    if (tag === 'text' || tag === 'tspan') return;
+    ['fill','stroke'].forEach(function(a){
+      var v = el.getAttribute(a);
+      if (!v) return;
+      v = String(v).toLowerCase();
+      if (v === 'none' || v.indexOf('url(') === 0) return;
+      if (!(v in map)){ map[v] = 0; order.push(v); }
+      map[v]++;
+    });
+  });
+  state.colors = order.map(function(hex){
+    var role = state.colorRole[hex];
+    if (!role){
+      role = (hex === SENTINEL) ? 'theme' : ((luminance(hex) > 0.94 || luminance(hex) < 0.06) ? 'keep' : 'theme');
+      state.colorRole[hex] = role;
+    }
+    return { hex: hex, count: map[hex], role: role };
+  }).filter(function(c){ return c.hex !== SENTINEL; });
+}
+
+function parseInnerRoot(){
+  try {
+    var doc = new DOMParser().parseFromString('<svg xmlns="' + NS + '">' + state.base.inner + '</svg>', 'image/svg+xml');
+    if (doc.getElementsByTagName('parsererror').length) return null;
+    return doc.documentElement;
+  } catch (e){ return null; }
+}
+
+function canvasFor(){
+  var b = state.base;
+  if (!b) return { x:0, y:0, w:64, h:64 };
+  var half = b.stroke * state.strokeScale * 0.5;
+  var x1 = b.bbox.x - half, y1 = b.bbox.y - half;
+  var x2 = b.bbox.x + b.bbox.w + half, y2 = b.bbox.y + b.bbox.h + half;
+  var box = { x:x1, y:y1, w:Math.max(1, x2 - x1), h:Math.max(1, y2 - y1) };
+  if (!b.vb || state.fitVb) return box;
+  var cx1 = Math.min(b.vb.x, box.x), cy1 = Math.min(b.vb.y, box.y);
+  var cx2 = Math.max(b.vb.x + b.vb.w, box.x + box.w);
+  var cy2 = Math.max(b.vb.y + b.vb.h, box.y + box.h);
+  var cv = { x:cx1, y:cy1, w:cx2 - cx1, h:cy2 - cy1 };
+  var contentArea = box.w * box.h;
+  var canvasArea = cv.w * cv.h;
+  if (contentArea > 0 && canvasArea > 0 && contentArea / canvasArea < 0.13) return box;
+  return cv;
+}
+
+/* 画布几何：宽度＝viewW，内容按「宽度减左右留白」等比缩放，
+   高度＝内容高 + 上下留白。留白可以不对称，所以数字能放左边或右边。 */
+function geom(){
+  var cv = canvasFor();
+  var W = Math.max(20, state.viewW);
+  var pl = W * Math.max(0, state.padL) / 100;
+  var pr = W * Math.max(0, state.padR) / 100;
+  var pt = W * Math.max(0, state.padT) / 100;
+  var pb = W * Math.max(0, state.padB) / 100;
+  var avail = W - pl - pr;
+  if (!(avail > W * 0.06)) avail = W * 0.06;
+  var k = avail / cv.w;
+  var H = cv.h * k + pt + pb;
+  if (!(H > 2)) H = 2;
+  return { W:W, H:H, k:k, cv:cv, padL:pl, padT:pt };
+}
+
+function composeEl(){
+  var b = state.base;
+  if (!b) return null;
+  var g0 = geom();
+  var cv = g0.cv, k = g0.k, W = g0.W, H = g0.H, padL = g0.padL, padT = g0.padT;
+
+  var doc = new DOMParser().parseFromString('<svg xmlns="' + NS + '">' + b.inner + '</svg>', 'image/svg+xml');
+  var holder = doc.documentElement;
+  if (!holder) return null;
+
+  if (state.strokeScale !== 1){
+    $$('[stroke-width]', holder).forEach(function(el){
+      var v = parseFloat(el.getAttribute('stroke-width'));
+      if (!isNaN(v)) el.setAttribute('stroke-width', fx(v * state.strokeScale));
+    });
+  }
+
+  $$('[fill],[stroke]', holder).forEach(function(el){
+    ['fill','stroke'].forEach(function(a){
+      var v = el.getAttribute(a);
+      if (!v) return;
+      var role = state.colorRole[String(v).toLowerCase()];
+      if (role === 'theme') el.setAttribute(a, '${color}');
+    });
+  });
+
+  var wrap = document.createElementNS(NS, 'svg');
+  wrap.setAttribute('xmlns', NS);
+  wrap.setAttribute('viewBox', '0 0 ' + fx(W) + ' ' + fx(H));
+
+  var g = document.createElementNS(NS, 'g');
+  g.setAttribute('transform', 'translate(' + fx(padL) + ' ' + fx(padT) + ') scale(' + fx(k) + ') translate(' + fx(-cv.x) + ' ' + fx(-cv.y) + ')');
+
+  var rp = b.rootProps || {};
+  ['fill','stroke'].forEach(function(a){
+    if (!rp[a]) return;
+    var role = state.colorRole[String(rp[a]).toLowerCase()];
+    if (role !== 'keep') g.setAttribute(a, role === 'theme' ? '${color}' : rp[a]);
+  });
+  if (rp['stroke-width'] && rp['stroke-width'] !== '0'){
+    var sw = parseFloat(rp['stroke-width']);
+    if (!isNaN(sw)) g.setAttribute('stroke-width', fx(sw * state.strokeScale));
+  }
+  ['stroke-linecap','stroke-linejoin','fill-rule','clip-rule','paint-order'].forEach(function(a){
+    if (rp[a]) g.setAttribute(a, rp[a]);
+  });
+
+  while (holder.firstChild){ g.appendChild(holder.firstChild); }
+  wrap.appendChild(g);
+
+  if (state.num.on){
+    var t = document.createElementNS(NS, 'text');
+    var nx = state.num.auto ? W / 2 : state.num.x;
+    var ny = state.num.auto ? H / 2 : state.num.y;
+    t.setAttribute('x', fx(nx));
+    t.setAttribute('y', fx(ny));
+    t.setAttribute('dy', '.35em');
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('font-family', 'sans-serif');
+    t.setAttribute('font-size', fx(state.num.size));
+    t.setAttribute('font-weight', String(state.num.weight));
+    t.setAttribute('fill', state.num.colorMode === 'theme' ? '${color}' : state.num.custom);
+    t.textContent = '${num}';
+    wrap.appendChild(t);
+  }
+
+  return { el: wrap, W: W, H: H, k: k };
+}
+
+function serializeClean(el){
+  var s = ser.serializeToString(el);
+  s = s.replace(/ xmlns="http:\/\/www\.w3\.org\/2000\/svg"/g, '');
+  var head = '<svg xmlns="http://www.w3.org/2000/svg"';
+  if (s.indexOf('xlink:') >= 0) head += ' xmlns:xlink="http://www.w3.org/1999/xlink"';
+  return s.replace(/^<svg/, head);
+}
+
+function toTemplate(el){
+  return serializeClean(el)
+    .replace(/\s+data-(part|mark|hed)="[^"]*"/g, '')
+    .replace(/>\s+</g, '><')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+function themeColor(emp){
+  var t = state.theme, n = state.preview.night;
+  return emp ? (n ? t.nightEmp : t.dayEmp) : (n ? t.nightNor : t.dayNor);
+}
+
+function svgForBox(composed, isEmp, numText){
+  return serializeClean(composed.el)
+    .replace(/\$\{color\}/g, themeColor(isEmp))
+    .replace(/\$\{num\}/g, numText);
+}
+
+/* 上方大画布 */
+function renderBoard(){
+  var box = $('#canvasbox');
+  var c = composeEl();
+  if (!c){
+    box.innerHTML = '';
+    $('#geoInfo').textContent = '画布是空的';
+    $('#numInfo2').textContent = '';
+    return;
+  }
+  box.innerHTML = svgForBox(c, state.preview.emp, state.demoNum);
+  var boardEl = $('#board');
+  var availW = Math.max(40, boardEl.clientWidth - 52);
+  var availH = Math.max(40, boardEl.clientHeight - 52);
+  var kk = Math.min(availW / c.W, availH / c.H);
+  box.style.width = Math.round(c.W * kk) + 'px';
+  box.style.height = Math.round(c.H * kk) + 'px';
+
+  var svg = box.firstElementChild;
+  if (svg){
+    svg.style.overflow = 'visible';
+    var t = lastText(svg);
+    if (t){
+      t.setAttribute('data-num', '1');
+      t.style.pointerEvents = state.mode === 'num' ? 'all' : 'none';
+      t.style.stroke = 'transparent';
+      t.style.strokeWidth = String(Math.max(6, state.num.size * 0.4));
+      t.style.paintOrder = 'stroke';
+      t.style.cursor = state.mode === 'num' ? 'move' : 'default';
+    }
+  }
+  bindDrag();
+
+  /* 空心的 path 只有描边能点中，积木模式下让它整块都能抓 */
+  if (state.mode === 'part'){
+    $$('[data-part]', box).forEach(function(g){
+      g.style.pointerEvents = 'all';
+      g.style.cursor = 'move';
+    });
+  }
+
+  boardMeta = { k: c.k, kk: kk };
+  if (state.mode === 'part' && state.selPart) markPart(svg, c);
+  if (state.mode === 'node') drawHandles(svg, boardMeta);
+
+  $('#board').classList.toggle('night', state.preview.night);
+
+  var g = geom();
+  var cw = g.cv.w * g.k, chh = g.cv.h * g.k;
+  $('#geoInfo').textContent = '画布 ' + Math.round(c.W) + ' × ' + Math.round(c.H)
+    + ' · 图形占 ' + Math.round(cw / c.W * 100) + '% 宽 / ' + Math.round(chh / c.H * 100) + '% 高';
+  $('#numInfo2').innerHTML = state.num.on
+    ? ('数字 ' + (state.num.auto ? '<b>自动居中</b>' : ('x ' + Math.round(state.num.x) + ' · y ' + Math.round(state.num.y)))
+       + ' · 字号 ' + Math.round(state.num.size))
+    : '不显示数字';
+}
+
+/* 下方正文预览 */
+function renderPreview(){
+  var emPx = parseFloat(getComputedStyle($('#reader .ct')).fontSize) || 17;
+  var composed = composeEl();
+  $$('#reader .bub').forEach(function(box){
+    if (!composed){ box.innerHTML = ''; return; }
+    var n = box.getAttribute('data-n') || '8';
+    var isEmp = state.preview.emp && box === $('#reader .bub');
+    box.innerHTML = svgForBox(composed, isEmp, n);
+    var svg = box.firstElementChild;
+    if (!svg) return;
+    var h = emPx * 1.42 * state.scale;
+    var w = h * composed.W / Math.max(0.01, composed.H);
+    svg.style.height = h.toFixed(1) + 'px';
+    svg.style.width = w.toFixed(1) + 'px';
+    svg.style.overflow = 'visible';
+    svg.style.pointerEvents = 'none';
+  });
+
+  var w = $('#reader');
+  if (state.preview.night) w.classList.add('night'); else w.classList.remove('night');
+
+  $('#pf1').textContent = (state.preview.night ? '夜间' : '白天') + ' · ' + (state.preview.emp ? '强调' : '普通');
+  $('#pf2').textContent = '主题色 ' + themeColor(state.preview.emp);
+  $('#pf3').textContent = composed ? ('viewBox 0 0 ' + fx(composed.W) + ' ' + fx(composed.H)) : '';
+}
+
+/* ---------- 拖动数字 ---------- */
+
+var drag = null;
+
+function toPx(svg, e){
+  var p = svg.createSVGPoint();
+  p.x = e.clientX; p.y = e.clientY;
+  var m = svg.getScreenCTM();
+  if (!m) return { x:0, y:0 };
+  return p.matrixTransform(m.inverse());
+}
+
+function lastText(svg){
+  var list = $$('text', svg);
+  return list.length ? list[list.length - 1] : null;
+}
+
+function paintNumPos(){
+  $$('#canvasbox svg, #reader svg').forEach(function(svg){
+    var t = lastText(svg);
+    if (!t) return;
+    t.setAttribute('x', fx(state.num.x));
+    t.setAttribute('y', fx(state.num.y));
+  });
+  $('#numX').value = Math.round(state.num.x);
+  $('#numY').value = Math.round(state.num.y);
+  $('#numInfo2').innerHTML = '数字 x ' + Math.round(state.num.x) + ' · y ' + Math.round(state.num.y) + ' · 字号 ' + Math.round(state.num.size);
+}
+
+function bindDrag(){
+  var svg = $('#canvasbox svg');
+  if (!svg) return;
+  var t = lastText(svg);
+  if (!t || t._bound) return;
+  t._bound = true;
+  t.addEventListener('pointerdown', function(e){
+    if (state.mode !== 'num') return;
+    e.preventDefault();
+    e.stopPropagation();
+    var p = toPx(svg, e);
+    var cx = parseFloat(t.getAttribute('x')) || 0;
+    var cy = parseFloat(t.getAttribute('y')) || 0;
+    drag = { svg: svg, ox: p.x - cx, oy: p.y - cy };
+    try { t.setPointerCapture(e.pointerId); } catch (err){}
+    document.body.style.cursor = 'grabbing';
+  });
+  t.addEventListener('pointermove', function(e){
+    if (!drag || drag.svg !== svg) return;
+    e.preventDefault();
+    var g = geom();
+    var p = toPx(svg, e);
+    var halfW = state.num.size * 0.3 * String(state.demoNum || '8').length;
+    var halfH = state.num.size * 0.55;
+    if (halfW * 2 > g.W) halfW = g.W / 2;
+    if (halfH * 2 > g.H) halfH = g.H / 2;
+    var nx = clamp(p.x - drag.ox, halfW, g.W - halfW);
+    var ny = clamp(p.y - drag.oy, halfH, g.H - halfH);
+    state.num.auto = false;
+    state.num.x = nx; state.num.y = ny;
+    paintNumPos();
+  });
+  var end = function(e){
+    if (!drag) return;
+    drag = null;
+    document.body.style.cursor = '';
+    try { t.releasePointerCapture(e.pointerId); } catch (err){}
+    renderOutput();
+  };
+  t.addEventListener('pointerup', end);
+  t.addEventListener('pointercancel', end);
+}
+
+
+/* ---------- 画布上的直接操作 ---------- */
+
+var boardDrag = null;
+var boardMeta = { k: 1, kk: 1 };
+
+function markPart(svg, c){
+  var gEl = svg.querySelector('[data-part="' + state.selPart + '"]');
+  if (!gEl) return;
+  var bb;
+  try { bb = gEl.getBBox(); } catch (e){ return; }
+  var unit = 1 / Math.max(0.0001, c.k * boardMeta.kk);
+  var r = document.createElementNS(NS, 'rect');
+  r.setAttribute('x', f(bb.x - 3 * unit));
+  r.setAttribute('y', f(bb.y - 3 * unit));
+  r.setAttribute('width', f(bb.width + 6 * unit));
+  r.setAttribute('height', f(bb.height + 6 * unit));
+  r.setAttribute('fill', 'none');
+  r.setAttribute('stroke', '#c9a24a');
+  r.setAttribute('stroke-width', f(1.8 * unit));
+  r.setAttribute('stroke-dasharray', f(6 * unit) + ' ' + f(4 * unit));
+  r.setAttribute('pointer-events', 'none');
+  r.setAttribute('data-mark', '1');
+  gEl.parentNode.appendChild(r);
+}
+
+function drawHandles(svg, meta){
+  var contentG = svg.querySelector('g');
+  if (!contentG || !state.base || !state.base.el) return;
+  var unit = 1 / Math.max(0.0001, meta.k * meta.kk);
+  var old = contentG.querySelector('[data-hed]');
+  if (old && old.parentNode) old.parentNode.removeChild(old);
+
+  var layer = document.createElementNS(NS, 'g');
+  layer.setAttribute('data-hed', '1');
+  state.pathSegs = {};
+
+  var paths = $$('path', state.base.el);
+  paths.forEach(function(pe, pi){
+    var segs = parsePathData(pe.getAttribute('d') || '');
+    state.pathSegs[pi] = segs;
+    var cx = 0, cy = 0;
+
+    function anchor(si, x, y){
+      var el = document.createElementNS(NS, 'circle');
+      el.setAttribute('cx', f(x)); el.setAttribute('cy', f(y));
+      el.setAttribute('r', f(4.4 * unit));
+      el.setAttribute('fill', '#ffffff');
+      el.setAttribute('stroke', '#3d6b9e');
+      el.setAttribute('stroke-width', f(1.6 * unit));
+      el.setAttribute('data-pi', pi); el.setAttribute('data-si', si);
+      el.setAttribute('data-k', 'p'); el.setAttribute('data-i', '0');
+      el.style.cursor = 'move';
+      layer.appendChild(el);
+    }
+    function ctl(si, i, x, y){
+      var el = document.createElementNS(NS, 'circle');
+      el.setAttribute('cx', f(x)); el.setAttribute('cy', f(y));
+      el.setAttribute('r', f(3.1 * unit));
+      el.setAttribute('fill', '#e08a3c');
+      el.setAttribute('stroke', 'none');
+      el.setAttribute('data-pi', pi); el.setAttribute('data-si', si);
+      el.setAttribute('data-k', 'c'); el.setAttribute('data-i', String(i));
+      el.style.cursor = 'move';
+      layer.appendChild(el);
+    }
+    function lead(x1, y1, x2, y2){
+      var el = document.createElementNS(NS, 'line');
+      el.setAttribute('x1', f(x1)); el.setAttribute('y1', f(y1));
+      el.setAttribute('x2', f(x2)); el.setAttribute('y2', f(y2));
+      el.setAttribute('stroke', '#e08a3c');
+      el.setAttribute('stroke-width', f(1 * unit));
+      el.setAttribute('stroke-dasharray', f(3 * unit) + ' ' + f(2 * unit));
+      el.setAttribute('pointer-events', 'none');
+      layer.appendChild(el);
+    }
+
+    segs.forEach(function(s, si){
+      if (s.c === 'M' || s.c === 'L'){ cx = s.v[0]; cy = s.v[1]; anchor(si, cx, cy); }
+      else if (s.c === 'C'){
+        lead(cx, cy, s.v[0], s.v[1]); ctl(si, 0, s.v[0], s.v[1]);
+        lead(s.v[4], s.v[5], s.v[2], s.v[3]); ctl(si, 1, s.v[2], s.v[3]);
+        cx = s.v[4]; cy = s.v[5]; anchor(si, cx, cy);
+      } else if (s.c === 'Q'){
+        lead(cx, cy, s.v[0], s.v[1]); ctl(si, 0, s.v[0], s.v[1]);
+        cx = s.v[2]; cy = s.v[3]; anchor(si, cx, cy);
+      } else if (s.c === 'A'){
+        cx = s.v[5]; cy = s.v[6]; anchor(si, cx, cy);
+      }
+    });
+  });
+  contentG.appendChild(layer);
+}
+
+function refreshMark(){
+  var svg = $('#canvasbox svg');
+  if (!svg) return;
+  $$('[data-mark]', svg).forEach(function(el){ if (el.parentNode) el.parentNode.removeChild(el); });
+  if (state.mode === 'part' && state.selPart) markPart(svg, boardMeta);
+}
+
+function beginBoardDrag(e){
+  var svg = $('#canvasbox svg');
+  if (!svg) return;
+  if (state.mode === 'part'){
+    var gEl = e.target && e.target.closest ? e.target.closest('[data-part]') : null;
+    if (!gEl) return;
+    e.preventDefault();
+    state.selPart = gEl.getAttribute('data-part');
+    renderParts(); renderPartEditor(); refreshMark();
+    var p = getPart(state.selPart), sp = toPx(svg, e);
+    if (!p) return;
+    boardDrag = { t:'part', g:gEl, p:p, x0:p.cx, y0:p.cy, sx:sp.x, sy:sp.y, k:boardMeta.k, dx:0, dy:0 };
+  } else if (state.mode === 'node'){
+    var el = e.target && e.target.closest ? e.target.closest('circle[data-k]') : null;
+    if (!el) return;
+    e.preventDefault();
+    boardDrag = {
+      t:'node', pi:+el.getAttribute('data-pi'), si:+el.getAttribute('data-si'),
+      kind:el.getAttribute('data-k'), idx:+el.getAttribute('data-i')
+    };
+  }
+}
+
+$('#canvasbox').addEventListener('pointerdown', beginBoardDrag);
+
+window.addEventListener('pointermove', function(e){
+  if (!boardDrag) return;
+  var svg = $('#canvasbox svg');
+  if (!svg) return;
+  var p = toPx(svg, e);
+  if (boardDrag.t === 'part'){
+    var dx = (p.x - boardDrag.sx) / boardDrag.k;
+    var dy = (p.y - boardDrag.sy) / boardDrag.k;
+    boardDrag.g.setAttribute('transform', 'translate(' + f(dx) + ' ' + f(dy) + ')');
+    boardDrag.dx = dx; boardDrag.dy = dy;
+    return;
+  }
+  var g = geom();
+  var cxp = g.cv.x + (p.x - g.padL) / g.k;
+  var cyp = g.cv.y + (p.y - g.padT) / g.k;
+  var segs = state.pathSegs[boardDrag.pi];
+  if (!segs) return;
+  movePathPoint(segs, boardDrag.si, boardDrag.kind, boardDrag.idx, cxp, cyp);
+  var d = serialPath(segs);
+  var bp = $$('path', state.base.el)[boardDrag.pi];
+  if (bp) bp.setAttribute('d', d);
+  var cg = svg.querySelector('g');
+  var bpaths = cg ? $$('path', cg) : [];
+  if (bpaths[boardDrag.pi]) bpaths[boardDrag.pi].setAttribute('d', d);
+  drawHandles(svg, boardMeta);
+});
+
+window.addEventListener('pointerup', function(){
+  if (!boardDrag) return;
+  var bd = boardDrag;
+  boardDrag = null;
+  if (bd.t === 'part'){
+    if (Math.abs(bd.dx) > 0.01 || Math.abs(bd.dy) > 0.01){
+      bd.p.cx = bd.x0 + bd.dx;
+      bd.p.cy = bd.y0 + bd.dy;
+      applyParts();
+      renderPartEditor();
+    }
+  } else {
+    refreshInner();
+    renderPreview();
+    renderOutput();
+  }
+});
+
+/* ---------- 积木式形状 ---------- */
+
+var INK = '#3d6b9e';
+var _pid = 0;
+
+function pt2(x, y){ return f(x) + ' ' + f(y); }
+
+/* 尾巴：从 (sx,sy) 经尖端走到 (ex,ey) */
+function tailSeg(sx, sy, ex, ey, tx, ty, kind){
+  if (kind === 'curve') return ' Q ' + pt2(tx, ty) + ' ' + pt2(ex, ey);
+  return ' L ' + pt2(tx, ty) + ' L ' + pt2(ex, ey);
+}
+
+function genBubble(p){
+  var w = Math.max(6, nz(p.w, 60)), h = Math.max(6, nz(p.h, 42));
+  var r = Math.max(0, Math.min(nz(p.r, 10), Math.min(w, h) / 2 - 0.05));
+  var x0 = p.cx - w / 2, y0 = p.cy - h / 2, x1 = x0 + w, y1 = y0 + h;
+  var td = Math.max(0, nz(p.tailSize, 12));           /* 尖头伸出多远 */
+  var span = nz(p.tailSpan, 0);                       /* 尖头在边上占多宽，0＝跟随伸出 */
+  var hs = Math.max(0, (span > 0 ? span : td) / 2);    /* 半跨度 */
+  var tp = clamp(nz(p.tailPos, 0.55), 0, 1);
+  var kind = p.tail || 'none', side = p.side || 'left';
+
+  var hasL = (kind !== 'none' && side === 'left' && td > 0);
+  var hasR = (kind !== 'none' && side === 'right' && td > 0);
+  var hasB = (kind !== 'none' && side === 'bottom' && td > 0);
+
+  /* 尖头跨度吃满整条边时，左边/右边要整条让出来，不能留一截竖墙 */
+  var ly0 = y0 + h * tp, ry0 = ly0;
+  var lp = Math.min(ly0 + hs, y1), lq = Math.max(ly0 - hs, y0);
+  var rp = Math.min(ry0 + hs, y1), rq = Math.max(ry0 - hs, y0);
+  var fullL = hasL && (lp >= y1 - 0.01 && lq <= y0 + 0.01);
+  var fullR = hasR && (rp >= y1 - 0.01 && rq <= y0 + 0.01);
+
+  var D = [];
+  function arc(x, y){
+    if (r > 0.01) D.push('A ' + f(r) + ' ' + f(r) + ' 0 0 1 ' + pt2(x, y));
+  }
+  D.push('M ' + pt2(x0 + (fullL ? 0 : r), y0));
+  D.push('H ' + f(x1 - (fullR ? 0 : r)));
+  if (!fullR) arc(x1, y0 + r);
+
+  if (hasR){
+    if (fullR){
+      D.push(tailSeg(x1, y0, x1, y1, x1 + td, ry0, 'tri'));
+    } else {
+      D.push('V ' + f(rq));
+      D.push(tailSeg(x1, rq, x1, rp, x1 + td, ry0, kind));
+      D.push('V ' + f(y1 - r));
+    }
+  }
+  D.push('V ' + f(y1 - (fullR ? 0 : r)));
+  if (!fullR) arc(x1 - r, y1);
+
+  if (hasB){
+    var tx0 = x0 + w * clamp(tp, 0, 1);
+    var bp = Math.min(tx0 + hs, x1 - r), bq = Math.max(tx0 - hs, x0 + r);
+    D.push('H ' + f(bq));
+    D.push(tailSeg(bq, y1, bp, y1, tx0, y1 + td, kind));
+  }
+  D.push('H ' + f(x0 + (fullL ? 0 : r)));
+  if (!fullL) arc(x0, y1 - r);
+
+  if (hasL){
+    if (fullL){
+      D.push(tailSeg(x0, y1, x0, y0, x0 - td, ly0, 'tri'));
+    } else {
+      D.push('V ' + f(lp));
+      D.push(tailSeg(x0, lp, x0, lq, x0 - td, ly0, kind));
+      D.push('V ' + f(y0 + r));
+      arc(x0 + r, y0);
+    }
+  } else {
+    D.push('V ' + f(y0 + r));
+    arc(x0 + r, y0);
+  }
+  D.push('Z');
+  return D.join(' ');
+}
+
+function starPts(p){
+  var n = Math.max(3, Math.round(nz(p.points, 5))), R = Math.max(1, nz(p.d, 40)) / 2;
+  var ir = clamp(nz(p.inner, 0.45), 0.1, 1);
+  var rot = (nz(p.rot, -90)) * Math.PI / 180, out = [];
+  for (var i = 0; i < n * 2; i++){
+    var a = rot + i * Math.PI / n, rr = (i % 2) ? R * ir : R;
+    out.push(pt2(p.cx + Math.cos(a) * rr, p.cy + Math.sin(a) * rr));
+  }
+  return out.join(' ');
+}
+
+function polyPts(p){
+  var n = Math.max(3, Math.round(nz(p.points, 6))), R = Math.max(1, nz(p.d, 40)) / 2;
+  var rot = nz(p.rot, -90) * Math.PI / 180, out = [];
+  for (var i = 0; i < n; i++){
+    var a = rot + i * 2 * Math.PI / n;
+    out.push(pt2(p.cx + Math.cos(a) * R, p.cy + Math.sin(a) * R));
+  }
+  return out.join(' ');
+}
+
+function genPart(p){
+  var sw = Math.max(0, nz(p.sw, 3));
+  var filled = String(p.fill) === '1';
+  var fillAttr = ' fill="' + (filled ? INK : 'none') + '"';
+  var strokeAttr = sw > 0
+    ? ' stroke="' + INK + '" stroke-width="' + f(sw) + '" stroke-linejoin="round" stroke-linecap="round"'
+    : ' stroke="none"';
+  var body = '';
+  var w, h, r;
+
+  switch (p.kind){
+    case 'bubble':
+      body = '<path d="' + genBubble(p) + '"' + fillAttr + strokeAttr + '/>';
+      break;
+    case 'rect':
+      w = Math.max(2, nz(p.w, 40)); h = Math.max(2, nz(p.h, 30));
+      r = Math.max(0, Math.min(nz(p.r, 6), Math.min(w, h) / 2));
+      body = '<rect x="' + f(p.cx - w / 2) + '" y="' + f(p.cy - h / 2) + '" width="' + f(w) + '" height="' + f(h)
+        + '" rx="' + f(r) + '"' + fillAttr + strokeAttr + '/>';
+      break;
+    case 'ellipse':
+      w = Math.max(2, nz(p.w, 40)); h = Math.max(2, nz(p.h, 30));
+      body = '<ellipse cx="' + f(p.cx) + '" cy="' + f(p.cy) + '" rx="' + f(w / 2) + '" ry="' + f(h / 2) + '"' + fillAttr + strokeAttr + '/>';
+      break;
+    case 'ring':
+      body = '<circle cx="' + f(p.cx) + '" cy="' + f(p.cy) + '" r="' + f(Math.max(1, nz(p.d, 16)) / 2)
+        + '" fill="none"' + strokeAttr + '/>';
+      break;
+    case 'dot':
+      body = '<circle cx="' + f(p.cx) + '" cy="' + f(p.cy) + '" r="' + f(Math.max(1, nz(p.d, 10)) / 2)
+        + '" fill="' + INK + '" stroke="none"/>';
+      break;
+    case 'star':
+      body = '<polygon points="' + starPts(p) + '"' + fillAttr + strokeAttr + '/>';
+      break;
+    case 'poly':
+      body = '<polygon points="' + polyPts(p) + '"' + fillAttr + strokeAttr + '/>';
+      break;
+    case 'line':
+      var len = Math.max(2, nz(p.len, 30)), a = nz(p.ang, 0) * Math.PI / 180;
+      var dx = Math.cos(a) * len / 2, dy = Math.sin(a) * len / 2;
+      body = '<line x1="' + f(p.cx - dx) + '" y1="' + f(p.cy - dy) + '" x2="' + f(p.cx + dx) + '" y2="' + f(p.cy + dy)
+        + '" stroke="' + INK + '" stroke-width="' + f(sw || 3) + '" stroke-linecap="round"/>';
+      break;
+  }
+  return '<g data-part="' + p.id + '">' + body + '</g>';
+}
+
+var KINDS = {
+  bubble: {
+    label: '气泡体', def: { w:62, h:44, r:11, sw:3, tail:'tri', side:'left', tailSize:12, tailSpan:0, tailPos:0.55, fill:0 },
+    params: [
+      { k:'w', t:'n', l:'宽', min:6, max:200, step:1 },
+      { k:'h', t:'n', l:'高', min:6, max:200, step:1 },
+      { k:'r', t:'n', l:'圆角', min:0, max:60, step:1 },
+      { k:'sw', t:'n', l:'线宽', min:0, max:20, step:0.5 },
+      { k:'tail', t:'s', l:'尾巴', opts:[['none','无'],['tri','三角'],['curve','圆弧']] },
+      { k:'side', t:'s', l:'尾巴方向', opts:[['left','左'],['right','右'],['bottom','下']] },
+      { k:'tailSize', t:'n', l:'尖头伸出', min:0, max:200, step:1 },
+      { k:'tailSpan', t:'n', l:'尖头跨度', min:0, max:240, step:1 },
+      { k:'tailPos', t:'n', l:'尖头位置', min:0, max:1, step:0.05 },
+      { k:'fill', t:'s', l:'填充', opts:[['0','空心'],['1','实心']] }
+    ]
+  },
+  rect: {
+    label: '圆角框', def: { w:52, h:34, r:8, sw:3, fill:0 },
+    params: [
+      { k:'w', t:'n', l:'宽', min:2, max:200, step:1 },
+      { k:'h', t:'n', l:'高', min:2, max:200, step:1 },
+      { k:'r', t:'n', l:'圆角', min:0, max:60, step:1 },
+      { k:'sw', t:'n', l:'线宽', min:0, max:20, step:0.5 },
+      { k:'fill', t:'s', l:'填充', opts:[['0','空心'],['1','实心']] }
+    ]
+  },
+  ellipse: {
+    label: '椭圆', def: { w:56, h:38, sw:3, fill:0 },
+    params: [
+      { k:'w', t:'n', l:'宽', min:2, max:200, step:1 },
+      { k:'h', t:'n', l:'高', min:2, max:200, step:1 },
+      { k:'sw', t:'n', l:'线宽', min:0, max:20, step:0.5 },
+      { k:'fill', t:'s', l:'填充', opts:[['0','空心'],['1','实心']] }
+    ]
+  },
+  ring: {
+    label: '圆环', def: { d:26, sw:3 },
+    params: [
+      { k:'d', t:'n', l:'直径', min:2, max:160, step:1 },
+      { k:'sw', t:'n', l:'线宽', min:0.5, max:20, step:0.5 }
+    ]
+  },
+  dot: {
+    label: '实心点', def: { d:10 },
+    params: [ { k:'d', t:'n', l:'直径', min:1, max:120, step:1 } ]
+  },
+  star: {
+    label: '星形', def: { d:34, points:5, inner:0.45, rot:-90, sw:2, fill:1 },
+    params: [
+      { k:'d', t:'n', l:'直径', min:4, max:160, step:1 },
+      { k:'points', t:'n', l:'角数', min:3, max:16, step:1 },
+      { k:'inner', t:'n', l:'内径比', min:0.1, max:1, step:0.05 },
+      { k:'rot', t:'n', l:'旋转', min:-180, max:180, step:5 },
+      { k:'sw', t:'n', l:'线宽', min:0, max:20, step:0.5 },
+      { k:'fill', t:'s', l:'填充', opts:[['0','空心'],['1','实心']] }
+    ]
+  },
+  poly: {
+    label: '多边形', def: { d:34, points:6, rot:-90, sw:2, fill:0 },
+    params: [
+      { k:'d', t:'n', l:'直径', min:4, max:160, step:1 },
+      { k:'points', t:'n', l:'边数', min:3, max:16, step:1 },
+      { k:'rot', t:'n', l:'旋转', min:-180, max:180, step:5 },
+      { k:'sw', t:'n', l:'线宽', min:0, max:20, step:0.5 },
+      { k:'fill', t:'s', l:'填充', opts:[['0','空心'],['1','实心']] }
+    ]
+  },
+  line: {
+    label: '线条', def: { len:30, ang:0, sw:3 },
+    params: [
+      { k:'len', t:'n', l:'长度', min:2, max:200, step:1 },
+      { k:'ang', t:'n', l:'角度', min:-180, max:180, step:5 },
+      { k:'sw', t:'n', l:'线宽', min:0.5, max:20, step:0.5 }
+    ]
+  }
+};
+
+function nz(v, d){ v = parseFloat(v); return isNaN(v) ? d : v; }
+
+function newPart(kind){
+  var def = KINDS[kind].def, p = { id: 'p' + (++_pid), kind: kind, cx: 50, cy: 50 };
+  Object.keys(def).forEach(function(k){ p[k] = def[k]; });
+  return p;
+}
+
+function getPart(id){
+  for (var i = 0; i < state.parts.length; i++) if (state.parts[i].id === id) return state.parts[i];
+  return null;
+}
+
+function partSummary(p){
+  if (p.kind === 'bubble') return Math.round(p.w) + '×' + Math.round(p.h) + ' · ' + (p.tail === 'none' ? '无尾' : (p.side === 'left' ? '左尾' : p.side === 'right' ? '右尾' : '下尾'));
+  if (p.kind === 'rect' || p.kind === 'ellipse') return Math.round(p.w) + '×' + Math.round(p.h);
+  if (p.kind === 'line') return '长' + Math.round(p.len) + ' ' + Math.round(p.ang) + '°';
+  return '直径 ' + Math.round(p.d);
+}
+
+function renderParts(){
+  var box = $('#partList');
+  if (!state.parts.length){
+    box.innerHTML = '<span class="tiny">还没有零件，点「新建气泡」或「＋ 加一块」。</span>';
+    box.removeAttribute('data-ids');
+    return;
+  }
+  var ids = state.parts.map(function(p){ return p.id; }).join(',');
+  /* 零件没增减时只改文字，别重建 DOM：否则用户点删除按钮的 mousedown 与 mouseup
+     落在两个不同节点上，click 事件根本不会触发 */
+  if (box.getAttribute('data-ids') === ids && box.children.length === state.parts.length){
+    state.parts.forEach(function(p, i){
+      var row = box.children[i];
+      row.className = 'prow' + (p.id === state.selPart ? ' on' : '');
+      var pd = row.querySelector('.pd');
+      if (pd) pd.textContent = partSummary(p);
+    });
+    return;
+  }
+  box.innerHTML = state.parts.map(function(p){
+    return '<div class="prow' + (p.id === state.selPart ? ' on' : '') + '" data-id="' + p.id + '">'
+      + '<span class="pn">' + KINDS[p.kind].label + '</span>'
+      + '<span class="pd">' + partSummary(p) + '</span>'
+      + '<button class="del" data-del="' + p.id + '" title="删掉这块">✕</button></div>';
+  }).join('');
+  box.setAttribute('data-ids', ids);
+}
+
+function renderPartEditor(){
+  var box = $('#partEdit');
+  var p = getPart(state.selPart);
+  if (!p){ box.className = 'pedit'; box.innerHTML = ''; return; }
+  var def = KINDS[p.kind];
+  var rows = def.params.map(function(pd){
+    var v = p[pd.k];
+    if (pd.t === 's'){
+      return '<label class="f">' + pd.l + '<select data-k="' + pd.k + '">' + pd.opts.map(function(o){
+        return '<option value="' + o[0] + '"' + (String(v) === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
+      }).join('') + '</select></label>';
+    }
+    return '<label class="f">' + pd.l + '<input type="number" data-k="' + pd.k + '" value="' + f(v)
+      + '" min="' + pd.min + '" max="' + pd.max + '" step="' + pd.step + '"></label>';
+  }).join('');
+  rows += '<label class="f">X<input type="number" data-k="cx" value="' + f(p.cx) + '" step="1"></label>';
+  rows += '<label class="f">Y<input type="number" data-k="cy" value="' + f(p.cy) + '" step="1"></label>';
+  box.className = 'pedit show';
+  box.innerHTML = '<div class="grid2">' + rows + '</div>';
+}
+
+function applyParts(){
+  if (!state.parts.length){ toast($('#msg3'), '至少留一块零件', 'err'); return; }
+  var svg = '<svg xmlns="' + NS + '" viewBox="0 0 100 100">' + state.parts.map(genPart).join('') + '</svg>';
+  try {
+    prepare(svg, { keepNum: true });
+  } catch (e){
+    toast($('#msg3'), '生成失败：' + (e.message || ''), 'err');
+    return;
+  }
+  renderSwatches();
+  renderParts();
+  renderAll();
+}
+
+/* ---------- 路径节点编辑 ---------- */
+
+function parsePathData(d){
+  var toks = String(d || '').match(/[MmZzLlHhVvCcSsQqTtAa]|-?\d*\.?\d+(?:[eE][-+]?\d+)?/g) || [];
+  var i = 0, cmd = null, cx = 0, cy = 0, sx = 0, sy = 0, lastC = null, lastQ = null, segs = [];
+  function n(){ return parseFloat(toks[i++]); }
+  while (i < toks.length){
+    var t = toks[i];
+    if (/^[A-Za-z]$/.test(t)){ cmd = t; i++; }
+    if (!cmd){ i++; continue; }
+    var C = cmd.toUpperCase(), rel = (cmd !== C);
+    if (C === 'Z'){ segs.push({ c:'Z' }); cx = sx; cy = sy; cmd = null; continue; }
+    if (C === 'M'){
+      var x = n(), y = n(); if (rel){ x += cx; y += cy; }
+      segs.push({ c:'M', v:[x, y] }); sx = x; sy = y; cx = x; cy = y;
+      cmd = rel ? 'l' : 'L'; lastC = null; lastQ = null;
+    } else if (C === 'L'){
+      var x2 = n(), y2 = n(); if (rel){ x2 += cx; y2 += cy; }
+      segs.push({ c:'L', v:[x2, y2] }); cx = x2; cy = y2; lastC = null; lastQ = null;
+    } else if (C === 'H'){
+      var hx = n(); if (rel) hx += cx; segs.push({ c:'L', v:[hx, cy] }); cx = hx; lastC = null; lastQ = null;
+    } else if (C === 'V'){
+      var vy = n(); if (rel) vy += cy; segs.push({ c:'L', v:[cx, vy] }); cy = vy; lastC = null; lastQ = null;
+    } else if (C === 'C' || C === 'S'){
+      var c1x, c1y;
+      if (C === 'C'){ c1x = n(); c1y = n(); }
+      else { c1x = lastC ? 2 * cx - lastC[0] : cx; c1y = lastC ? 2 * cy - lastC[1] : cy; }
+      var c2x = n(), c2y = n(), ex = n(), ey = n();
+      if (rel){ if (C === 'C'){ c1x += cx; c1y += cy; } c2x += cx; c2y += cy; ex += cx; ey += cy; }
+      segs.push({ c:'C', v:[c1x, c1y, c2x, c2y, ex, ey] });
+      lastC = [c2x, c2y]; lastQ = null; cx = ex; cy = ey;
+    } else if (C === 'Q' || C === 'T'){
+      var qx, qy;
+      if (C === 'Q'){ qx = n(); qy = n(); if (rel){ qx += cx; qy += cy; } }
+      else { qx = lastQ ? 2 * cx - lastQ[0] : cx; qy = lastQ ? 2 * cy - lastQ[1] : cy; }
+      var qex = n(), qey = n(); if (rel){ qex += cx; qey += cy; }
+      segs.push({ c:'Q', v:[qx, qy, qex, qey] });
+      lastQ = [qx, qy]; lastC = null; cx = qex; cy = qey;
+    } else if (C === 'A'){
+      var rx = n(), ry = n(), rot = n(), laf = n(), sf = n(), ax = n(), ay = n();
+      if (rel){ ax += cx; ay += cy; }
+      segs.push({ c:'A', v:[rx, ry, rot, laf, sf, ax, ay] });
+      lastC = null; lastQ = null; cx = ax; cy = ay;
+    } else { i++; }
+  }
+  return segs;
+}
+
+function serialPath(segs){
+  return segs.map(function(s){
+    if (s.c === 'Z') return 'Z';
+    if (s.c === 'A') return 'A ' + f(s.v[0]) + ' ' + f(s.v[1]) + ' ' + f(s.v[2]) + ' ' + s.v[3] + ' ' + s.v[4] + ' ' + f(s.v[5]) + ' ' + f(s.v[6]);
+    return s.c + ' ' + s.v.map(f).join(' ');
+  }).join(' ');
+}
+
+function movePathPoint(segs, si, kind, idx, nx0, ny0){
+  var s = segs[si];
+  if (!s || !s.v) return;
+  if (kind === 'c'){
+    if (s.c === 'C'){
+      var off = idx === 0 ? 0 : 2;
+      s.v[off] = nx0; s.v[off + 1] = ny0;
+    } else if (s.c === 'Q'){ s.v[0] = nx0; s.v[1] = ny0; }
+    return;
+  }
+  var ox, oy;
+  if (s.c === 'L' || s.c === 'M'){ ox = s.v[0]; oy = s.v[1]; s.v[0] = nx0; s.v[1] = ny0; }
+  else if (s.c === 'C'){ ox = s.v[4]; oy = s.v[5]; s.v[4] = nx0; s.v[5] = ny0; }
+  else if (s.c === 'Q'){ ox = s.v[2]; oy = s.v[3]; s.v[2] = nx0; s.v[3] = ny0; }
+  else if (s.c === 'A'){ ox = s.v[5]; oy = s.v[6]; s.v[5] = nx0; s.v[6] = ny0; }
+  else return;
+  var dx = nx0 - ox, dy = ny0 - oy;
+  if (s.c === 'C'){ s.v[0] += dx; s.v[1] += dy; }
+  if (s.c === 'Q'){ s.v[0] += dx; s.v[1] += dy; }
+  for (var j = si - 1; j >= 0; j--){
+    var ps = segs[j];
+    if (ps.c === 'Z') continue;
+    if (ps.c === 'C'){ ps.v[2] += dx; ps.v[3] += dy; }
+    else if (ps.c === 'Q'){ ps.v[0] += dx; ps.v[1] += dy; }
+    break;
+  }
+}
+
+function innerOf(el){
+  var out = '';
+  for (var i = 0; i < el.childNodes.length; i++){
+    var nd = el.childNodes[i];
+    if (nd.nodeType === 1) out += ser.serializeToString(nd);
+  }
+  return out;
+}
+
+function refreshInner(){
+  if (state.base && state.base.el) state.base.inner = innerOf(state.base.el);
+}
+
+/* ---------- 面板 ---------- */
+
+function renderSwatches(){
+  var box = $('#swatches');
+  if (!state.colors.length){
+    box.innerHTML = '<span class="tiny">这个形状没有可替换的纯色（可能是渐变或纯线条）。</span>';
+    return;
+  }
+  box.innerHTML = state.colors.map(function(c, i){
+    return '<div class="sw" data-hex="' + c.hex + '">'
+      + '<span class="dot" style="background:' + c.hex + '"></span>'
+      + '<span class="hex">' + c.hex + '</span>'
+      + '<span class="cnt">' + c.count + ' 处</span>'
+      + '<span class="seg" data-i="' + i + '">'
+      + '<button data-role="theme"' + (c.role === 'theme' ? ' class="on"' : '') + '>主题</button>'
+      + '<button data-role="keep"' + (c.role === 'keep' ? ' class="on"' : '') + '>保留</button>'
+      + '</span></div>';
+  }).join('');
+  $$('#swatches .seg button').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var row = btn.closest('.sw');
+      var hex = row.getAttribute('data-hex');
+      state.colorRole[hex] = btn.getAttribute('data-role');
+      renderSwatches();
+      renderAll();
+    });
+  });
+}
+
+function renderOutput(){
+  var c = composeEl();
+  if (!c){ $('#outTpl').value = ''; $('#outHint').textContent = ''; return; }
+  var tpl = toTemplate(c.el);
+  $('#outTpl').value = tpl;
+  var n = (state.base.inner.match(/<(path|rect|circle|ellipse|line|polygon|polyline)\b/g) || []).length;
+  $('#outHint').textContent = tpl.length + ' 字符 · ' + n + ' 个图形';
+}
+
+function syncNumUI(){
+  $('#numOn').checked = state.num.on;
+  $('#numSize').value = Math.round(state.num.size * 10) / 10;
+  $('#numWeight').value = String(state.num.weight);
+  $('#numColor').value = state.num.colorMode;
+  $('#numCustom').value = state.num.custom;
+  $('#numX').value = Math.round(state.num.x);
+  $('#numY').value = Math.round(state.num.y);
+  $('#numCtl').style.opacity = state.num.on ? '1' : '.45';
+  $('#numCtl').style.pointerEvents = state.num.on ? 'auto' : 'none';
+}
+
+function syncGeomUI(){
+  $('#viewW').value = state.viewW;
+  $('#padL').value = state.padL;
+  $('#padR').value = state.padR;
+  $('#padT').value = state.padT;
+  $('#padB').value = state.padB;
+  $('#strokeScale').value = state.strokeScale;
+  $('#scale').value = state.scale;
+  $('#fitCanvas').checked = state.fitVb;
+}
+
+function renderAll(){
+  renderBoard();
+  renderPreview();
+  renderOutput();
+  syncNumUI();
+}
+
+/* ---------- 载入 ---------- */
+
+function loadShape(text, label){
+  try {
+    prepare(text);
+    if (label) $('#srcInfo').textContent = label;
+    else $('#srcInfo').textContent = '已载入形状 · ' + state.colors.length + ' 种颜色';
+    renderSwatches();
+    renderAll();
+    toast($('#msg1'), '形状已载入', 'ok');
+  } catch (e){
+    toast($('#msg1'), e.message || '载入失败', 'err');
+  }
+}
+
+function loadBubbleJson(obj){
+  if (!obj || typeof obj !== 'object') throw new Error('这不是一个气泡包 JSON');
+  if (!obj.svgTemplate) throw new Error('JSON 里没有 svgTemplate 字段');
+  var t = String(obj.svgTemplate);
+  state.theme.dayEmp = obj.dayEmphasisColor || state.theme.dayEmp;
+  state.theme.dayNor = obj.dayNormalColor || state.theme.dayNor;
+  state.theme.nightEmp = obj.nightEmphasisColor || state.theme.nightEmp;
+  state.theme.nightNor = obj.nightNormalColor || state.theme.nightNor;
+  state.scale = (typeof obj.sizeScale === 'number') ? obj.sizeScale : state.scale;
+  state.name = obj.name || state.name;
+
+  var preparedSrc = t.replace(/\$\{color\}/g, SENTINEL).replace(/\$\{num\}/g, '8');
+  try {
+    prepare(preparedSrc);
+  } catch (e){
+    throw new Error('包里的 svgTemplate 解析失败：' + (e.message || ''));
+  }
+  state.colorRole[SENTINEL] = 'theme';
+  scanColors();
+  renderSwatches();
+  syncThemeUI();
+  $('#srcInfo').textContent = '已导入气泡包「' + state.name + '」';
+  renderAll();
+  toast($('#msg1'), '气泡包已导入，改完直接下载新的 zip', 'ok');
+}
+
+function syncThemeUI(){
+  $('#cDayEmp').value = state.theme.dayEmp;
+  $('#cDayNor').value = state.theme.dayNor;
+  $('#cNightEmp').value = state.theme.nightEmp;
+  $('#cNightNor').value = state.theme.nightNor;
+  $('#bname').value = state.name;
+  $('#scale').value = state.scale;
+}
+
+function readFile(file){
+  var name = (file.name || '').toLowerCase();
+  if (/\.zip$/.test(name)) return readZipFile(file);
+  if (/\.svg$/.test(name)) return file.text().then(function(t){ loadShape(t, '已载入 ' + file.name); });
+  if (/\.json$/.test(name)) return file.text().then(function(t){ loadJsonText(t); });
+  return file.text().then(function(t){
+    t = t.trim();
+    if (t.charAt(0) === '<') loadShape(t, '已载入 ' + file.name);
+    else loadJsonText(t);
+  });
+}
+
+function loadJsonText(t){
+  var obj;
+  try { obj = JSON.parse(t); }
+  catch (e){ toast($('#msg1'), '这不是合法的 JSON', 'err'); return; }
+  try { loadBubbleJson(obj); }
+  catch (e){ toast($('#msg1'), e.message || '导入失败', 'err'); }
+}
+
+/* ---------- zip 读 ---------- */
+
+function readZipFile(file){
+  return file.arrayBuffer().then(function(buf){ return readZip(buf); }).then(function(files){
+    var hit = null;
+    for (var i = 0; i < files.length; i++){
+      if (/(^|\/)bubble\.json$/i.test(files[i].name)){ hit = files[i]; break; }
+    }
+    if (!hit){
+      for (var j = 0; j < files.length; j++){
+        if (/\.json$/i.test(files[j].name)){ hit = files[j]; break; }
+      }
+    }
+    if (!hit) throw new Error('压缩包里没找到 bubble.json');
+    var txt = new TextDecoder('utf-8').decode(hit.data);
+    loadJsonText(txt);
+  }).catch(function(e){
+    toast($('#msg1'), '读包失败：' + (e.message || ''), 'err');
+  });
+}
+
+function readZip(buf){
+  var dv = new DataView(buf);
+  var eocd = -1;
+  var floor = Math.max(0, buf.byteLength - 22 - 65536);
+  for (var i = buf.byteLength - 22; i >= floor; i--){
+    if (dv.getUint32(i, true) === 0x06054b50){ eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error('不是有效的 zip');
+  var count = dv.getUint16(eocd + 10, true);
+  var off = dv.getUint32(eocd + 16, true);
+  var out = [];
+  var jobs = [];
+  for (var d = 0; d < count; d++){
+    if (dv.getUint32(off, true) !== 0x02014b50) break;
+    var method = dv.getUint16(off + 10, true);
+    var csize = dv.getUint32(off + 20, true);
+    var nlen = dv.getUint16(off + 28, true);
+    var elen = dv.getUint16(off + 30, true);
+    var clen = dv.getUint16(off + 32, true);
+    var lho = dv.getUint32(off + 42, true);
+    var name = new TextDecoder('utf-8').decode(new Uint8Array(buf, off + 46, nlen));
+    var lNlen = dv.getUint16(lho + 26, true);
+    var lElen = dv.getUint16(lho + 28, true);
+    var start = lho + 30 + lNlen + lElen;
+    var raw = new Uint8Array(buf, start, csize);
+    jobs.push((function(nm, mth, dta){
+      return {
+        name: nm,
+        run: function(){
+          if (mth === 0) return Promise.resolve(dta);
+          if (mth !== 8) return Promise.reject(new Error('不支持的压缩方式'));
+          var ds = new DecompressionStream('deflate-raw');
+          var stream = new Blob([dta]).stream().pipeThrough(ds);
+          return new Response(stream).arrayBuffer().then(function(b){ return new Uint8Array(b); });
+        }
+      };
+    })(name, method, raw));
+    off += 46 + nlen + elen + clen;
+  }
+  return Promise.all(jobs.map(function(j){ return j.run(); })).then(function(res){
+    return res.map(function(d, i){ return { name: jobs[i].name, data: d }; });
+  });
+}
+
+/* ---------- zip 写 ---------- */
+
+var _crcTab = null;
+function crc32(bytes){
+  if (!_crcTab){
+    _crcTab = new Uint32Array(256);
+    for (var n = 0; n < 256; n++){
+      var c = n;
+      for (var k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      _crcTab[n] = c >>> 0;
+    }
+  }
+  var crc = 0xFFFFFFFF;
+  for (var i = 0; i < bytes.length; i++){
+    crc = _crcTab[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+  }
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+
+function makeZip(entries){
+  var enc = new TextEncoder();
+  var parts = [];
+  var central = [];
+  var offset = 0;
+  var now = new Date();
+  var dosTime = ((now.getHours() & 31) << 11) | ((now.getMinutes() & 63) << 5) | ((now.getSeconds() >> 1) & 31);
+  var dosDate = (((now.getFullYear() - 1980) & 127) << 9) | (((now.getMonth() + 1) & 15) << 5) | (now.getDate() & 31);
+
+  entries.forEach(function(e){
+    var nb = enc.encode(e.name);
+    var data = e.data;
+    var crc = crc32(data);
+
+    var lh = new Uint8Array(30 + nb.length);
+    var dv = new DataView(lh.buffer);
+    dv.setUint32(0, 0x04034b50, true);
+    dv.setUint16(4, 20, true);
+    dv.setUint16(6, 0x0800, true);
+    dv.setUint16(8, 0, true);
+    dv.setUint16(10, dosTime, true);
+    dv.setUint16(12, dosDate, true);
+    dv.setUint32(14, crc, true);
+    dv.setUint32(18, data.length, true);
+    dv.setUint32(22, data.length, true);
+    dv.setUint16(26, nb.length, true);
+    dv.setUint16(28, 0, true);
+    lh.set(nb, 30);
+    parts.push(lh, data);
+
+    var ch = new Uint8Array(46 + nb.length);
+    var cv = new DataView(ch.buffer);
+    cv.setUint32(0, 0x02014b50, true);
+    cv.setUint16(4, 20, true);
+    cv.setUint16(6, 20, true);
+    cv.setUint16(8, 0x0800, true);
+    cv.setUint16(10, 0, true);
+    cv.setUint16(12, dosTime, true);
+    cv.setUint16(14, dosDate, true);
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, data.length, true);
+    cv.setUint32(24, data.length, true);
+    cv.setUint16(28, nb.length, true);
+    cv.setUint16(30, 0, true);
+    cv.setUint16(32, 0, true);
+    cv.setUint16(34, 0, true);
+    cv.setUint16(36, 0, true);
+    cv.setUint32(38, 0, true);
+    cv.setUint32(42, offset, true);
+    ch.set(nb, 46);
+    central.push(ch);
+
+    offset += lh.length + data.length;
+  });
+
+  var cdSize = central.reduce(function(a, b){ return a + b.length; }, 0);
+  var eocd = new Uint8Array(22);
+  var ev = new DataView(eocd.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(4, 0, true);
+  ev.setUint16(6, 0, true);
+  ev.setUint16(8, entries.length, true);
+  ev.setUint16(10, entries.length, true);
+  ev.setUint32(12, cdSize, true);
+  ev.setUint32(16, offset, true);
+  ev.setUint16(20, 0, true);
+
+  return new Blob(parts.concat(central, [eocd]), { type: 'application/zip' });
+}
+
+/* ---------- 导出 ---------- */
+
+function buildManifest(){
+  var c = composeEl();
+  if (!c || !state.base) return null;
+  return {
+    dayEmphasisColor: state.theme.dayEmp,
+    dayNormalColor: state.theme.dayNor,
+    dirName: 'bubble',
+    formatVersion: 1,
+    name: state.name || '气泡',
+    nightEmphasisColor: state.theme.nightEmp,
+    nightNormalColor: state.theme.nightNor,
+    resources: [],
+    sizeScale: state.scale,
+    svgTemplate: toTemplate(c.el),
+    updatedAt: Date.now()
+  };
+}
+
+function download(blob, filename){
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){
+    URL.revokeObjectURL(url);
+    if (a.parentNode) a.parentNode.removeChild(a);
+  }, 2000);
+}
+
+/* ---------- 工具 ---------- */
+
+function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+function numVal(el, def){ var v = parseFloat(el.value); return isNaN(v) ? def : v; }
+
+/* 几何一变（画布宽、留白、描边倍数），数字要跟着图形一起走：
+   位置按「相对图形的坐标」换算，字号按缩放比一起缩。 */
+function snapGeom(){
+  var g = geom();
+  return { k: g.k, padL: g.padL, padT: g.padT };
+}
+
+function applyGeomChange(old){
+  if (!old) return;
+  var g = geom();
+  var r = g.k / old.k;
+  if (!isFinite(r) || r <= 0) return;
+  state.num.size *= r;
+  if (!state.num.auto){
+    state.num.x = g.padL + (state.num.x - old.padL) * r;
+    state.num.y = g.padT + (state.num.y - old.padT) * r;
+  }
+}
+
+/* ---------- 事件 ---------- */
+
+var msg1 = $('#msg1'), msg2 = $('#msg2');
+
+$('#drop').addEventListener('click', function(){ $('#file').click(); });
+$('#file').addEventListener('change', function(){
+  var f = this.files && this.files[0];
+  if (f) readFile(f);
+  this.value = '';
+});
+['dragenter','dragover'].forEach(function(ev){
+  $('#drop').addEventListener(ev, function(e){ e.preventDefault(); this.classList.add('over'); });
+});
+['dragleave','dragend'].forEach(function(ev){
+  $('#drop').addEventListener(ev, function(e){ e.preventDefault(); this.classList.remove('over'); });
+});
+$('#drop').addEventListener('drop', function(e){
+  e.preventDefault();
+  this.classList.remove('over');
+  var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if (f) readFile(f);
+});
+
+$('#usePaste').addEventListener('click', function(){
+  var t = $('#paste').value.trim();
+  if (!t){ toast(msg1, '粘贴框是空的', 'err'); return; }
+  if (t.charAt(0) === '{' || t.charAt(0) === '[') loadJsonText(t);
+  else loadShape(t, '已载入粘贴的源码');
+});
+
+$('#useSample').addEventListener('click', function(){
+  loadShape(SAMPLE, '示例：内置模板');
+});
+
+$('#allTheme').addEventListener('click', function(){
+  state.colors.forEach(function(c){ state.colorRole[c.hex] = 'theme'; });
+  renderSwatches(); renderAll();
+});
+$('#allKeep').addEventListener('click', function(){
+  state.colors.forEach(function(c){ state.colorRole[c.hex] = 'keep'; });
+  renderSwatches(); renderAll();
+});
+
+$('#numOn').addEventListener('change', function(){
+  state.num.on = this.checked;
+  renderAll();
+});
+$('#numSize').addEventListener('input', function(){
+  state.num.size = clamp(numVal(this, 20), 1, 400);
+  renderAll();
+});
+$('#numWeight').addEventListener('change', function(){
+  state.num.weight = parseInt(this.value, 10) || 700;
+  renderAll();
+});
+$('#numColor').addEventListener('change', function(){
+  state.num.colorMode = this.value;
+  renderAll();
+});
+$('#numCustom').addEventListener('input', function(){
+  state.num.custom = this.value;
+  renderAll();
+});
+$('#numX').addEventListener('input', function(){
+  state.num.auto = false;
+  state.num.x = numVal(this, 0);
+  renderAll();
+});
+$('#numY').addEventListener('input', function(){
+  state.num.auto = false;
+  state.num.y = numVal(this, 0);
+  renderAll();
+});
+$('#numCenter').addEventListener('click', function(){
+  state.num.auto = true;
+  renderAll();
+});
+
+$('#viewW').addEventListener('change', function(){
+  var old = snapGeom();
+  var w = clamp(numVal(this, 120), 20, 2000);
+  this.value = w;
+  state.viewW = w;
+  applyGeomChange(old);
+  renderAll();
+});
+
+$('#fitCanvas').addEventListener('change', function(){
+  var old = snapGeom();
+  state.fitVb = this.checked;
+  applyGeomChange(old);
+  renderAll();
+});
+
+['padL','padR','padT','padB'].forEach(function(id){
+  $('#' + id).addEventListener('change', function(){
+    var old = snapGeom();
+    var v = clamp(numVal(this, 2), 0, 45);
+    this.value = v;
+    state[id] = v;
+    applyGeomChange(old);
+    renderAll();
+  });
+});
+
+$('#padEven').addEventListener('click', function(){
+  var old = snapGeom();
+  var v = Math.max(state.padL, state.padR, state.padT, state.padB);
+  state.padL = state.padR = state.padT = state.padB = v;
+  syncGeomUI(); applyGeomChange(old); renderAll();
+});
+
+$('#padWide').addEventListener('click', function(){
+  var old = snapGeom();
+  state.padL = state.padR = 25;
+  syncGeomUI(); applyGeomChange(old); renderAll();
+});
+
+$('#strokeScale').addEventListener('change', function(){
+  var old = snapGeom();
+  state.strokeScale = clamp(numVal(this, 1), 0.2, 6);
+  this.value = state.strokeScale;
+  applyGeomChange(old);
+  renderAll();
+});
+
+$('#scale').addEventListener('change', function(){
+  state.scale = clamp(numVal(this, 1.1), 0.2, 6);
+  this.value = state.scale;
+  renderPreview();
+  renderOutput();
+});
+
+['cDayEmp','cDayNor','cNightEmp','cNightNor'].forEach(function(id){
+  $('#' + id).addEventListener('input', function(){
+    state.theme[id === 'cDayEmp' ? 'dayEmp' : id === 'cDayNor' ? 'dayNor' : id === 'cNightEmp' ? 'nightEmp' : 'nightNor'] = this.value;
+    renderBoard();
+    renderPreview();
+  });
+});
+
+$('#bname').addEventListener('input', function(){
+  state.name = this.value.trim() || '气泡';
+  renderOutput();
+});
+
+$('#segDay').addEventListener('click', function(e){
+  var b = e.target.closest('button');
+  if (!b) return;
+  state.preview.night = b.getAttribute('data-v') === 'night';
+  $$('#segDay button').forEach(function(x){ x.classList.toggle('on', x === b); });
+  renderBoard();
+  renderPreview();
+});
+$('#segEmp').addEventListener('click', function(e){
+  var b = e.target.closest('button');
+  if (!b) return;
+  state.preview.emp = b.getAttribute('data-v') === 'emp';
+  $$('#segEmp button').forEach(function(x){ x.classList.toggle('on', x === b); });
+  renderBoard();
+  renderPreview();
+});
+
+$('#segDigits').addEventListener('click', function(e){
+  var b = e.target.closest('button');
+  if (!b) return;
+  state.demoNum = b.getAttribute('data-v');
+  $$('#segDigits button').forEach(function(x){ x.classList.toggle('on', x === b); });
+  renderBoard();
+});
+
+$('#copyTpl').addEventListener('click', function(){
+  var v = $('#outTpl').value;
+  if (!v){ toast(msg2, '还没有可复制的模板', 'err'); return; }
+  var done = function(){ toast(msg2, '已复制，粘贴到阅读的段评气泡设置里即可', 'ok'); };
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(v).then(done, function(){
+      $('#outTpl').select();
+      document.execCommand('copy');
+      done();
+    });
+  } else {
+    $('#outTpl').select();
+    document.execCommand('copy');
+    done();
+  }
+});
+
+$('#dlZip').addEventListener('click', function(){
+  var m = buildManifest();
+  if (!m){ toast(msg2, '先载入一个形状', 'err'); return; }
+  try {
+    var json = JSON.stringify(m, null, 2);
+    var zip = makeZip([{ name: m.dirName + '/bubble.json', data: new TextEncoder().encode(json) }]);
+    download(zip, (m.name || '气泡') + '.zip');
+    toast(msg2, '已打包下载。若浏览器没反应，请用系统浏览器打开本页再试。', 'ok');
+  } catch (e){
+    toast(msg2, '打包失败：' + (e.message || ''), 'err');
+  }
+});
+
+$('#dlJson').addEventListener('click', function(){
+  var m = buildManifest();
+  if (!m){ toast(msg2, '先载入一个形状', 'err'); return; }
+  download(new Blob([JSON.stringify(m, null, 2)], { type: 'application/json' }), 'bubble.json');
+  toast(msg2, '已下载 bubble.json（自己压成 zip 也能导入）', 'ok');
+});
+
+/* ---------- 模式 / 积木 事件 ---------- */
+
+function setMode(m){
+  state.mode = m;
+  $$('#segMode button').forEach(function(x){ x.classList.toggle('on', x.getAttribute('data-v') === m); });
+  $('#boardHint').textContent = m === 'num' ? '直接拖数字' : (m === 'part' ? '点住一块拖位置' : '拖白点 / 橙点改形状');
+  renderBoard();
+}
+
+$('#segMode').addEventListener('click', function(e){
+  var b = e.target.closest('button');
+  if (!b) return;
+  setMode(b.getAttribute('data-v'));
+});
+
+$('#newBubble').addEventListener('click', function(){
+  state.parts = [newPart('bubble')];
+  state.selPart = state.parts[0].id;
+  state.num.auto = true;
+  state.num.size = Math.max(10, Math.round(state.viewW * 0.22));
+  applyParts();
+  renderPartEditor();
+  toast($('#msg3'), '已放一个气泡，右边画布上可以直接拖', 'ok');
+});
+
+$('#presetTag').addEventListener('click', function(){
+  var b = newPart('bubble');
+  b.cx = 78; b.cy = 50;
+  b.w = 76; b.h = 64; b.r = 8; b.sw = 5;
+  b.tail = 'tri'; b.side = 'left'; b.tailSize = 40; b.tailSpan = 64; b.tailPos = 0.5;
+  var dot = newPart('dot');
+  dot.cx = 36; dot.cy = 50; dot.d = 20;
+  state.parts = [b, dot];
+  state.selPart = b.id;
+  applyParts();
+
+  /* 数字按原标签的比例摆到右侧，省得再拖 */
+  var g = geom();
+  state.num.auto = false;
+  state.num.x = g.padL + (80 - g.cv.x) * g.k;
+  state.num.y = g.padT + (50 - g.cv.y) * g.k;
+  state.num.size = Math.max(6, 36 * g.k);
+  state.num.weight = 900;
+  state.num.colorMode = 'theme';
+
+  renderPartEditor();
+  renderAll();
+  toast($('#msg3'), '吊牌已生成：左尖 + 矩形 + 挂孔圆，数字在右侧。想挪就切到「数字」模式拖', 'ok');
+});
+
+$('#newBlank').addEventListener('click', function(){
+  state.parts = [];
+  state.selPart = null;
+  state.base = null;
+  renderParts();
+  renderPartEditor();
+  renderAll();
+  toast($('#msg3'), '已清空，用下面的列表一块块加', 'ok');
+});
+
+$('#addPart').addEventListener('click', function(){
+  var k = $('#addKind').value;
+  if (!KINDS[k]) return;
+  var p = newPart(k);
+  var n = state.parts.length;
+  p.cx = 50 + ((n % 3) - 1) * 7;
+  p.cy = 50 + ((n % 3) - 1) * 7;
+  state.parts.push(p);
+  state.selPart = p.id;
+  applyParts();
+  renderPartEditor();
+});
+
+$('#partList').addEventListener('click', function(e){
+  var del = e.target.closest('[data-del]');
+  if (del){
+    e.stopPropagation();
+    var id = del.getAttribute('data-del');
+    state.parts = state.parts.filter(function(p){ return p.id !== id; });
+    if (state.selPart === id) state.selPart = state.parts.length ? state.parts[0].id : null;
+    renderPartEditor();
+    if (state.parts.length) applyParts(); else renderParts();
+    return;
+  }
+  var row = e.target.closest('.prow');
+  if (!row) return;
+  state.selPart = row.getAttribute('data-id');
+  renderParts(); renderPartEditor(); renderBoard();
+});
+
+function onPartField(e){
+  var el = e.target;
+  if (e.type === 'change' && el.tagName === 'INPUT') return;  /* 数字框的 input 已经处理过，别再重绘一次 */
+  var k = el.getAttribute && el.getAttribute('data-k');
+  if (!k) return;
+  var p = getPart(state.selPart);
+  if (!p) return;
+  if (el.tagName === 'SELECT') p[k] = el.value;
+  else {
+    var v = parseFloat(el.value);
+    if (isNaN(v)) return;
+    p[k] = v;
+  }
+  applyParts();
+}
+$('#partEdit').addEventListener('input', onPartField);
+$('#partEdit').addEventListener('change', onPartField);
+
+$('#nodeOn').addEventListener('click', function(){
+  setMode('node');
+  var n = state.base ? $$('path', state.base.el).length : 0;
+  toast($('#msg1'), n ? ('显示 ' + n + ' 条路径的锚点，拖白点改形状') : '这个形状里没有 <path>，圆和矩形请用积木调参数', n ? 'ok' : 'err');
+});
+
+$('#nodeReset').addEventListener('click', function(){
+  if (!state.baseSrc){ toast($('#msg3'), '还没有可还原的形状', 'err'); return; }
+  try {
+    prepare(state.baseSrc, { keepNum: true });
+    renderSwatches();
+    renderAll();
+    toast($('#msg3'), '形状已还原', 'ok');
+  } catch (err){
+    toast($('#msg3'), '还原失败：' + (err.message || err), 'err');
+  }
+});
+
+$('#addKind').innerHTML = Object.keys(KINDS).map(function(k){
+  return '<option value="' + k + '">' + KINDS[k].label + '</option>';
+}).join('');
+
+var _rsz = null;
+window.addEventListener('resize', function(){
+  clearTimeout(_rsz);
+  _rsz = setTimeout(function(){ if (state.base) renderBoard(); }, 120);
+});
+
+/* ---------- 启动 ---------- */
+
+syncThemeUI();
+syncGeomUI();
+loadShape(SAMPLE, '示例：内置模板');
+renderSwatches();
+renderAll();
+
+})();
+</script>
+</body>
+</html>

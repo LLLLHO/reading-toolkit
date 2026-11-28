@@ -1,0 +1,2102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#4f6ef2">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>SVG 批量改色 · 导出</title>
+<style>
+:root{
+  --bg:#f5f5f3;
+  --surface:#ffffff;
+  --line:#e6e5e0;
+  --line-soft:#efeeea;
+  --text:#1d1d1b;
+  --muted:#77766f;
+  --faint:#a6a59d;
+  --ink:#1d1d1b;
+  --radius:12px;
+  --checker:repeating-conic-gradient(#e9e8e4 0% 25%,#fff 0% 50%) 50%/14px 14px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased;overflow:hidden;
+}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+
+/* ---------- top ---------- */
+.app{display:grid;grid-template-rows:auto 1fr;height:100vh}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 18px 12px}
+.brand{display:flex;align-items:center;gap:11px;min-width:0}
+.mark{width:30px;height:30px;border-radius:9px;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:14px;flex:none}
+.brand h1{margin:0;font-size:14.5px;font-weight:600;letter-spacing:.2px}
+.brand p{margin:1px 0 0;font-size:11.5px;color:var(--muted)}
+.tb-actions{display:flex;align-items:center;gap:8px}
+.btn{
+  border:1px solid var(--line);background:var(--surface);border-radius:9px;
+  padding:7px 13px;font-size:13px;transition:.12s;
+}
+.btn:hover{border-color:var(--faint);background:#fbfbfa}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.ghost:hover{background:#eceae5;color:var(--text)}
+.btn.solid{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn.solid:hover{background:#333331}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.stat{font-size:12px;color:var(--faint);margin-right:4px;white-space:nowrap}
+
+/* ---------- layout ---------- */
+.layout{
+  display:grid;grid-template-columns:252px minmax(320px,1fr) 328px;
+  gap:12px;padding:0 18px 16px;min-height:0;
+}
+.panel{
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  display:flex;flex-direction:column;min-height:0;overflow:hidden;
+}
+.phead{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:11px 14px;border-bottom:1px solid var(--line-soft);flex:none;
+}
+.phead h2{margin:0;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.6px}
+.pbody{flex:1;min-height:0;overflow:auto}
+
+/* ---------- queue ---------- */
+.queue .pbody{padding:6px}
+.fitem{
+  display:flex;align-items:center;gap:9px;padding:7px 8px;border-radius:9px;
+  cursor:pointer;position:relative;
+}
+.fitem:hover{background:#f7f6f3}
+.fitem.on{background:#efeee9}
+.fitem .thumb{
+  width:32px;height:32px;border-radius:7px;flex:none;border:1px solid var(--line);
+  background:var(--checker);display:grid;place-items:center;overflow:hidden;
+}
+.fitem .thumb img{max-width:88%;max-height:88%;display:block}
+.fitem .meta{min-width:0;flex:1}
+.fitem .nm{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fitem .sub{font-size:10.5px;color:var(--faint);margin-top:1px}
+.fitem .x{
+  border:0;background:transparent;color:var(--faint);font-size:15px;line-height:1;
+  padding:2px 4px;border-radius:5px;opacity:0;flex:none;
+}
+.fitem:hover .x{opacity:1}
+.fitem .x:hover{background:#e5e3dd;color:var(--text)}
+.fitem .ck{accent-color:#1d1d1b;margin:0;flex:none;width:13px;height:13px}
+.fitem.bad{opacity:.55}
+.empty-list{color:var(--faint);font-size:12px;text-align:center;padding:28px 12px;line-height:1.7}
+
+/* ---------- preview ---------- */
+.preview .pbody{display:flex;flex-direction:column;overflow:hidden}
+.stage{
+  flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line-soft);
+}
+.cell{background:var(--surface);display:flex;flex-direction:column;min-height:0;position:relative}
+.cell .cap{
+  font-size:10.5px;color:var(--faint);letter-spacing:.8px;padding:9px 0 2px;text-align:center;flex:none;
+}
+.cell .art{
+  flex:1;min-height:0;display:grid;place-items:center;padding:4px 18px 18px;overflow:hidden;
+}
+.cell .art img{max-width:100%;max-height:100%;display:block}
+.cell.orig .art{background:var(--checker)}
+.cell.new .art{background:var(--checker)}
+.cell.flat .art{background:#fff}
+
+.art.picking{cursor:crosshair}
+.art.picking img{outline:1px dashed rgba(0,0,0,.2);outline-offset:5px;border-radius:2px}
+.pickbar{
+  position:absolute;left:12px;bottom:12px;display:flex;align-items:center;gap:6px;
+  background:rgba(255,255,255,.95);border:1px solid var(--line);border-radius:8px;
+  padding:4px 6px 4px 10px;font-size:11px;color:var(--muted);box-shadow:0 2px 10px rgba(0,0,0,.07);
+}
+.pickbar b{color:var(--text);font-weight:600}
+.pickbar button{
+  border:1px solid var(--line);background:#fff;border-radius:6px;font-size:11px;
+  padding:2px 8px;color:var(--muted);
+}
+.pickbar button:hover{border-color:var(--faint);color:var(--text)}
+
+.palette{
+  flex:none;border-top:1px solid var(--line-soft);padding:10px 14px 12px;
+}
+.palette .pl-top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}
+.palette .pl-top span{font-size:11.5px;color:var(--muted)}
+.palette .pl-top em{font-size:10.5px;color:var(--faint);font-style:normal}
+.colors{display:flex;flex-wrap:wrap;gap:6px}
+.colors .c{
+  width:22px;height:22px;border-radius:6px;border:1px solid rgba(0,0,0,.14);
+  position:relative;cursor:pointer;flex:none;
+}
+.colors .c:hover{transform:translateY(-1px)}
+.colors .c.on{outline:2px solid var(--ink);outline-offset:1px}
+.colors .c .n{
+  position:absolute;right:-4px;bottom:-5px;font-size:9px;background:#fff;border:1px solid var(--line);
+  border-radius:4px;padding:0 2px;color:var(--muted);line-height:1.35;
+}
+
+/* ---------- settings ---------- */
+.settings .pbody{padding:14px}
+.grp{margin-bottom:13px}
+.grp:last-child{margin-bottom:4px}
+.glabel{
+  display:block;font-size:11px;color:var(--faint);letter-spacing:.7px;margin-bottom:7px;font-weight:600;
+}
+.seg{display:flex;background:#f2f1ec;border-radius:9px;padding:3px;gap:2px}
+.seg button{
+  flex:1;border:0;background:transparent;font-size:12.5px;padding:6px 2px;border-radius:7px;
+  color:var(--muted);transition:.12s;
+}
+.seg button.on{background:#fff;color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.07);font-weight:500}
+.hint{font-size:11px;color:var(--faint);margin:7px 0 0;line-height:1.6}
+.hint.warn{background:#fdf4f1;border:1px solid #f2dad2;border-radius:8px;padding:7px 9px;color:#8a4b30;line-height:1.65}
+.hint.warn b{color:#7a3c22}
+.hint.good{color:#2f6b45}
+.hint.good b{color:#20563a;font-weight:600}
+
+.row{display:flex;align-items:center;gap:8px}
+.colorbox{
+  display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:9px;padding:5px 8px 5px 5px;
+}
+.colorbox input[type=color]{
+  width:30px;height:26px;border:0;border-radius:6px;background:transparent;padding:0;cursor:pointer;
+}
+.colorbox input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+.colorbox input[type=color]::-webkit-color-swatch{border:1px solid rgba(0,0,0,.12);border-radius:5px}
+.colorbox input[type=text]{
+  border:0;background:transparent;font:12.5px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+  width:100%;outline:none;text-transform:uppercase;
+}
+.presets{display:grid;grid-template-columns:repeat(10,1fr);gap:5px;margin-top:9px}
+.presets .p{
+  aspect-ratio:1;border-radius:5px;border:1px solid rgba(0,0,0,.12);cursor:pointer;padding:0;
+}
+.presets .p:hover{transform:scale(1.12)}
+.presets .p.on{outline:2px solid var(--ink);outline-offset:1px}
+
+.chk{display:flex;align-items:center;gap:7px;font-size:12.5px;color:#3b3a36;cursor:pointer;line-height:1.9}
+.chk input{accent-color:#1d1d1b;width:13px;height:13px;margin:0}
+.chk-row{display:flex;gap:16px;flex-wrap:wrap}
+
+.field{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:12.5px}
+.field>span:first-child{color:var(--muted);flex:none;width:34px}
+.field input[type=text]{
+  border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:12.5px;
+  width:100%;outline:none;background:#fff;
+}
+.field input[type=text]:focus{border-color:var(--faint)}
+.field input[type=number]{
+  border:1px solid var(--line);border-radius:8px;padding:4px 7px;font-size:12.5px;
+  outline:none;background:#fff;-moz-appearance:textfield;
+}
+.field input[type=number]:focus{border-color:var(--faint)}
+.tiny{font-style:normal;font-size:10.5px;color:var(--faint);line-height:1.45}
+.lnk{
+  border:0;background:transparent;padding:0;font-size:11px;color:var(--ink);
+  border-bottom:1px solid var(--ink);cursor:pointer;
+}
+.scale-row{display:flex;gap:4px}
+.scale-row button{
+  border:1px solid var(--line);background:#fff;border-radius:7px;font-size:11.5px;
+  padding:4px 7px;color:var(--muted);min-width:34px;
+}
+.scale-row button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.mini-color{
+  width:26px;height:24px;border:1px solid var(--line);border-radius:6px;padding:0;background:transparent;
+}
+.mini-color::-webkit-color-swatch-wrapper{padding:2px}
+.mini-color::-webkit-color-swatch{border:0;border-radius:4px}
+
+.exportbar{margin-top:4px;padding-top:12px;border-top:1px solid var(--line-soft)}
+.pfoot{flex:none;border-top:1px solid var(--line-soft);padding:11px 14px 12px;background:#fff}
+.pfoot .progress{margin-top:9px}
+.pfoot .log{margin-top:7px}
+.progress{height:3px;background:#eeede9;border-radius:2px;margin-top:10px;overflow:hidden}
+.progress div{height:100%;width:0;background:var(--ink);transition:width .18s}
+.log{margin-top:9px;font-size:11px;color:var(--muted);min-height:16px;line-height:1.6}
+.log .err{color:#b4342b}
+.log .ok{color:#2f6b45}
+
+/* ---------- drop ---------- */
+.drop{
+  position:fixed;inset:0;background:rgba(245,245,243,.86);backdrop-filter:blur(2px);
+  display:none;place-items:center;z-index:50;
+}
+.drop.on{display:grid}
+.drop .in{
+  border:2px dashed #b9b7ae;border-radius:18px;padding:44px 60px;font-size:14px;color:var(--muted);background:#fff;
+}
+@media (max-width:980px){
+  body{overflow:auto}
+  .app{height:auto;min-height:100vh}
+  .layout{grid-template-columns:1fr;padding:0 12px 12px}
+  .panel{min-height:auto}
+  .stage{min-height:240px}
+  .preview .pbody{overflow:visible}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="mark">◨</div>
+      <div>
+        <h1>SVG 批量改色</h1>
+        <p>批量换色 · 补填充 · 导出 PNG / SVG</p>
+      </div>
+    </div>
+    <div class="tb-actions">
+      <span class="stat" id="stat">空</span>
+      <button class="btn" id="btnAdd">选择文件</button>
+      <button class="btn" id="btnDir">导入文件夹</button>
+      <button class="btn ghost" id="btnClear">清空</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="panel queue">
+      <div class="phead"><h2>文件队列</h2><span class="stat" id="qCount">0</span></div>
+      <div class="pbody" id="fileList">
+        <div class="empty-list">还没有文件<br>拖入 SVG 或点上方按钮</div>
+      </div>
+    </aside>
+
+    <section class="panel preview">
+      <div class="phead">
+        <h2>预览</h2>
+        <span class="stat" id="previewMeta">—</span>
+      </div>
+      <div class="pbody">
+        <div class="stage">
+          <div class="cell orig">
+            <div class="cap">原图</div>
+            <div class="art"><img id="imgOrig" alt=""></div>
+          </div>
+          <div class="cell new" id="newCell">
+            <div class="cap">处理后</div>
+            <div class="art" id="artNew"><img id="imgNew" alt=""></div>
+            <div class="pickbar" id="pickbar" style="display:none">
+              <span>已点选 <b id="pickCount">0</b> 处</span>
+              <button type="button" id="pickUndo">撤销</button>
+              <button type="button" id="pickClear">清空</button>
+            </div>
+          </div>
+        </div>
+        <div class="palette">
+          <div class="pl-top">
+            <span>用到的颜色</span>
+            <em>点色块 = 拿它当替换源色</em>
+          </div>
+          <div class="colors" id="colorList"></div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel settings">
+      <div class="phead"><h2>参数</h2></div>
+      <div class="pbody">
+        <div class="grp">
+          <label class="glabel">处理模式</label>
+          <div class="seg" id="modeSeg">
+            <button data-mode="all">统一刷色</button>
+            <button data-mode="replace">按色替换</button>
+            <button data-mode="fillonly">只补填充</button>
+          </div>
+          <p class="hint" id="modeHint"></p>
+        </div>
+
+        <div class="grp" id="replaceGrp" style="display:none">
+          <label class="glabel">要被替换的颜色</label>
+          <div class="colorbox">
+            <input type="color" id="srcPicker" value="#000000">
+            <input type="text" id="srcHex" value="" placeholder="从下方色板点选">
+          </div>
+          <div class="field" style="margin-top:7px">
+            <span>容差</span>
+            <input type="number" id="tol" min="0" max="60" step="1" value="12" style="width:58px">
+            <em class="tiny">0 = 精确匹配</em>
+          </div>
+          <p class="hint" id="matchHint"></p>
+        </div>
+
+        <div class="grp">
+          <label class="glabel">目标颜色</label>
+          <div class="colorbox">
+            <input type="color" id="colorPicker" value="#e8543f">
+            <input type="text" id="hexInput" value="#E8543F">
+          </div>
+          <div class="presets" id="presets"></div>
+        </div>
+
+        <div class="grp">
+          <label class="glabel">作用范围</label>
+          <label class="chk"><input type="checkbox" id="optFill" checked> 填充 fill（含 currentColor）</label>
+          <label class="chk"><input type="checkbox" id="optStroke" checked> 描边 stroke</label>
+          <label class="chk"><input type="checkbox" id="optGradient"> 渐变节点 stop-color</label>
+          <p class="hint">默认不动渐变，也不碰 none 和 url(#…)。</p>
+        </div>
+
+        <div class="grp">
+          <label class="chk"><input type="checkbox" id="optPick"> ✋ 点选填充：在右边预览上点空心区域</label>
+          <p class="hint">点了才填，不改原色。一条路径画全身的线稿靠它才不会糊成一块。</p>
+        </div>
+
+        <div class="exportbar">
+          <label class="glabel">导出</label>
+          <div class="chk-row" style="margin-bottom:4px">
+            <label class="chk"><input type="checkbox" id="outPng" checked> PNG</label>
+            <label class="chk"><input type="checkbox" id="outSvg" checked> SVG</label>
+          </div>
+
+          <div class="field">
+            <span>尺寸</span>
+            <div class="seg" id="sizeSeg" style="flex:1">
+              <button data-m="scale" class="on">按倍率</button>
+              <button data-m="width">指定宽度</button>
+            </div>
+          </div>
+
+          <div class="field" id="scaleField">
+            <span>倍率</span>
+            <div class="scale-row" id="scaleRow">
+              <button data-s="1" class="on">1x</button>
+              <button data-s="2">2x</button>
+              <button data-s="3">3x</button>
+              <button data-s="4">4x</button>
+            </div>
+          </div>
+
+          <div class="field" id="widthField" style="display:none">
+            <span>宽度</span>
+            <input type="number" id="outWidth" min="8" max="4096" step="1" value="512" style="width:78px">
+            <em class="tiny">px，高度按比例算</em>
+          </div>
+          <p class="hint" id="sizeHint"></p>
+
+          <div class="field">
+            <span>背景</span>
+            <label class="chk" style="margin-right:2px"><input type="checkbox" id="bgTrans" checked> 透明</label>
+            <input type="color" class="mini-color" id="bgColor" value="#ffffff" disabled>
+          </div>
+
+          <div class="field">
+            <span>前缀</span>
+            <input type="text" id="prefix" placeholder="比如 icon-">
+          </div>
+          <div class="field">
+            <span>后缀</span>
+            <input type="text" id="suffix" placeholder="比如 -light">
+          </div>
+        </div>
+      </div>
+      <div class="pfoot">
+        <button class="btn solid" id="btnExport" style="width:100%;padding:9px">导出全部</button>
+        <div class="progress"><div id="bar"></div></div>
+        <div class="log" id="log"></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<div class="drop" id="drop"><div class="in">松开，导入 SVG 文件</div></div>
+<input type="file" id="fileInput" accept=".svg,image/svg+xml" multiple hidden>
+<input type="file" id="dirInput" webkitdirectory directory multiple hidden>
+
+<script>
+(function(){
+"use strict";
+
+/* ============ 基础工具 ============ */
+const $ = s => document.querySelector(s);
+const NS = "http://www.w3.org/2000/svg";
+const enc = new TextEncoder();
+
+let _seq = 0;
+const uid = () => "f" + (++_seq);
+
+function fmtSize(n){
+  if(n < 1024) return n + " B";
+  return (n/1024).toFixed(1) + " KB";
+}
+function errMsg(e){ return (e && e.message) ? e.message : String(e); }
+
+/* ============ 颜色归一化 ============ */
+let _cx = null;
+function normalizeColor(v){
+  if(v == null) return null;
+  let s = String(v).trim();
+  if(!s) return null;
+  const low = s.toLowerCase();
+  if(low === "none" || low === "transparent" || low === "inherit" ||
+     low === "currentcolor" || low === "initial" || low === "unset" || low === "context-fill"){
+    return null;
+  }
+  if(/^(url\(|var\(|context-)/i.test(low)) return null;
+
+  if(/^#[0-9a-f]{3}$/.test(low)){
+    s = "#" + low.slice(1).split("").map(c => c + c).join("");
+  } else if(/^#[0-9a-f]{6}$/.test(low)){
+    s = low;
+  } else if(/^#[0-9a-f]{8}$/.test(low)){
+    s = low.slice(0, 7);
+  } else {
+    if(!_cx) _cx = document.createElement("canvas").getContext("2d");
+    _cx.fillStyle = "#010203";
+    _cx.fillStyle = s;
+    const out = String(_cx.fillStyle).toLowerCase();
+    if(out === "#010203" && low !== "#010203"){
+      return low === "rgb(1,2,3)" ? "#010203" : null;
+    }
+    if(/^#[0-9a-f]{6}$/.test(out)){
+      s = out;
+    } else if(out.indexOf("rgba(") === 0){
+      const p = out.slice(5, -1).split(",").map(x => x.trim());
+      const a = parseFloat(p[3]);
+      if(a >= 0.999){
+        s = "#" + p.slice(0,3).map(x => (+x).toString(16).padStart(2,"0")).join("");
+      } else {
+        return "rgba(" + p.slice(0,3).join(",") + "," + a + ")";
+      }
+    } else if(out.indexOf("rgb(") === 0){
+      const p = out.slice(4, -1).split(",").map(x => parseInt(x, 10));
+      s = "#" + p.map(x => x.toString(16).padStart(2,"0")).join("");
+    } else {
+      return null;
+    }
+  }
+  return s;
+}
+function isNoneish(v){
+  if(v == null) return true;
+  const t = String(v).trim().toLowerCase();
+  return t === "none" || t === "transparent";
+}
+
+/* ============ SVG 解析 / 序列化 ============ */
+function parseSvg(text){
+  text = String(text).replace(/^\uFEFF/, "");
+  let doc = null;
+  try {
+    doc = new DOMParser().parseFromString(text, "image/svg+xml");
+  } catch(e){ doc = null; }
+
+  let root = doc ? doc.documentElement : null;
+  const broken = !root || root.nodeName.toLowerCase() === "parsererror" || !!doc.querySelector("parsererror");
+  if(broken){
+    const h = new DOMParser().parseFromString(text, "text/html");
+    const svg = h.querySelector("svg");
+    if(!svg) throw new Error("不是有效的 SVG");
+    const d2 = document.implementation.createDocument(NS, "svg", null);
+    const imported = d2.importNode(svg, true);
+    d2.replaceChild(imported, d2.documentElement);
+    imported.setAttribute("xmlns", NS);
+    doc = d2;
+    root = imported;
+  }
+  if(!root || root.nodeName.toLowerCase() !== "svg") throw new Error("根节点不是 <svg>");
+  if(!root.getAttribute("xmlns")) root.setAttribute("xmlns", NS);
+  return doc;
+}
+
+// "256" / "256px" → 256；"100%" / 空 → NaN
+function pxOf(v){
+  if(v == null) return NaN;
+  const m = /^\s*\+?\d*\.?\d+\s*(px)?\s*$/i.exec(String(v));
+  return m ? parseFloat(v) : NaN;
+}
+
+// 文件声明的像素尺寸：有 width/height 就用它，这才是「原图多大」；
+// 只有 viewBox 的（比如只写了 viewBox="0 0 24 24"）才退回用户坐标，这种情况通常要手动指定宽度。
+function naturalSize(doc){
+  const root = doc.documentElement;
+  const w = pxOf(root.getAttribute("width"));
+  const h = pxOf(root.getAttribute("height"));
+  if(isFinite(w) && isFinite(h) && w > 0 && h > 0) return { w, h };
+  const vb = viewBoxOf(doc);
+  return { w: vb.w, h: vb.h };
+}
+
+// viewBox 的完整矩形（点选填充要按用户坐标铺遮罩）
+function viewBoxOf(doc){
+  const root = doc.documentElement;
+  const raw = (root.getAttribute("viewBox") || "").trim();
+  if(raw){
+    const v = raw.split(/[\s,]+/).map(Number);
+    if(v.length === 4 && isFinite(v[0]) && isFinite(v[1]) && v[2] > 0 && v[3] > 0){
+      return { x: v[0], y: v[1], w: v[2], h: v[3] };
+    }
+  }
+  const w = pxOf(root.getAttribute("width"));
+  const h = pxOf(root.getAttribute("height"));
+  if(isFinite(w) && isFinite(h) && w > 0 && h > 0) return { x: 0, y: 0, w, h };
+  return { x: 0, y: 0, w: 256, h: 256 };
+}
+
+function serialize(doc, size){
+  const clone = doc.documentElement.cloneNode(true);
+  if(size){
+    const nat = naturalSize(doc);
+    if(!clone.getAttribute("viewBox")){
+      clone.setAttribute("viewBox", "0 0 " + nat.w + " " + nat.h);
+    }
+    clone.setAttribute("width", String(size.w));
+    clone.setAttribute("height", String(size.h));
+  }
+  if(!clone.getAttribute("xmlns")) clone.setAttribute("xmlns", NS);
+  return new XMLSerializer().serializeToString(clone);
+}
+
+/* ============ CSS 颜色重写 ============ */
+const COLOR_PROP = /^(stop-color|flood-color|lighting-color|fill|stroke|color)$/i;
+function rewriteCss(css, fn, onHit){
+  return String(css).replace(/([a-z-]*color|fill|stroke)\s*:\s*([^;}]+)/gi, function(m, prop, raw){
+    if(!COLOR_PROP.test(prop)) return m;
+    const impMatch = /\s*!\s*important\s*$/i.exec(raw);
+    const imp = impMatch ? " !important" : "";
+    const val = (impMatch ? raw.slice(0, impMatch.index) : raw).trim();
+    const nv = fn(prop.toLowerCase(), val);
+    if(nv){
+      if(onHit) onHit();
+      return prop + ":" + nv + imp;
+    }
+    return m;
+  });
+}
+
+/* ============ 颜色比对（带容差） ============ */
+function hexToRgb(h){
+  if(!h || h[0] !== "#" || h.length < 7) return null;
+  return [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
+}
+// 返回两色之间的最大通道差（0~255）；非十六进制（如 rgba）只能精确比
+function colorDistance(a, b){
+  if(!a || !b) return 999;
+  if(a === b) return 0;
+  const ra = hexToRgb(a), rb = hexToRgb(b);
+  if(!ra || !rb) return 999;
+  return Math.max(Math.abs(ra[0]-rb[0]), Math.abs(ra[1]-rb[1]), Math.abs(ra[2]-rb[2]));
+}
+
+/* ============ 三种改色 ============ */
+const ATTRS = ["fill","stroke","stop-color","flood-color","lighting-color","color"];
+
+function rewriteDoc(doc, fn, stats){
+  const bump = function(){ if(stats) stats.hits++; };
+  const all = doc.querySelectorAll("*");
+  for(let i = 0; i < all.length; i++){
+    const el = all[i];
+    for(let k = 0; k < ATTRS.length; k++){
+      const a = ATTRS[k];
+      if(!el.hasAttribute(a)) continue;
+      const v = el.getAttribute(a);
+      const nv = fn(a, v);
+      if(nv && nv !== v){ el.setAttribute(a, nv); bump(); }
+    }
+    const st = el.getAttribute("style");
+    if(st){
+      const ns = rewriteCss(st, fn, bump);
+      if(ns !== st) el.setAttribute("style", ns);
+    }
+  }
+  const styles = doc.querySelectorAll("style");
+  for(let i = 0; i < styles.length; i++){
+    const t = styles[i].textContent;
+    const nt = rewriteCss(t, fn, bump);
+    if(nt !== t) styles[i].textContent = nt;
+  }
+}
+
+function gate(cfg, prop){
+  if(prop === "stroke") return cfg.opt.stroke;
+  if(prop === "fill" || prop === "color") return cfg.opt.fill;
+  return cfg.opt.gradient;
+}
+
+function applyAll(doc, cfg, stats){
+  rewriteDoc(doc, function(prop, val){
+    if(!normalizeColor(val)) return null;
+    if(!gate(cfg, prop)) return null;
+    return cfg.target;
+  }, stats);
+  applyDefaults(doc, cfg, stats);
+}
+
+function applyReplace(doc, cfg, stats){
+  const src = normalizeColor(cfg.source);
+  if(!src) return;
+  const tol = Math.max(0, Number(cfg.tol) || 0);
+  rewriteDoc(doc, function(prop, val){
+    const n = normalizeColor(val);
+    if(!n) return null;
+    if(colorDistance(n, src) > tol) return null;
+    if(!gate(cfg, prop)) return null;
+    return cfg.target;
+  }, stats);
+  // 选的是黑（或接近黑）时，那些「没写颜色、实际就显示成黑」的形状也算命中
+  if(colorDistance("#000000", src) <= tol) applyDefaults(doc, cfg, stats);
+}
+
+const SKIP_TAGS = /^(style|script|title|desc|metadata)$/i;
+const FILLABLE = { path:1, rect:1, circle:1, ellipse:1, polygon:1, polyline:1, text:1, tspan:1, textpath:1, use:1 };
+
+// 逐元素算出「继承下来实际生效的 fill / stroke 声明」
+// null 表示整条继承链都没写 —— fill 此时按默认黑色填充、stroke 为 none，
+// 这种文件没有任何颜色属性可以改写，必须单独补色
+function walkPaint(doc, cb){
+  (function visit(node, inf, ins){
+    let fill = inf, stroke = ins, fStyle = false, sStyle = false;
+    if(node.hasAttribute("fill")) fill = node.getAttribute("fill");
+    if(node.hasAttribute("stroke")) stroke = node.getAttribute("stroke");
+    const st = node.getAttribute("style") || "";
+    let m = /(?:^|;)\s*fill\s*:\s*([^;]+)/i.exec(st);
+    if(m){ fill = m[1].replace(/!\s*important/i, "").trim(); fStyle = true; }
+    m = /(?:^|;)\s*stroke\s*:\s*([^;]+)/i.exec(st);
+    if(m){ stroke = m[1].replace(/!\s*important/i, "").trim(); sStyle = true; }
+    cb(node, fill, stroke, fStyle, sStyle);
+    const kids = node.children || [];
+    for(let i = 0; i < kids.length; i++){
+      if(!SKIP_TAGS.test(kids[i].tagName || "")) visit(kids[i], fill, stroke);
+    }
+  })(doc.documentElement, null, null);
+}
+
+// 文件里有没有定义 color：没定义时 currentColor 实际渲染成黑
+function hasColorDef(doc){
+  const all = doc.querySelectorAll("*");
+  for(let i = 0; i < all.length; i++){
+    if(all[i].hasAttribute("color")) return true;
+    if(/(?:^|;)\s*color\s*:/i.test(all[i].getAttribute("style") || "")) return true;
+  }
+  const styles = doc.querySelectorAll("style");
+  for(let i = 0; i < styles.length; i++){
+    if(/(?:^|[;{\s])color\s*:/i.test(styles[i].textContent)) return true;
+  }
+  return false;
+}
+
+function isCurrentColor(v){
+  return /^currentcolor$/i.test(String(v == null ? "" : v).trim());
+}
+
+// 给「没有颜色可改」的文件上色：
+//  - fill 完全没写 -> 显式补上目标色（浏览器原本当作黑色）
+//  - 只写了 currentColor 又没定义 color -> 同样按黑色处理，fill 和 stroke 都换
+// 明确写了 fill="none" 的形状一律不动
+function applyDefaults(doc, cfg, stats){
+  if(!cfg.opt.fill && !cfg.opt.stroke) return;
+  const colored = hasColorDef(doc);
+  walkPaint(doc, function(node, fill, stroke, fStyle, sStyle){
+    // 1) currentColor 且文件里没定义 color：实际渲染就是黑
+    if(!colored){
+      if(cfg.opt.fill && isCurrentColor(fill)){
+        let hit = false;
+        if(isCurrentColor(node.getAttribute("fill"))){
+          node.setAttribute("fill", cfg.target); hit = true;
+        }
+        if(fStyle){
+          const st = node.getAttribute("style") || "";
+          const ns = st.replace(/(fill\s*:\s*)(currentcolor)/gi, "$1" + cfg.target);
+          if(ns !== st){ node.setAttribute("style", ns); hit = true; }
+        }
+        if(hit && stats) stats.hits++;
+      }
+      if(cfg.opt.stroke && isCurrentColor(stroke)){
+        let hit = false;
+        if(isCurrentColor(node.getAttribute("stroke"))){
+          node.setAttribute("stroke", cfg.target); hit = true;
+        }
+        if(sStyle){
+          const st = node.getAttribute("style") || "";
+          const ns = st.replace(/(stroke\s*:\s*)(currentcolor)/gi, "$1" + cfg.target);
+          if(ns !== st){ node.setAttribute("style", ns); hit = true; }
+        }
+        if(hit && stats) stats.hits++;
+      }
+    }
+
+    // 2) fill 完全没写：浏览器按默认黑填充，显式补上目标色
+    const tag = node.tagName ? node.tagName.toLowerCase() : "";
+    if(!cfg.opt.fill || !FILLABLE[tag] || fill !== null) return;
+    node.setAttribute("fill", cfg.target);
+    if(stats) stats.hits++;
+  });
+
+  // 3) <style> 块里写 fill:currentColor 的（属性层改不到），一样按黑色处理
+  if(!colored){
+    const styles = doc.querySelectorAll("style");
+    for(let i = 0; i < styles.length; i++){
+      const t = styles[i].textContent;
+      let n = 0;
+      const nt = t.replace(/(fill|stroke)(\s*:\s*)(currentcolor)/gi, function(m0, prop, sep){
+        const p = prop.toLowerCase();
+        if(p === "fill" && !cfg.opt.fill) return m0;
+        if(p === "stroke" && !cfg.opt.stroke) return m0;
+        n++;
+        return prop + sep + cfg.target;
+      });
+      if(nt !== t){ styles[i].textContent = nt; if(stats) stats.hits += n; }
+    }
+  }
+}
+
+function applyFillOnly(doc, cfg, stats){
+  const bump = function(){ if(stats) stats.hits++; };
+  (function visit(node, inherited){
+    let fill = inherited;
+    const a = node.getAttribute("fill");
+    if(a != null) fill = a;
+    const st = node.getAttribute("style");
+    if(st){
+      const m = /(?:^|;)\s*fill\s*:\s*([^;]+)/i.exec(st);
+      if(m) fill = m[1].replace(/!important/i, "").trim();
+    }
+    const tag = node.tagName ? node.tagName.toLowerCase() : "";
+    if(FILLABLE[tag] && isNoneish(fill)){
+      node.setAttribute("fill", cfg.target);
+      if(st && /fill\s*:/i.test(st)){
+        node.setAttribute("style", st.replace(/(fill\s*:\s*)(none|transparent)/gi, "$1" + cfg.target));
+      }
+      bump();
+      fill = cfg.target;
+    }
+    const kids = node.children || [];
+    for(let i = 0; i < kids.length; i++){
+      if(!SKIP_TAGS.test(kids[i].tagName || "")) visit(kids[i], fill);
+    }
+  })(doc.documentElement, "#000000");
+
+  const styles = doc.querySelectorAll("style");
+  for(let i = 0; i < styles.length; i++){
+    const t = styles[i].textContent;
+    let n = 0;
+    const nt = t.replace(/(fill\s*:\s*)(none|transparent)\b/gi, function(m0, p1){
+      n++;
+      return p1 + cfg.target;
+    });
+    if(nt !== t){ styles[i].textContent = nt; if(stats) stats.hits += n; }
+  }
+}
+
+function processText(text, cfg){
+  const doc = parseSvg(text);
+  const stats = { hits: 0 };
+  if(cfg.mode === "pick"){ /* 点选填充不改原色 */ }
+  else if(cfg.mode === "replace") applyReplace(doc, cfg, stats);
+  else if(cfg.mode === "fillonly") applyFillOnly(doc, cfg, stats);
+  else applyAll(doc, cfg, stats);
+  return { doc: doc, hits: stats.hits };
+}
+
+/* ============ 调色板统计 ============ */
+function collectColors(doc){
+  const map = new Map();
+  const add = v => {
+    const n = normalizeColor(v);
+    if(!n) return;
+    map.set(n, (map.get(n) || 0) + 1);
+  };
+  const scan = css => css.replace(/([a-z-]*color|fill|stroke)\s*:\s*([^;}]+)/gi, function(m, prop, raw){
+    if(COLOR_PROP.test(prop)) add(raw.replace(/!\s*important/i, "").trim());
+    return m;
+  });
+  const all = doc.querySelectorAll("*");
+  for(let i = 0; i < all.length; i++){
+    const el = all[i];
+    for(let k = 0; k < ATTRS.length; k++){
+      if(el.hasAttribute(ATTRS[k])) add(el.getAttribute(ATTRS[k]));
+    }
+    const st = el.getAttribute("style");
+    if(st) scan(st);
+  }
+  const styles = doc.querySelectorAll("style");
+  for(let i = 0; i < styles.length; i++) scan(styles[i].textContent);
+
+  // 压根没写 fill 的形状，浏览器按默认黑色填充，也记成「黑色」，
+  // 否则这类文件在调色板里一片空白，看着像没东西可改
+  const colored = hasColorDef(doc);
+  let bare = 0;
+  walkPaint(doc, function(node, fill, stroke){
+    const tag = node.tagName ? node.tagName.toLowerCase() : "";
+    if(!FILLABLE[tag]) return;
+    if(fill === null || (isCurrentColor(fill) && !colored)) bare++;
+    else if(isCurrentColor(stroke) && !colored) bare++;
+  });
+  if(bare) map.set("#000000", (map.get("#000000") || 0) + bare);
+
+  return map;
+}
+
+/* ============ 栅格化 ============ */
+function loadImg(url){
+  return new Promise(function(res, rej){
+    const img = new Image();
+    img.onload = () => res(img);
+    img.onerror = () => rej(new Error("浏览器无法渲染这个 SVG（可能含外部资源）"));
+    img.decoding = "sync";
+    img.src = url;
+  });
+}
+
+async function rasterize(svgText, pxW, pxH, bg){
+  const blob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  try {
+    const img = await loadImg(url);
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(pxW));
+    canvas.height = Math.max(1, Math.round(pxH));
+    const ctx = canvas.getContext("2d");
+    if(bg){
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const out = await new Promise(r => canvas.toBlob(r, "image/png"));
+    if(!out) throw new Error("PNG 编码失败");
+    return out;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+/* ============ 点选填充：洪水填充算区域 ============ */
+const PICK_RES = 512;   // 遮罩渲染长边像素
+
+async function renderPixels(svgText, W, H){
+  const blob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  try {
+    const img = await loadImg(url);
+    const canvas = document.createElement("canvas");
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0, W, H);
+    return ctx.getImageData(0, 0, W, H);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+// 从 (sx,sy) 出发，沿着「不透明的笔画」围成的连通空白区扩散
+function floodRegion(imgData, W, H, sx, sy){
+  const d = imgData.data;
+  const free = i => d[i * 4 + 3] < 40;
+
+  let x0 = Math.round(sx), y0 = Math.round(sy);
+  if(x0 < 0 || y0 < 0 || x0 >= W || y0 >= H) return { ok:false, reason:"outside" };
+  if(!free(y0 * W + x0)){
+    // 落在描边上时，向外找最近的一个空点，避免点偏一点就失败
+    let found = null;
+    for(let r = 1; r <= 6 && !found; r++){
+      for(let dy = -r; dy <= r && !found; dy++){
+        for(let dx = -r; dx <= r && !found; dx++){
+          const x = x0 + dx, y = y0 + dy;
+          if(x < 1 || y < 1 || x >= W - 1 || y >= H - 1) continue;
+          if(free(y * W + x)) found = [x, y];
+        }
+      }
+    }
+    if(!found) return { ok:false, reason:"wall" };
+    x0 = found[0]; y0 = found[1];
+  }
+
+  const mask = new Uint8Array(W * H);
+  const stack = new Int32Array(W * H);
+  let sp = 0, count = 0, border = false;
+  let minX = W, maxX = -1, minY = H, maxY = -1;
+  const start = y0 * W + x0;
+  mask[start] = 1;
+  stack[sp++] = start;
+
+  while(sp > 0){
+    const p = stack[--sp];
+    const x = p % W, y = (p - x) / W;
+    count++;
+    if(x < minX) minX = x;
+    if(x > maxX) maxX = x;
+    if(y < minY) minY = y;
+    if(y > maxY) maxY = y;
+    if(x === 0 || y === 0 || x === W - 1 || y === H - 1) border = true;
+    if(x > 0){ const q = p - 1; if(!mask[q] && free(q)){ mask[q] = 1; stack[sp++] = q; } }
+    if(x < W - 1){ const q = p + 1; if(!mask[q] && free(q)){ mask[q] = 1; stack[sp++] = q; } }
+    if(y > 0){ const q = p - W; if(!mask[q] && free(q)){ mask[q] = 1; stack[sp++] = q; } }
+    if(y < H - 1){ const q = p + W; if(!mask[q] && free(q)){ mask[q] = 1; stack[sp++] = q; } }
+  }
+  return { ok:true, mask, count, border, W, H, minX, maxX, minY, maxY };
+}
+
+// 从画布四边灌进来，标出「图标外面的空白」，用来给外扩的填充画红线
+function floodOutside(imgData, W, H){
+  const d = imgData.data;
+  const free = i => d[i * 4 + 3] < 40;
+  const bg = new Uint8Array(W * H);
+  const stack = new Int32Array(W * H);
+  let sp = 0;
+  function push(i){
+    if(!bg[i] && free(i)){ bg[i] = 1; stack[sp++] = i; }
+  }
+  for(let x = 0; x < W; x++){ push(x); push((H - 1) * W + x); }
+  for(let y = 0; y < H; y++){ push(y * W); push(y * W + W - 1); }
+  while(sp > 0){
+    const p = stack[--sp];
+    const x = p % W, y = (p - x) / W;
+    if(x > 0) push(p - 1);
+    if(x < W - 1) push(p + 1);
+    if(y > 0) push(p - W);
+    if(y < H - 1) push(p + W);
+  }
+  return bg;
+}
+
+// 把区域向外长 r 像素：让填充钻到描边底下去，避免「填充和线条之间有一条白缝」
+function dilateMask(mask, W, H, r){
+  if(r <= 0) return mask;
+  const tmp = new Uint8Array(W * H);
+  const out = new Uint8Array(W * H);
+  for(let y = 0; y < H; y++){
+    const base = y * W;
+    let last = -1e9;
+    for(let x = 0; x < W; x++){
+      if(mask[base + x]) last = x;
+      if(x - last <= r) tmp[base + x] = 1;
+    }
+    last = 1e9;
+    for(let x = W - 1; x >= 0; x--){
+      if(mask[base + x]) last = x;
+      if(last - x <= r) tmp[base + x] = 1;
+    }
+  }
+  for(let x = 0; x < W; x++){
+    let last = -1e9;
+    for(let y = 0; y < H; y++){
+      if(tmp[y * W + x]) last = y;
+      if(y - last <= r) out[y * W + x] = 1;
+    }
+    last = 1e9;
+    for(let y = H - 1; y >= 0; y--){
+      if(tmp[y * W + x]) last = y;
+      if(last - y <= r) out[y * W + x] = 1;
+    }
+  }
+  return out;
+}
+
+// 取图标本身的描边粗细（多数线稿写在根节点上），用来决定填充要钻进描边多深
+function rootStrokeWidth(doc){
+  const root = doc.documentElement;
+  let sw = parseFloat(root.getAttribute("stroke-width"));
+  if(!isFinite(sw) || sw <= 0){
+    const m = /stroke-width\s*:\s*([\d.]+)/i.exec(root.getAttribute("style") || "");
+    if(m) sw = parseFloat(m[1]);
+  }
+  if(!isFinite(sw) || sw <= 0){
+    // 有的图标把 stroke-width 写在每个 path 上
+    const els = doc.querySelectorAll("[stroke-width]");
+    for(let i = 0; i < els.length; i++){
+      const v = parseFloat(els[i].getAttribute("stroke-width"));
+      if(isFinite(v) && v > sw) sw = v;
+    }
+  }
+  if(!isFinite(sw) || sw <= 0) sw = 0;
+  return Math.min(sw, 10);
+}
+
+// 只截取区域外框做遮罩，避免整张画布都塞进 SVG
+function cropMask(mask, reg, vb){
+  const pad = 2;
+  const x0 = Math.max(0, reg.minX - pad);
+  const y0 = Math.max(0, reg.minY - pad);
+  const x1 = Math.min(reg.W - 1, reg.maxX + pad);
+  const y1 = Math.min(reg.H - 1, reg.maxY + pad);
+  const cw = x1 - x0 + 1;
+  const ch = y1 - y0 + 1;
+  const k = Math.min(1, 384 / Math.max(cw, ch));
+  const ow = Math.max(1, Math.round(cw * k));
+  const oh = Math.max(1, Math.round(ch * k));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = ow;
+  canvas.height = oh;
+  const ctx = canvas.getContext("2d");
+  const id = ctx.createImageData(ow, oh);
+  const d = id.data;
+  for(let y = 0; y < oh; y++){
+    const sy = y0 + Math.min(ch - 1, Math.floor(y / k));
+    const rowBase = sy * reg.W;
+    for(let x = 0; x < ow; x++){
+      const sx = x0 + Math.min(cw - 1, Math.floor(x / k));
+      if(mask[rowBase + sx]){
+        const j = (y * ow + x) * 4;
+        d[j] = 255; d[j+1] = 255; d[j+2] = 255; d[j+3] = 255;
+      }
+    }
+  }
+  ctx.putImageData(id, 0, 0);
+  return {
+    url: canvas.toDataURL("image/png"),
+    x: vb.x + (x0 / reg.W) * vb.w,
+    y: vb.y + (y0 / reg.H) * vb.h,
+    w: (cw / reg.W) * vb.w,
+    h: (ch / reg.H) * vb.h
+  };
+}
+
+// 把点选出来的区域铺进 SVG：遮罩 + 色块，始终垫在内容最底层
+function applyPicks(doc, picks, color){
+  if(!picks || !picks.length) return;
+  const root = doc.documentElement;
+  let defs = root.querySelector("defs");
+  if(!defs){
+    defs = doc.createElementNS(NS, "defs");
+    root.insertBefore(defs, root.firstChild);
+  }
+  picks.forEach(function(p, i){
+    const mid = "wbpick" + i;
+    const mask = doc.createElementNS(NS, "mask");
+    mask.setAttribute("id", mid);
+    mask.setAttribute("maskUnits", "userSpaceOnUse");
+    mask.setAttribute("x", p.x);
+    mask.setAttribute("y", p.y);
+    mask.setAttribute("width", p.w);
+    mask.setAttribute("height", p.h);
+    const im = doc.createElementNS(NS, "image");
+    im.setAttribute("x", p.x);
+    im.setAttribute("y", p.y);
+    im.setAttribute("width", p.w);
+    im.setAttribute("height", p.h);
+    im.setAttribute("preserveAspectRatio", "none");
+    im.setAttribute("href", p.url);
+    mask.appendChild(im);
+    defs.appendChild(mask);
+
+    const rect = doc.createElementNS(NS, "rect");
+    rect.setAttribute("x", p.x);
+    rect.setAttribute("y", p.y);
+    rect.setAttribute("width", p.w);
+    rect.setAttribute("height", p.h);
+    rect.setAttribute("fill", color);
+    // 关键：图形属性会从 <svg> 根节点继承。线稿图标通常把 stroke / stroke-width 写在根上，
+    // 不显式关掉的话，这块填充会被自家粗描边盖住，看起来就像「没填上」。
+    rect.setAttribute("stroke", "none");
+    rect.setAttribute("stroke-width", "0");
+    rect.setAttribute("style", "stroke:none;stroke-width:0");
+    rect.setAttribute("mask", "url(#" + mid + ")");
+    root.insertBefore(rect, defs.nextSibling);
+  });
+}
+
+/* ============ ZIP（store 模式，无依赖） ============ */
+const CRC_TABLE = (function(){
+  const t = new Uint32Array(256);
+  for(let n = 0; n < 256; n++){
+    let c = n;
+    for(let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(u8){
+  let c = 0xFFFFFFFF;
+  for(let i = 0; i < u8.length; i++) c = CRC_TABLE[(c ^ u8[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+function makeZip(entries){
+  const parts = [];
+  const central = [];
+  let offset = 0;
+  const now = new Date();
+  const dosTime = ((now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1)) & 0xFFFF;
+  const dosDate = (((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate()) & 0xFFFF;
+
+  for(let i = 0; i < entries.length; i++){
+    const e = entries[i];
+    const name = enc.encode(e.name);
+    const data = e.data;
+    const crc = crc32(data);
+
+    const lh = new Uint8Array(30 + name.length);
+    const dv = new DataView(lh.buffer);
+    dv.setUint32(0, 0x04034b50, true);
+    dv.setUint16(4, 20, true);
+    dv.setUint16(6, 0x0800, true);
+    dv.setUint16(8, 0, true);
+    dv.setUint16(10, dosTime, true);
+    dv.setUint16(12, dosDate, true);
+    dv.setUint32(14, crc, true);
+    dv.setUint32(18, data.length, true);
+    dv.setUint32(22, data.length, true);
+    dv.setUint16(26, name.length, true);
+    dv.setUint16(28, 0, true);
+    lh.set(name, 30);
+    parts.push(lh, data);
+
+    const cd = new Uint8Array(46 + name.length);
+    const d2 = new DataView(cd.buffer);
+    d2.setUint32(0, 0x02014b50, true);
+    d2.setUint16(4, 20, true);
+    d2.setUint16(6, 20, true);
+    d2.setUint16(8, 0x0800, true);
+    d2.setUint16(10, 0, true);
+    d2.setUint16(12, dosTime, true);
+    d2.setUint16(14, dosDate, true);
+    d2.setUint32(16, crc, true);
+    d2.setUint32(20, data.length, true);
+    d2.setUint32(24, data.length, true);
+    d2.setUint16(28, name.length, true);
+    d2.setUint16(30, 0, true);
+    d2.setUint16(32, 0, true);
+    d2.setUint16(34, 0, true);
+    d2.setUint16(36, 0, true);
+    d2.setUint32(38, 0, true);
+    d2.setUint32(42, offset, true);
+    cd.set(name, 46);
+    central.push(cd);
+
+    offset += lh.length + data.length;
+  }
+
+  let cdSize = 0;
+  for(let i = 0; i < central.length; i++) cdSize += central[i].length;
+
+  const eocd = new Uint8Array(22);
+  const d3 = new DataView(eocd.buffer);
+  d3.setUint32(0, 0x06054b50, true);
+  d3.setUint16(8, entries.length, true);
+  d3.setUint16(10, entries.length, true);
+  d3.setUint32(12, cdSize, true);
+  d3.setUint32(16, offset, true);
+
+  return new Blob(parts.concat(central, [eocd]), { type: "application/zip" });
+}
+
+/* ============ 状态 ============ */
+const PRESETS = [
+  "#000000","#1F1F1D","#3F3F3B","#77766F","#B8B6AE","#FFFFFF",
+  "#E8543F","#F0784E","#F2A33C","#F5C542","#8FBF4D","#3FA05B",
+  "#17A398","#2E8FC0","#3C6FD6","#6C5CE0","#A855C9","#E0568C",
+  "#8B5E3C","#C9A227"
+];
+
+const state = {
+  files: [],
+  sel: null,
+  mode: "all",
+  target: "#E8543F",
+  source: "",
+  tol: 12,
+  pick: false,
+  opt: { fill: true, stroke: true, gradient: false },
+  out: {
+    png: true, svg: true, scales: [1], sizeMode: "scale", width: 512,
+    bgTrans: true, bg: "#ffffff", prefix: "", suffix: ""
+  }
+};
+
+function cfg(){
+  return {
+    mode: state.mode,
+    target: state.target,
+    source: state.source,
+    tol: state.tol,
+    opt: Object.assign({}, state.opt)
+  };
+}
+
+/* ============ 设置持久化 ============ */
+const LS_KEY = "svg-batch-tool/v1";
+function saveSettings(){
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      mode: state.mode, target: state.target, tol: state.tol, pick: state.pick,
+      opt: state.opt, out: state.out
+    }));
+  } catch(e){}
+}
+function loadSettings(){
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw) return;
+    const s = JSON.parse(raw);
+    if(s.mode) state.mode = s.mode;
+    if(s.target) state.target = s.target;
+    if(typeof s.tol === "number") state.tol = s.tol;
+    if(typeof s.pick === "boolean") state.pick = s.pick;
+    if(s.opt) Object.assign(state.opt, s.opt);
+    if(s.out) Object.assign(state.out, s.out);
+    if(!Array.isArray(state.out.scales) || !state.out.scales.length) state.out.scales = [1];
+    if(state.out.sizeMode !== "width") state.out.sizeMode = "scale";
+    if(!(state.out.width > 0)) state.out.width = 512;
+  } catch(e){}
+}
+
+/* ============ 文件导入 ============ */
+function readFileAsText(file){
+  if(file.text) return file.text();
+  return new Promise(function(res, rej){
+    const r = new FileReader();
+    r.onload = () => res(String(r.result));
+    r.onerror = () => rej(new Error("读取失败"));
+    r.readAsText(file);
+  });
+}
+
+async function addFiles(list){
+  const arr = Array.from(list).filter(f =>
+    /\.svg$/i.test(f.name) || f.type === "image/svg+xml"
+  );
+  if(!arr.length){
+    setLog("只接受 .svg 文件", "err");
+    return;
+  }
+  for(let i = 0; i < arr.length; i++){
+    const f = arr[i];
+    const id = uid();
+    const item = { id, name: f.name, size: f.size, text: "", doc: null, colors: null, err: "", checked: true, picks: [] };
+    try {
+      item.text = await readFileAsText(f);
+      item.doc = parseSvg(item.text);
+      item.colors = collectColors(item.doc);
+    } catch(e){
+      item.err = errMsg(e);
+      item.doc = null;
+    }
+    state.files.push(item);
+  }
+  if(!state.sel || !state.files.find(f => f.id === state.sel)){
+    const first = state.files.find(f => f.doc);
+    state.sel = first ? first.id : (state.files[0] ? state.files[0].id : null);
+  }
+  renderAll();
+  const bad = state.files.filter(f => f.err).length;
+  setLog("已导入 " + arr.length + " 个文件" + (bad ? "，其中 " + bad + " 个解析失败" : ""), bad ? "err" : "ok");
+}
+
+/* ============ 渲染 ============ */
+function svgDataUrl(text){
+  return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(text);
+}
+
+// 预览用：给小图标放大到看得清的尺寸，矢量重新渲染，不糊
+function previewUrl(doc, cap){
+  const nat = naturalSize(doc);
+  const k = Math.min(12, (cap || 360) / Math.max(nat.w, nat.h, 1));
+  const w = Math.max(1, Math.round(nat.w * k));
+  const h = Math.max(1, Math.round(nat.h * k));
+  return svgDataUrl(serialize(doc, { w: w, h: h }));
+}
+
+function currentFile(){
+  return state.files.find(f => f.id === state.sel) || null;
+}
+
+// 统一出图：模式改色 -> 叠加点选填充
+function buildFinal(item, c){
+  const res = processText(item.text, c || cfg());
+  if(item.picks && item.picks.length) applyPicks(res.doc, item.picks, (c || cfg()).target);
+  return res;
+}
+
+function processedOf(item){
+  if(!item || !item.doc) return null;
+  try {
+    const res = buildFinal(item);
+    return { doc: res.doc, text: serialize(res.doc), hits: res.hits };
+  } catch(e){
+    return { err: errMsg(e) };
+  }
+}
+
+function renderQueue(){
+  const box = $("#fileList");
+  if(!state.files.length){
+    box.innerHTML = '<div class="empty-list">还没有文件<br>拖入 SVG 或点上方按钮</div>';
+    $("#qCount").textContent = "0";
+    return;
+  }
+  $("#qCount").textContent = state.files.length + " 个";
+  box.innerHTML = "";
+  state.files.forEach(function(f){
+    const div = document.createElement("div");
+    div.className = "fitem" + (f.id === state.sel ? " on" : "") + (f.err ? " bad" : "");
+    div.dataset.id = f.id;
+
+    const ck = document.createElement("input");
+    ck.type = "checkbox";
+    ck.className = "ck";
+    ck.checked = f.checked;
+    ck.addEventListener("click", function(ev){
+      ev.stopPropagation();
+      f.checked = ck.checked;
+      updateStat();
+    });
+
+    const th = document.createElement("div");
+    th.className = "thumb";
+    if(f.doc){
+      const img = document.createElement("img");
+      img.src = previewUrl(f.doc, 64);
+      img.alt = "";
+      th.appendChild(img);
+    }
+
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    const nm = document.createElement("div");
+    nm.className = "nm";
+    nm.textContent = f.name;
+    nm.title = f.name;
+    const sub = document.createElement("div");
+    sub.className = "sub";
+    if(f.err){
+      sub.textContent = "解析失败";
+    } else {
+      const s = naturalSize(f.doc);
+      const vb = viewBoxOf(f.doc);
+      sub.textContent = fmtSize(f.size) + " · " + Math.round(s.w) + "×" + Math.round(s.h) + "px";
+      sub.title = "原图 " + Math.round(s.w) + "×" + Math.round(s.h) + " px，画布(viewBox) " +
+        Math.round(vb.w) + "×" + Math.round(vb.h);
+    }
+    meta.appendChild(nm);
+    meta.appendChild(sub);
+
+    const x = document.createElement("button");
+    x.className = "x";
+    x.type = "button";
+    x.textContent = "✕";
+    x.title = "移除";
+    x.addEventListener("click", function(ev){
+      ev.stopPropagation();
+      state.files = state.files.filter(v => v.id !== f.id);
+      if(state.sel === f.id){
+        const nx = state.files.find(v => v.doc) || state.files[0];
+        state.sel = nx ? nx.id : null;
+      }
+      renderAll();
+    });
+
+    div.appendChild(ck);
+    div.appendChild(th);
+    div.appendChild(meta);
+    div.appendChild(x);
+    div.addEventListener("click", function(){
+      state.sel = f.id;
+      renderAll();
+    });
+    box.appendChild(div);
+  });
+}
+
+function renderPreview(){
+  const f = currentFile();
+  const imgO = $("#imgOrig");
+  const imgN = $("#imgNew");
+  const meta = $("#previewMeta");
+  const cellN = $("#newCell");
+  const artN = $("#artNew");
+
+  artN.classList.toggle("picking", !!state.pick);
+  $("#pickbar").style.display = state.pick ? "" : "none";
+  $("#pickCount").textContent = f && f.picks ? f.picks.length : 0;
+
+  if(!f){
+    imgO.removeAttribute("src");
+    imgN.removeAttribute("src");
+    meta.textContent = "—";
+    updateMatchHint(null, null);
+    return;
+  }
+  if(!f.doc){
+    imgO.removeAttribute("src");
+    imgN.removeAttribute("src");
+    meta.textContent = "解析失败：" + f.err;
+    updateMatchHint(null, null);
+    return;
+  }
+  imgO.src = previewUrl(f.doc);
+  const p = processedOf(f);
+  if(p && p.err){
+    imgN.removeAttribute("src");
+    meta.textContent = p.err;
+  } else {
+    imgN.src = previewUrl(p.doc);
+    const s = naturalSize(p.doc);
+    const vb = viewBoxOf(p.doc);
+    const bytes = enc.encode(p.text).length;
+    const sizeTxt = Math.round(s.w) === Math.round(vb.w) && Math.round(s.h) === Math.round(vb.h)
+      ? Math.round(s.w) + "×" + Math.round(s.h) + " px"
+      : Math.round(s.w) + "×" + Math.round(s.h) + " px（画布 " + Math.round(vb.w) + "×" + Math.round(vb.h) + "）";
+    const bits = [sizeTxt, fmtSize(bytes)];
+    if(p.hits) bits.push("改了 " + p.hits + " 处");
+    if(f.picks && f.picks.length) bits.push("点填 " + f.picks.length + " 处");
+    meta.textContent = bits.join(" · ");
+  }
+  updateMatchHint(f, p);
+
+  const trans = state.out.bgTrans;
+  cellN.classList.toggle("flat", !trans);
+  cellN.style.background = trans ? "" : state.out.bg;
+  renderSizeHint();
+}
+
+// 按色替换的实时反馈：匹到几处、匹不到时告诉用户文件里到底是什么色
+function updateMatchHint(f, p){
+  const el = $("#matchHint");
+  if(!el) return;
+  el.className = "hint";
+  if(state.mode !== "replace"){ el.innerHTML = ""; return; }
+  if(!f || !f.doc){ el.innerHTML = ""; return; }
+
+  const src = normalizeColor(state.source);
+  if(!src){
+    el.classList.add("warn");
+    el.innerHTML = '源色还没选。点下方「用到的颜色」里任意一个色块。';
+    return;
+  }
+  if(p && !p.err && p.hits > 0){
+    el.className = "hint good";
+    el.innerHTML = '匹配到 <b>' + p.hits + '</b> 处，将换成 ' + state.target.toUpperCase() + '。';
+    return;
+  }
+  el.classList.add("warn");
+  const cols = f.colors ? Array.from(f.colors.keys()) : [];
+  if(!cols.length){ el.innerHTML = '这个文件里没有可替换的颜色。'; return; }
+  const near = cols.find(function(c){ return colorDistance(c, src) <= 40; });
+  const shown = cols.slice(0, 4).map(function(c){ return "<b>" + c.toUpperCase() + "</b>"; }).join("、");
+  el.innerHTML = '没匹配到任何颜色。文件里实际用的是 ' + shown +
+    (near ? '，<button type="button" class="lnk" id="useNear">改用 ' + near.toUpperCase() + '</button>' : '') + '。';
+  const btn = $("#useNear");
+  if(btn){
+    btn.onclick = function(){
+      state.source = near;
+      syncControls();
+      renderAll();
+    };
+  }
+}
+
+/* ============ 点选填充交互 ============ */
+async function pickAt(ev){
+  const f = currentFile();
+  if(!f || !f.doc) return;
+  const img = $("#imgNew");
+  const r = img.getBoundingClientRect();
+  if(!r.width || !r.height) return;
+  const px = (ev.clientX - r.left) / r.width;
+  const py = (ev.clientY - r.top) / r.height;
+  if(px < 0 || py < 0 || px > 1 || py > 1) return;
+
+  let base;
+  try {
+    base = processText(f.text, cfg());
+  } catch(e){ setLog(errMsg(e), "err"); return; }
+
+  const vb = viewBoxOf(base.doc);
+  const scale = PICK_RES / Math.max(vb.w, vb.h);
+  const W = Math.max(1, Math.round(vb.w * scale));
+  const H = Math.max(1, Math.round(vb.h * scale));
+
+  let reg, bg = null;
+  try {
+    const data = await renderPixels(serialize(base.doc, { w: W, h: H }), W, H);
+    reg = floodRegion(data, W, H, px * W, py * H);
+    if(reg.ok && !reg.border) bg = floodOutside(data, W, H);
+  } catch(e){
+    setLog("这块区域算不出来：" + errMsg(e), "err");
+    return;
+  }
+
+  if(!reg.ok){
+    setLog(reg.reason === "wall" ? "点在笔画上了，往空心的地方点一点" : "点到画布外面了", "err");
+    return;
+  }
+  if(reg.border){
+    setLog("这块跟图标外面的空白是连通的，围不住，填不了；线稿图标通常只有闭合的小圈能填", "err");
+    return;
+  }
+  if(reg.count < 8){
+    setLog("这块太小，忽略", "err");
+    return;
+  }
+
+  if(!f.picks) f.picks = [];
+  // 点在已经填过的同一区域 -> 取消
+  const hit = f.picks.findIndex(function(p){
+    const gx = Math.round(p.nx * W), gy = Math.round(p.ny * H);
+    return gx >= 0 && gy >= 0 && gx < W && gy < H && reg.mask[gy * W + gx] === 1;
+  });
+  if(hit >= 0){
+    f.picks.splice(hit, 1);
+    setLog("取消了一处填充");
+    renderPreview();
+    return;
+  }
+
+  // 让填充往描边底下钻半个描边宽度：既不露白缝，也不会漏到图标外面去
+  const sw = rootStrokeWidth(base.doc);
+  const grow = Math.max(0, Math.min(40, Math.round((sw / 2) * scale)));
+  let mask = reg.mask;
+  let frame = reg;
+  if(grow > 0){
+    mask = dilateMask(reg.mask, reg.W, reg.H, grow);
+    if(bg){
+      // 外扩不许翻出图标外形（否则圆角处会冒出一小块颜色）
+      for(let i = 0; i < mask.length; i++){ if(bg[i]) mask[i] = 0; }
+    }
+    let minX = reg.W, maxX = -1, minY = reg.H, maxY = -1;
+    for(let y = 0; y < reg.H; y++){
+      const b = y * reg.W;
+      for(let x = 0; x < reg.W; x++){
+        if(!mask[b + x]) continue;
+        if(x < minX) minX = x;
+        if(x > maxX) maxX = x;
+        if(y < minY) minY = y;
+        if(y > maxY) maxY = y;
+      }
+    }
+    frame = { minX, maxX, minY, maxY, W: reg.W, H: reg.H };
+  }
+
+  const box = cropMask(mask, frame, vb);
+  box.nx = px;
+  box.ny = py;
+  f.picks.push(box);
+  setLog("已填 " + f.picks.length + " 处（再点同一块可取消）", "ok");
+  renderPreview();
+}
+
+function renderPalette(){
+  const box = $("#colorList");
+  const agg = new Map();
+  state.files.forEach(function(f){
+    if(!f.colors) return;
+    f.colors.forEach(function(n, c){
+      agg.set(c, (agg.get(c) || 0) + n);
+    });
+  });
+  box.innerHTML = "";
+  if(!agg.size){
+    box.innerHTML = '<span style="font-size:11px;color:var(--faint)">文件里没写任何颜色（形状默认按黑色渲染），用「统一刷色」可直接上色</span>';
+    return;
+  }
+  const list = Array.from(agg.entries()).sort((a, b) => b[1] - a[1]).slice(0, 30);
+  list.forEach(function(entry){
+    const c = entry[0], n = entry[1];
+    const b = document.createElement("button");
+    b.className = "c" + (state.source === c ? " on" : "");
+    b.type = "button";
+    b.style.background = c;
+    b.title = c + " · 出现 " + n + " 次";
+    if(n > 1){
+      const tag = document.createElement("i");
+      tag.className = "n";
+      tag.textContent = n;
+      b.appendChild(tag);
+    }
+    b.addEventListener("click", function(){
+      state.source = c;
+      state.mode = "replace";
+      syncControls();
+      renderAll();
+    });
+    box.appendChild(b);
+  });
+}
+
+function renderPresets(){
+  const box = $("#presets");
+  box.innerHTML = "";
+  PRESETS.forEach(function(c){
+    const b = document.createElement("button");
+    b.className = "p" + (state.target.toLowerCase() === c.toLowerCase() ? " on" : "");
+    b.type = "button";
+    b.style.background = c;
+    b.title = c;
+    b.addEventListener("click", function(){
+      state.target = c;
+      syncControls();
+      renderAll();
+      saveSettings();
+    });
+    box.appendChild(b);
+  });
+}
+
+function syncControls(){
+  // mode
+  Array.from($("#modeSeg").children).forEach(function(b){
+    b.classList.toggle("on", b.dataset.mode === state.mode);
+  });
+  $("#modeHint").textContent = ({
+    "all": "把文件里所有 fill / stroke 都换成目标色；本身没写颜色的会直接补上。none 与渐变引用不动。",
+    "replace": "把 A 色全换成 B 色，其余不动。先在下面点一个色块当 A。",
+    "fillonly": "给本来就是空心的形状补底色。注意：一条路径画全身的线稿会被整块填满，改用下面的「点选填充」更准。"
+  })[state.mode];
+  $("#replaceGrp").style.display = state.mode === "replace" ? "" : "none";
+  $("#tol").value = state.tol;
+
+  // source
+  const srcNorm = normalizeColor(state.source) || "#000000";
+  $("#srcPicker").value = /^#[0-9a-f]{6}$/i.test(srcNorm) ? srcNorm : "#000000";
+  $("#srcHex").value = state.source || "";
+
+  // target
+  $("#colorPicker").value = state.target;
+  $("#hexInput").value = state.target.toUpperCase();
+
+  // opts
+  $("#optFill").checked = state.opt.fill;
+  $("#optStroke").checked = state.opt.stroke;
+  $("#optGradient").checked = state.opt.gradient;
+  $("#optPick").checked = state.pick;
+
+  // export
+  $("#outPng").checked = state.out.png;
+  $("#outSvg").checked = state.out.svg;
+  Array.from($("#sizeSeg").children).forEach(function(b){
+    b.classList.toggle("on", b.dataset.m === state.out.sizeMode);
+  });
+  $("#scaleField").style.display = state.out.sizeMode === "width" ? "none" : "";
+  $("#widthField").style.display = state.out.sizeMode === "width" ? "" : "none";
+  if(document.activeElement !== $("#outWidth")) $("#outWidth").value = state.out.width;
+  Array.from($("#scaleRow").children).forEach(function(b){
+    b.classList.toggle("on", state.out.scales.indexOf(Number(b.dataset.s)) >= 0);
+  });
+  $("#bgTrans").checked = state.out.bgTrans;
+  $("#bgColor").value = state.out.bg;
+  $("#bgColor").disabled = state.out.bgTrans;
+  $("#prefix").value = state.out.prefix;
+  $("#suffix").value = state.out.suffix;
+  renderSizeHint();
+
+  renderPresets();
+}
+
+// 输出尺寸提示：直接告诉用户每张会得到多少像素
+function renderSizeHint(){
+  const el = $("#sizeHint");
+  if(!el) return;
+  const f = currentFile();
+  if(!f || !f.doc){ el.textContent = "导入文件后显示实际输出尺寸"; return; }
+  const nat = naturalSize(f.doc);
+  const vb = viewBoxOf(f.doc);
+  const natTxt = Math.round(nat.w) + "×" + Math.round(nat.h);
+  if(state.out.sizeMode === "width"){
+    const t = pngTargets(nat)[0];
+    el.textContent = "每张输出 " + t.w + "×" + t.h + " px（原图 " + natTxt + "，等比缩放）";
+  } else {
+    const parts = state.out.scales.slice().sort((a, b) => a - b).map(function(s){
+      return s + "x=" + Math.round(nat.w * s);
+    });
+    const low = nat.w < 64;
+    el.textContent = "原图 " + natTxt + "（画布 " + Math.round(vb.w) + "×" + Math.round(vb.h) + "）→ " +
+      parts.join("、") + " px" + (low ? "，原图偏小，建议改用「指定宽度」" : "");
+  }
+}
+
+function updateStat(){
+  const n = state.files.length;
+  const bytes = state.files.reduce((s, f) => s + f.size, 0);
+  const sel = state.files.filter(f => f.checked).length;
+  $("#stat").textContent = n ? (n + " 个文件 · " + fmtSize(bytes) + (sel !== n ? " · 已选 " + sel : "")) : "空";
+}
+
+function renderAll(){
+  renderQueue();
+  renderPreview();
+  renderPalette();
+  updateStat();
+  syncControls();
+}
+
+function setLog(msg, kind){
+  const el = $("#log");
+  el.className = "log" + (kind ? " " + kind : "");
+  el.textContent = msg || "";
+}
+function setProgress(v){
+  $("#bar").style.width = Math.max(0, Math.min(1, v)) * 100 + "%";
+}
+
+/* ============ 导出 ============ */
+function baseName(name){
+  return String(name).replace(/\.svg$/i, "");
+}
+// tag 形如 "@2x"、"-512"，为空则不加
+function makeName(item, ext, tag, used){
+  const core = (state.out.prefix || "") + baseName(item.name) + (state.out.suffix || "");
+  tag = tag || "";
+  let n = core + tag + "." + ext;
+  if(used.has(n)){
+    let i = 2;
+    while(used.has(core + "-" + i + tag + "." + ext)) i++;
+    n = core + "-" + i + tag + "." + ext;
+  }
+  used.add(n);
+  return n;
+}
+
+const MAXPIX = 4096;          // 单边像素上限，避免画布爆内存
+function clampWidth(v){
+  const n = Math.round(Number(v));
+  if(!isFinite(n) || n <= 0) return 512;
+  return Math.min(MAXPIX, Math.max(1, n));
+}
+
+function pngCount(){
+  return state.out.sizeMode === "width" ? 1 : state.out.scales.length;
+}
+
+// 这一轮 PNG 要出哪几个尺寸
+function pngTargets(nat){  if(state.out.sizeMode === "width"){
+    const w = clampWidth(state.out.width);
+    const h = Math.min(MAXPIX, Math.max(1, Math.round(w * nat.h / nat.w)));
+    return [{ w, h, tag: "" }];
+  }
+  return state.out.scales.slice().sort((a, b) => a - b).map(function(s){
+    return {
+      w: Math.min(MAXPIX, Math.max(1, Math.round(nat.w * s))),
+      h: Math.min(MAXPIX, Math.max(1, Math.round(nat.h * s))),
+      tag: s > 1 ? "@" + s + "x" : ""
+    };
+  });
+}
+function download(blob, name){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+function stamp(){
+  const d = new Date();
+  const p = n => String(n).padStart(2, "0");
+  return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + "-" + p(d.getHours()) + p(d.getMinutes());
+}
+
+let exporting = false;
+async function doExport(){
+  if(exporting) return;
+  const list = state.files.filter(f => f.checked && f.doc);
+  if(!list.length){ setLog("没有可导出的文件", "err"); return; }
+  if(!state.out.png && !state.out.svg){ setLog("至少选择一种导出格式", "err"); return; }
+  if(state.mode === "replace" && !normalizeColor(state.source)){
+    setLog("按色替换模式需要先选源色", "err"); return;
+  }
+
+  const perFile = (state.out.svg ? 1 : 0) + (state.out.png ? pngCount() : 0);
+  const total = list.length * perFile;
+  const entries = [];
+  const used = new Set();
+  const errors = [];
+  let done = 0;
+
+  exporting = true;
+  $("#btnExport").disabled = true;
+  setProgress(0);
+  setLog("正在处理…");
+
+  const bg = state.out.bgTrans ? null : state.out.bg;
+
+  for(let i = 0; i < list.length; i++){
+    const f = list[i];
+    let doc;
+    try {
+      doc = buildFinal(f).doc;
+    } catch(e){
+      errors.push(f.name + "：" + errMsg(e));
+      done += perFile;
+      setProgress(done / total);
+      continue;
+    }
+    const nat = naturalSize(doc);
+
+    if(state.out.svg){
+      const txt = '<?xml version="1.0" encoding="UTF-8"?>\n' + serialize(doc);
+      entries.push({ name: makeName(f, "svg", "", used), data: enc.encode(txt) });
+      done++;
+      setProgress(done / total);
+    }
+
+    if(state.out.png){
+      const targets = pngTargets(nat);
+      for(let k = 0; k < targets.length; k++){
+        const t = targets[k];
+        try {
+          const txt = serialize(doc, { w: t.w, h: t.h });
+          const blob = await rasterize(txt, t.w, t.h, bg);
+          entries.push({
+            name: makeName(f, "png", t.tag, used),
+            data: new Uint8Array(await blob.arrayBuffer())
+          });
+        } catch(e){
+          errors.push(f.name + " " + (t.tag || t.w + "px") + "：" + errMsg(e));
+        }
+        done++;
+        setProgress(done / total);
+        await new Promise(r => setTimeout(r, 0));
+      }
+    }
+  }
+
+  exporting = false;
+  $("#btnExport").disabled = false;
+
+  if(!entries.length){
+    setProgress(0);
+    setLog("全部失败：" + (errors[0] || "未知错误"), "err");
+    return;
+  }
+
+  if(entries.length === 1){
+    download(new Blob([entries[0].data], { type: entries[0].name.endsWith(".png") ? "image/png" : "image/svg+xml" }), entries[0].name);
+  } else {
+    download(makeZip(entries), "svg-batch-" + stamp() + ".zip");
+  }
+
+  setProgress(1);
+  const msg = "完成 " + entries.length + " 个文件" + (entries.length > 1 ? "（已打包 ZIP）" : "") +
+    (errors.length ? "，失败 " + errors.length + " 个" : "");
+  setLog(errors.length ? msg + "：" + errors[0] : msg, errors.length ? "err" : "ok");
+  setTimeout(() => setProgress(0), 1200);
+}
+
+/* ============ 事件绑定 ============ */
+function bind(){
+  $("#btnAdd").addEventListener("click", () => $("#fileInput").click());
+  $("#btnDir").addEventListener("click", () => $("#dirInput").click());
+  $("#btnClear").addEventListener("click", function(){
+    state.files = [];
+    state.sel = null;
+    renderAll();
+    setLog("");
+    setProgress(0);
+  });
+
+  $("#fileInput").addEventListener("change", function(e){
+    if(e.target.files && e.target.files.length) addFiles(e.target.files);
+    e.target.value = "";
+  });
+  $("#dirInput").addEventListener("change", function(e){
+    if(e.target.files && e.target.files.length) addFiles(e.target.files);
+    e.target.value = "";
+  });
+
+  // drag & drop
+  let dragDepth = 0;
+  window.addEventListener("dragenter", function(e){
+    if(!e.dataTransfer || Array.from(e.dataTransfer.types || []).indexOf("Files") < 0) return;
+    e.preventDefault();
+    dragDepth++;
+    $("#drop").classList.add("on");
+  });
+  window.addEventListener("dragover", function(e){
+    if(e.dataTransfer && Array.from(e.dataTransfer.types || []).indexOf("Files") >= 0){
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "copy";
+    }
+  });
+  window.addEventListener("dragleave", function(e){
+    dragDepth = Math.max(0, dragDepth - 1);
+    if(!dragDepth) $("#drop").classList.remove("on");
+  });
+  window.addEventListener("drop", function(e){
+    if(!e.dataTransfer) return;
+    e.preventDefault();
+    dragDepth = 0;
+    $("#drop").classList.remove("on");
+    const files = e.dataTransfer.files;
+    if(files && files.length) addFiles(files);
+  });
+
+  // mode
+  $("#modeSeg").addEventListener("click", function(e){
+    const b = e.target.closest("button[data-mode]");
+    if(!b) return;
+    state.mode = b.dataset.mode;
+    syncControls();
+    renderAll();
+    saveSettings();
+  });
+
+  // source color
+  $("#srcPicker").addEventListener("input", function(e){
+    state.source = e.target.value;
+    syncControls();
+    renderAll();
+  });
+  $("#srcHex").addEventListener("change", function(e){
+    const n = normalizeColor(e.target.value);
+    state.source = n || "";
+    syncControls();
+    renderAll();
+  });
+
+  // target color
+  $("#colorPicker").addEventListener("input", function(e){
+    state.target = e.target.value;
+    $("#hexInput").value = state.target.toUpperCase();
+    renderPreview();
+    renderPresets();
+    saveSettings();
+  });
+  $("#hexInput").addEventListener("change", function(e){
+    const n = normalizeColor(e.target.value);
+    if(n && /^#[0-9a-f]{6}$/.test(n)){
+      state.target = n;
+      syncControls();
+      renderAll();
+      saveSettings();
+    } else {
+      $("#hexInput").value = state.target.toUpperCase();
+    }
+  });
+
+  // options
+  $("#optFill").addEventListener("change", function(e){
+    state.opt.fill = e.target.checked; renderPreview(); saveSettings();
+  });
+  $("#optStroke").addEventListener("change", function(e){
+    state.opt.stroke = e.target.checked; renderPreview(); saveSettings();
+  });
+  $("#optGradient").addEventListener("change", function(e){
+    state.opt.gradient = e.target.checked; renderPreview(); saveSettings();
+  });
+
+  // 点选填充
+  $("#optPick").addEventListener("change", function(e){
+    state.pick = e.target.checked;
+    saveSettings();
+    renderPreview();
+    setLog(state.pick ? "在右边预览上点空心区域即可填充，再点一次取消" : "");
+  });
+  $("#tol").addEventListener("input", function(e){
+    const v = Number(e.target.value);
+    state.tol = isNaN(v) ? 0 : Math.max(0, Math.min(60, v));
+    saveSettings();
+    renderPreview();
+  });
+  $("#artNew").addEventListener("click", function(e){
+    if(!state.pick) return;
+    pickAt(e);
+  });
+  $("#pickUndo").addEventListener("click", function(e){
+    e.stopPropagation();
+    const f = currentFile();
+    if(f && f.picks && f.picks.length){
+      f.picks.pop();
+      setLog("已撤销一处");
+      renderPreview();
+    }
+  });
+  $("#pickClear").addEventListener("click", function(e){
+    e.stopPropagation();
+    const f = currentFile();
+    if(f && f.picks && f.picks.length){
+      f.picks = [];
+      setLog("已清空点选");
+      renderPreview();
+    }
+  });
+
+  // export options
+  $("#outPng").addEventListener("change", function(e){ state.out.png = e.target.checked; saveSettings(); });
+  $("#outSvg").addEventListener("change", function(e){ state.out.svg = e.target.checked; saveSettings(); });
+
+  $("#sizeSeg").addEventListener("click", function(e){
+    const b = e.target.closest("button[data-m]");
+    if(!b || b.dataset.m === state.out.sizeMode) return;
+    state.out.sizeMode = b.dataset.m;
+    syncControls();
+    saveSettings();
+  });
+
+  $("#outWidth").addEventListener("input", function(e){
+    const n = parseInt(e.target.value, 10);
+    state.out.width = isFinite(n) && n > 0 ? n : 0;
+    renderSizeHint();
+    saveSettings();
+  });
+  // 失焦时把非法值拉回合法范围，并回填输入框
+  $("#outWidth").addEventListener("blur", function(e){
+    state.out.width = clampWidth(state.out.width);
+    e.target.value = state.out.width;
+    renderSizeHint();
+    saveSettings();
+  });
+
+  $("#scaleRow").addEventListener("click", function(e){
+    const b = e.target.closest("button[data-s]");
+    if(!b) return;
+    const s = Number(b.dataset.s);
+    const i = state.out.scales.indexOf(s);
+    if(i >= 0){
+      if(state.out.scales.length === 1) return;
+      state.out.scales.splice(i, 1);
+    } else {
+      state.out.scales.push(s);
+    }
+    syncControls();
+    saveSettings();
+  });
+
+  $("#bgTrans").addEventListener("change", function(e){
+    state.out.bgTrans = e.target.checked;
+    syncControls();
+    renderPreview();
+    saveSettings();
+  });
+  $("#bgColor").addEventListener("input", function(e){
+    state.out.bg = e.target.value;
+    renderPreview();
+    saveSettings();
+  });
+
+  $("#prefix").addEventListener("input", function(e){
+    state.out.prefix = e.target.value;
+    saveSettings();
+  });
+  $("#suffix").addEventListener("input", function(e){
+    state.out.suffix = e.target.value;
+    saveSettings();
+  });
+
+  $("#btnExport").addEventListener("click", doExport);
+
+  // 拖入图片时阻止浏览器直接打开文件
+  window.addEventListener("dragover", e => e.preventDefault());
+  window.addEventListener("drop", e => e.preventDefault());
+}
+
+/* ============ 启动 ============ */
+loadSettings();
+bind();
+syncControls();
+renderAll();
+setLog("拖入 SVG 开始，支持一次多个文件");
+
+// 调试入口（自动化测试用，不影响正常使用）
+window.__svgTool = {
+  parseSvg, processText, serialize, naturalSize, viewBoxOf, collectColors,
+  normalizeColor, colorDistance, rewriteCss, makeZip, rasterize, state, addFiles, renderAll,
+  doExport, buildFinal, applyPicks, floodRegion, floodOutside, dilateMask, pickAt, renderPreview,
+  pngTargets, pngCount, clampWidth, syncControls, renderSizeHint
+};
+
+})();
+</script>
+</body>
+</html>

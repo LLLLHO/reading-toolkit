@@ -8,7 +8,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#4f6ef2">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>阅读相关网站 - 阅读工具箱</title>
+<title>网站导航 · 其他小工具 - 阅读工具箱</title>
 <style>
     :root { --bg: #f1f5f9; --panel: #fff; --text: #1e293b; --text2: #64748b; --accent: #4f6ef2; --border: #e2e8f0; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -22,23 +22,29 @@
             radial-gradient(520px 380px at 55% 118%, rgba(125,211,252,.25), transparent 65%),
             linear-gradient(180deg, #f1f5f9 0%, #eaf2fb 100%); }
     .wrap { width: 100%; max-width: 860px; margin: 0 auto; }
-    .top { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+    .top { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; flex-wrap: wrap; }
     .top h1 { font-size: 22px; }
     .back { color: var(--text2); text-decoration: none; font-size: 14px; padding: 6px 12px; border-radius: 8px; background: var(--panel); border: 1px solid var(--border); white-space: nowrap; }
     .back:hover { color: var(--accent); border-color: var(--accent); }
-    .subbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    /* 两部分切换 */
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0 20px; padding: 5px; background: rgba(148,163,184,.13); border-radius: 12px; width: fit-content; max-width: 100%; }
+    .tab { border: 0; background: transparent; color: var(--text2); font-family: inherit; font-size: 14px; line-height: 1; padding: 10px 16px; border-radius: 9px; cursor: pointer; white-space: nowrap; }
+    .tab:hover { color: var(--accent); }
+    .tab.on { background: var(--panel); color: var(--accent); font-weight: 600; box-shadow: 0 1px 3px rgba(15,23,42,.10); }
+    .tab .cnt { display: inline-block; margin-left: 5px; min-width: 18px; padding: 2px 5px; border-radius: 999px; background: rgba(79,110,242,.12); font-size: 11px; text-align: center; }
+    [hidden] { display: none !important; }
+    .subbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
     .sub { color: var(--text2); font-size: 13.5px; margin: 0; }
-    .linkbtn { border: 1px solid var(--border); background: var(--panel); color: var(--text2); font-family: inherit; font-size: 12.5px; line-height: 1; padding: 7px 11px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
-    .linkbtn:hover { color: var(--accent); border-color: var(--accent); }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
     /* 卡片与删除按钮分开成两层：button 不能塞在 a 里面（无效结构，点起来也容易误触） */
     .siteWrap { position: relative; display: flex; min-width: 0; }
-    .site { flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px 16px; text-decoration: none; color: var(--text); transition: transform .15s, box-shadow .15s; }
-    .site:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(30,41,59,.12); }
+    .site, .tool { flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px 16px; text-decoration: none; color: var(--text); transition: transform .15s, box-shadow .15s; }
+    .site:hover, .tool:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(30,41,59,.12); }
     .ava { flex: none; width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: #fff; }
     .info { min-width: 0; }
     .info h3 { font-size: 16px; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .info p { font-size: 12.5px; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .info p { font-size: 12.5px; color: var(--text2); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .tool .go { margin-left: auto; flex: none; color: var(--accent); font-size: 13px; font-weight: 600; white-space: nowrap; }
     .del { position: absolute; top: -9px; right: -9px; width: 26px; height: 26px; border-radius: 50%; border: none; background: #ef4444; color: #fff; font-size: 14px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(239,68,68,.4);
         opacity: .52; transition: opacity .15s, background .15s; }
     .siteWrap:hover .del, .siteWrap:focus-within .del { opacity: 1; }
@@ -64,7 +70,7 @@
     .dialog button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
     .dialog button.primary:hover { opacity: .92; }
     .empty { text-align: center; color: var(--text2); font-size: 14px; padding: 40px 0; grid-column: 1 / -1; }
-    @media (max-width: 560px) { .grid { grid-template-columns: 1fr; gap: 10px; } .siteWrap { min-width: 0; } .site { padding: 14px 14px; gap: 12px; } .ava { width: 40px; height: 40px; font-size: 17px; } .info h3 { font-size: 15px; } .info p { font-size: 11.5px; } .add { min-height: 64px; } }
+    @media (max-width: 560px) { .grid { grid-template-columns: 1fr; gap: 10px; } .siteWrap { min-width: 0; } .site, .tool { padding: 14px 14px; gap: 12px; } .ava { width: 40px; height: 40px; font-size: 17px; } .info h3 { font-size: 15px; } .info p { font-size: 11.5px; } .add { min-height: 64px; } .tabs { width: 100%; } .tab { flex: 1; text-align: center; padding: 10px 8px; } .top h1 { font-size: 19px; } }
     @media (prefers-color-scheme: dark) {
         :root { --bg: #0b1220; --panel: #151e30; --text: #e2e8f0; --text2: #94a3b8; --border: #2b3a55; --accent: #60a5fa; }
         body::before {
@@ -76,8 +82,9 @@
                 radial-gradient(520px 380px at 55% 118%, rgba(8,145,178,.22), transparent 65%),
                 linear-gradient(180deg, #0b1220 0%, #0e1729 100%);
         }
-        .site:hover { box-shadow: 0 8px 24px rgba(0,0,0,.45); }
+        .site:hover, .tool:hover { box-shadow: 0 8px 24px rgba(0,0,0,.45); }
         .back { background: var(--panel); }
+        .tab.on { background: #1e2b42; }
         .dialog input { background: #0b1220; color: var(--text); border-color: var(--border); }
         .dialog button { background: var(--panel); color: var(--text); border-color: var(--border); }
         .dialog button.primary { background: var(--accent); border-color: var(--accent); color: #0b1220; }
@@ -88,13 +95,47 @@
     <div class="wrap">
         <div class="top">
             <a class="back" href="index.html">← 返回工具箱</a>
-            <h1>🔗 阅读相关网站</h1>
+            <h1>🔗 网站导航 · 其他小工具</h1>
         </div>
-        <div class="subbar">
-            <p class="sub">点击卡片在新标签页打开对应网站；卡片右上角的 × 可移除；点击「添加网站」自定义收录。</p>
-            <button class="linkbtn" type="button" id="btnRestore" hidden title="把自己移除掉的内置网站加回来，自己添加的不会动">恢复默认收录</button>
+        <div class="tabs" role="tablist" aria-label="板块切换">
+            <button class="tab on" type="button" id="tabSites" role="tab" aria-controls="panelSites" aria-selected="true">🌐 网站导航</button>
+            <button class="tab" type="button" id="tabTools" role="tab" aria-controls="panelTools" aria-selected="false">🧰 其他小工具 <span class="cnt">4</span></button>
         </div>
-        <div class="grid" id="grid"></div>
+
+        <section id="panelSites" role="tabpanel" aria-labelledby="tabSites">
+            <div class="subbar">
+                <p class="sub">这里只显示你自己添加的网站；点「添加网站」收藏新站点，卡片右上角的 × 可移除。</p>
+            </div>
+            <div class="grid" id="siteGrid"></div>
+        </section>
+
+        <section id="panelTools" role="tabpanel" aria-labelledby="tabTools" hidden>
+            <div class="subbar">
+                <p class="sub">以下 4 个小工具已并入工具箱，全部本地运行，文件不上传。</p>
+            </div>
+            <div class="grid">
+                <a class="tool" href="pbar-studio.html?v=20261128">
+                    <span class="ava" style="background:#e08c2e">▥</span>
+                    <span class="info"><h3>进度条工作室</h3><p>导入并编辑 ARC 进度条 SVG：改色、大小、位置，单条下载或批量打包。</p></span>
+                    <span class="go">进入 →</span>
+                </a>
+                <a class="tool" href="image-tool/index.html?v=20261128">
+                    <span class="ava" style="background:#0ea5a4">◐</span>
+                    <span class="info"><h3>调色台</h3><p>图片局部改色（点选 / 笔刷 / 魔棒，多个改色层）与多图色调统一。</p></span>
+                    <span class="go">进入 →</span>
+                </a>
+                <a class="tool" href="svg-batch-tool.html?v=20261128">
+                    <span class="ava" style="background:#7c6cf0">✎</span>
+                    <span class="info"><h3>SVG 批量改色 · 导出</h3><p>统一刷色、按色替换、点选填充；批量导出 SVG / PNG / ZIP。</p></span>
+                    <span class="go">进入 →</span>
+                </a>
+                <a class="tool" href="bubble-workshop.html?v=20261128">
+                    <span class="ava" style="background:#d4548c">◍</span>
+                    <span class="info"><h3>段评气泡工坊</h3><p>SVG / 积木 / 节点编辑生成段评气泡模板，也能反导入改造。</p></span>
+                    <span class="go">进入 →</span>
+                </a>
+            </div>
+        </section>
     </div>
     <div class="mask" id="mask">
         <div class="dialog">
@@ -113,14 +154,8 @@
 <script>
 (function () {
     'use strict';
-    // 默认收录（id 稳定，供"移除后可恢复"判断；如需恢复出厂，清空浏览器 localStorage 即可）
-    var DEFAULTS = [
-        { id: 'guiyunju', name: '归云居', url: 'https://guiyunju.xin', desc: '标题美化 / 气泡创作 / 多角色朗读等创作工具', color: '#7c6cf0' },
-        { id: 'themeshare', name: 'ThemeShare', url: 'https://themeshare.cn', desc: '阅读 APP 主题分享社区', color: '#f0736c' }
-    ];
-    var LS_KEY = 'rtb_sites_v1';       // 用户添加的网站
-    var LS_REMOVED = 'rtb_sites_removed_v1'; // 被移除的默认网站 id
-
+    // 全部网站都由用户自己添加，不再内置任何站点
+    var LS_KEY = 'rtb_sites_v1';
     var AVA_COLORS = ['#4f6ef2','#7c6cf0','#f0736c','#0ea5a4','#e08c2e','#d4548c','#3b9e5f','#64748b'];
 
     function load(key, fallback) {
@@ -142,19 +177,13 @@
         return AVA_COLORS[h % AVA_COLORS.length];
     }
 
-    var grid = document.getElementById('grid');
+    var grid = document.getElementById('siteGrid');
     var mask = document.getElementById('mask');
     var fName = document.getElementById('fName');
     var fUrl = document.getElementById('fUrl');
     var fErr = document.getElementById('fErr');
 
-    function getSites() {
-        var removed = load(LS_REMOVED, []);
-        var customs = load(LS_KEY, []);
-        var list = DEFAULTS.filter(function (s) { return removed.indexOf(s.id) === -1; })
-            .map(function (s) { return { name: s.name, url: s.url, desc: s.desc, color: s.color }; });
-        return list.concat(customs);
-    }
+    function getSites() { return load(LS_KEY, []); }
 
     function render() {
         var sites = getSites();
@@ -199,26 +228,10 @@
         add.innerHTML = '<span class="plus">＋</span>添加网站';
         add.addEventListener('click', openDialog);
         grid.appendChild(add);
-        updateRestoreBtn();
-    }
-
-    function updateRestoreBtn() {
-        var btn = document.getElementById('btnRestore');
-        if (!btn) return;
-        var removed = load(LS_REMOVED, []);
-        btn.hidden = removed.length === 0;
-        btn.textContent = removed.length ? '恢复默认收录（' + removed.length + '）' : '恢复默认收录';
     }
 
     function removeSite(s) {
-        var isDefault = DEFAULTS.some(function (d) { return d.url === s.url; });
-        if (isDefault) {
-            var removed = load(LS_REMOVED, []);
-            var d = DEFAULTS.filter(function (x) { return x.url === s.url; })[0];
-            if (d && removed.indexOf(d.id) === -1) { removed.push(d.id); save(LS_REMOVED, removed); }
-        } else {
-            save(LS_KEY, load(LS_KEY, []).filter(function (x) { return x.url !== s.url; }));
-        }
+        save(LS_KEY, load(LS_KEY, []).filter(function (x) { return x.url !== s.url; }));
         render();
     }
 
@@ -235,30 +248,17 @@
         if (!name) { fErr.textContent = '请填写网站名称'; fName.focus(); return; }
         if (!url) { fErr.textContent = '网址格式不正确，请检查后重试'; fUrl.focus(); return; }
         var customs = load(LS_KEY, []);
-        var all = getSites();
-        for (var i = 0; i < all.length; i++) {
-            if (all[i].url === url) { fErr.textContent = '这个网站已经在列表里了'; return; }
+        for (var i = 0; i < customs.length; i++) {
+            if (customs[i].url === url) { fErr.textContent = '这个网站已经在列表里了'; return; }
         }
-        // 若添加的是曾移除的默认网站，恢复它而不是重复添加
-        var d = DEFAULTS.filter(function (x) { return x.url === url; })[0];
-        if (d) {
-            var removed = load(LS_REMOVED, []);
-            save(LS_REMOVED, removed.filter(function (id) { return id !== d.id; }));
-        } else {
-            customs.push({ name: name, url: url, desc: '', color: colorFor(hostOf(url)) });
-            save(LS_KEY, customs);
-        }
+        customs.push({ name: name, url: url, desc: '', color: colorFor(hostOf(url)) });
+        save(LS_KEY, customs);
         closeDialog();
         render();
     }
 
     document.getElementById('fCancel').addEventListener('click', closeDialog);
     document.getElementById('fOk').addEventListener('click', submitDialog);
-    document.getElementById('btnRestore').addEventListener('click', function () {
-        if (!confirm('把自己移除掉的内置网站都加回来？自己添加的网站不受影响。')) return;
-        save(LS_REMOVED, []);
-        render();
-    });
     fUrl.addEventListener('keydown', function (e) { if (e.key === 'Enter') submitDialog(); });
     fName.addEventListener('keydown', function (e) { if (e.key === 'Enter') fUrl.focus(); });
     mask.addEventListener('click', function (e) { if (e.target === mask) closeDialog(); });
@@ -269,7 +269,29 @@
         if (window.matchMedia && window.matchMedia('(hover: none)').matches) document.body.classList.add('no-hover');
     } catch (e) {}
 
+    /* 两部分切换 */
+    var tabSites = document.getElementById('tabSites');
+    var tabTools = document.getElementById('tabTools');
+    var panelSites = document.getElementById('panelSites');
+    var panelTools = document.getElementById('panelTools');
+    function activate(which, updateHash) {
+        var isTools = which === 'tools';
+        panelSites.hidden = isTools;
+        panelTools.hidden = !isTools;
+        tabSites.classList.toggle('on', !isTools);
+        tabTools.classList.toggle('on', isTools);
+        tabSites.setAttribute('aria-selected', String(!isTools));
+        tabTools.setAttribute('aria-selected', String(isTools));
+        if (updateHash) {
+            try { history.replaceState(null, '', location.pathname + location.search + (isTools ? '#tools' : '')); }
+            catch (e) { location.hash = isTools ? 'tools' : ''; }
+        }
+    }
+    tabSites.addEventListener('click', function () { activate('sites', true); });
+    tabTools.addEventListener('click', function () { activate('tools', true); });
+
     render();
+    activate((location.hash || '').replace('#', '') === 'tools' ? 'tools' : 'sites', false);
 })();
 </script>
 </body>
